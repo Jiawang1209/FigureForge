@@ -13,3 +13,9 @@ skills/figureforge/cases/**/Example_group.csv
 skills/figureforge/cases/**/shapiro.test_out.csv
 skills/figureforge/cases/**/*.pdf
 !skills/figureforge/cases/**/reproduction.pdf
+
+# FigureForge case corpus is private/local by default.
+skills/figureforge/cases/**
+!skills/figureforge/cases/**/
+skills/figureforge/references/case-index.csv
+skills/figureforge/references/case-status.csv

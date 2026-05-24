@@ -17,7 +17,7 @@ if (!file.exists(input_path)) {
   stop("Missing data file: ", input_path)
 }
 
-command_args <- c(plot_script, input_path, output_path)
+command_args <- shQuote(c(plot_script, input_path, output_path))
 status <- system2("Rscript", command_args)
 if (!identical(status, 0L)) {
   stop("Case rendering failed with status: ", status)
