@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Create the first usable FigureForge repository skeleton: README, skill entrypoint, reference docs, case template, and lightweight validation scripts.
+**Goal:** Create the first usable FigureForge repository skeleton: README, bilingual-friendly skill entrypoint, reference docs, case template, and lightweight validation scripts.
 
 **Architecture:** FigureForge starts as a skillbase repository, not an app or plotting framework. The `skills/figureforge/` directory contains the AI skill, human-readable references, case folders, and R helper scripts. Cases remain independently understandable so real reproductions can be imported later without premature abstraction.
 
@@ -12,10 +12,10 @@
 
 ## File Structure
 
-- Create `README.md`: public-facing project overview, positioning, layout, setup, roadmap, and current status.
-- Create `skills/figureforge/SKILL.md`: AI-agent workflow for selecting, adapting, rendering, and QA-checking scientific visualization cases.
-- Create `skills/figureforge/references/gallery-index.md`: case index schema and initial empty MVP inventory notes.
-- Create `skills/figureforge/references/data-mapping.md`: column mapping rules for adapting user data into case schemas.
+- Create `README.md`: public-facing project overview, positioning, bilingual user support, layout, setup, roadmap, and current status.
+- Create `skills/figureforge/SKILL.md`: AI-agent workflow for selecting, adapting, rendering, and QA-checking scientific visualization cases with Chinese/English keyword support.
+- Create `skills/figureforge/references/gallery-index.md`: case index schema, Chinese/English chart aliases, searchable keywords, and initial empty MVP inventory notes.
+- Create `skills/figureforge/references/data-mapping.md`: column mapping rules for adapting user data, including Chinese column names, into case schemas.
 - Create `skills/figureforge/references/ggplot-patterns.md`: reusable ggplot2 pattern notes without creating a rigid plotting API.
 - Create `skills/figureforge/references/theme-and-export.md`: publication output and export guidance.
 - Create `skills/figureforge/references/qa-checklist.md`: final verification checklist for adapted figures.
@@ -73,6 +73,8 @@ Create `README.md` with:
 FigureForge is an AI-ready, reproducible case-based skillbase for publication-ready scientific visualization in R and Python. The first version focuses on R and ggplot2 cases built from real figure reproductions.
 
 FigureForge is designed around a simple idea: from reproduction to adaptation. Each curated case should connect a visual example, reproducible plotting data, plotting code, adaptation notes, and QA rules so an AI agent or human contributor can reuse the workflow on new scientific data.
+
+FigureForge should support both English and Chinese users. Case metadata and search keywords should include Chinese chart names and aliases such as `柱状图`, `箱线图`, `小提琴图`, `散点图`, `折线图`, `热图`, `分面图`, and `多面板`.
 
 ## Current Status
 
@@ -168,8 +170,8 @@ If no case matches well, say so. Recommend the closest case only with clear cave
 
 ## Workflow
 
-1. Clarify the user's plotting goal, scientific data type, target output, and preferred ecosystem.
-2. Search `references/gallery-index.md` and case metadata under `cases/` for matching chart types, data schemas, and visual encodings.
+1. Clarify the user's plotting goal, scientific data type, target output, preferred ecosystem, and working language.
+2. Search `references/gallery-index.md` and case metadata under `cases/` for matching chart types, Chinese/English aliases, keywords, data schemas, and visual encodings.
 3. Open the selected case's `case.md`, `plot.R`, and data file before editing anything.
 4. Create a data mapping table from the user's columns to the case schema.
 5. Adapt the case-specific plotting script while preserving the useful visual structure.
@@ -179,8 +181,8 @@ If no case matches well, say so. Recommend the closest case only with clear cave
 
 ## References
 
-- `references/gallery-index.md`: case navigation and metadata fields.
-- `references/data-mapping.md`: column mapping and derived-variable rules.
+- `references/gallery-index.md`: case navigation, metadata fields, Chinese/English aliases, and keywords.
+- `references/data-mapping.md`: column mapping, Chinese field-name handling, and derived-variable rules.
 - `references/ggplot-patterns.md`: recurring ggplot2 components.
 - `references/theme-and-export.md`: publication export expectations.
 - `references/qa-checklist.md`: final verification checklist.
@@ -220,7 +222,10 @@ This file is the curated navigation layer for FigureForge cases.
 | case_id | Stable folder prefix such as `001` |
 | title | Human-readable case title |
 | chart_type | Primary chart family |
+| chart_type_zh | Chinese chart family name |
+| aliases | Searchable English and Chinese aliases |
 | best_for | Scientific scenario where the case is useful |
+| best_for_zh | Chinese description of the scientific scenario |
 | required_columns | Columns needed to adapt the case |
 | optional_columns | Columns that improve the figure but are not required |
 | visual_features | Labels, annotations, facets, color scales, layouts, or other notable features |
@@ -231,7 +236,7 @@ This file is the curated navigation layer for FigureForge cases.
 
 No real curated cases have been imported yet.
 
-Start the MVP with 12-20 representative R/ggplot2 cases covering bars, boxplots, violin plots, scatter plots with labels, trend lines, heatmaps, facets, multi-panel layouts, and complex annotations.
+Start the MVP with 12-20 representative R/ggplot2 cases covering bars (`柱状图`), boxplots (`箱线图`), violin plots (`小提琴图`), scatter plots with labels (`带标签散点图`), trend lines (`趋势线`), heatmaps (`热图`), facets (`分面图`), multi-panel layouts (`多面板`), and complex annotations (`复杂注释`).
 ```
 
 `skills/figureforge/references/data-mapping.md`
@@ -239,7 +244,7 @@ Start the MVP with 12-20 representative R/ggplot2 cases covering bars, boxplots,
 ```markdown
 # Data Mapping
 
-Data mapping translates a user's dataset into the schema expected by a FigureForge case.
+Data mapping translates a user's dataset into the schema expected by a FigureForge case. Source data may use English or Chinese column names, and users should not need to rename columns before the mapping step.
 
 ## Mapping Table
 
@@ -254,6 +259,18 @@ Before editing a plotting script, write a mapping table:
 | label |  | no |  |
 | value |  | no |  |
 
+## Chinese Field Names
+
+When users provide Chinese data columns, preserve the original column names in the mapping table and create explicit script aliases only when needed by R code.
+
+Example:
+
+| Case role | User column | Required | Transformation |
+| --- | --- | --- | --- |
+| x | 处理组 | yes | map to `x` inside plotting script |
+| y | 平均值 | yes | map to `y` inside plotting script |
+| group | 土层 | no | preserve order as factor levels |
+
 ## Rules
 
 - Required case roles must map to existing user columns or explicit derived columns.
@@ -261,6 +278,7 @@ Before editing a plotting script, write a mapping table:
 - Aesthetic mappings such as color, shape, size, and alpha should preserve the case's visual intent.
 - Factor order should be set deliberately when order affects interpretation.
 - Missing values should be handled before rendering, not hidden silently by geoms.
+- Chinese labels, legends, and annotations should remain in Chinese when that matches the user's target output.
 ```
 
 `skills/figureforge/references/ggplot-patterns.md`

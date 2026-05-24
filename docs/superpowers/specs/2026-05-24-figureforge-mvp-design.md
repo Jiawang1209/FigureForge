@@ -4,7 +4,7 @@ Date: 2026-05-24
 
 ## Goal
 
-Build the first usable repository shape for FigureForge as an AI-ready, case-based scientific visualization skillbase.
+Build the first usable repository shape for FigureForge as an AI-ready, bilingual-friendly, case-based scientific visualization skillbase.
 
 The MVP should make the project understandable to a human contributor and usable by an AI coding agent before the full 100+ case library is cleaned. It should support the first curated batch of 12-20 R/ggplot2 cases without forcing all plotting code into an over-generalized framework.
 
@@ -15,6 +15,7 @@ This first implementation should create:
 - A project README that explains the positioning, repository layout, development workflow, and current status.
 - A `skills/figureforge/SKILL.md` entrypoint that tells an AI agent how to select, inspect, adapt, render, and QA a figure case.
 - A small `skills/figureforge/references/` knowledge base for gallery indexing, data mapping, ggplot patterns, theme/export guidance, and QA.
+- Chinese-compatible keywords, aliases, and field-mapping guidance so Chinese users can search by terms such as `柱状图`, `箱线图`, `小提琴图`, `散点图`, `热图`, `分面图`, and `多面板`.
 - A case folder convention under `skills/figureforge/cases/`, including a template or placeholder that does not pretend to be a real reproduction.
 - Lightweight scripts or script stubs only where they clarify the workflow for future indexing, rendering, and validation.
 
@@ -66,8 +67,8 @@ The `_template` case folder is intentionally a template. It should contain clear
 
 The `SKILL.md` should guide an agent through this sequence:
 
-1. Understand the user's plotting goal, target journal or style constraints, data shape, and preferred ecosystem.
-2. Search `references/gallery-index.md` and available case metadata for matching chart types and data schemas.
+1. Understand the user's plotting goal, target journal or style constraints, data shape, preferred ecosystem, and working language.
+2. Search `references/gallery-index.md` and available case metadata for matching chart types, Chinese/English aliases, keywords, and data schemas.
 3. Open the chosen case's `case.md`, `plot.R`, and data file.
 4. Map the user's data columns to the case schema before editing code.
 5. Adapt the case-specific R/ggplot2 script while preserving the visual structure that made the case useful.
@@ -79,9 +80,9 @@ The skill should prefer real case details over generic style prompts. If no case
 
 ## Reference Documents
 
-`gallery-index.md` should be the human-curated navigation layer. For now it can include the intended metadata columns and a short placeholder section for the MVP case set.
+`gallery-index.md` should be the human-curated navigation layer. For now it can include the intended metadata columns, Chinese/English chart-type aliases, searchable keywords, and a short placeholder section for the MVP case set.
 
-`data-mapping.md` should explain how to translate user data into a case schema, including required, optional, derived, and aesthetic columns.
+`data-mapping.md` should explain how to translate user data into a case schema, including required, optional, derived, and aesthetic columns. It should explicitly handle Chinese column names and Chinese scientific labels without forcing users to rename their source data prematurely.
 
 `ggplot-patterns.md` should describe recurring ggplot2 building blocks that appear across cases without turning them into a rigid API.
 
