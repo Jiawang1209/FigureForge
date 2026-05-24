@@ -31,6 +31,7 @@ rows <- lapply(case_dirs, function(case_dir) {
     chart_type_zh = extract_section(lines, "## Chart Type Chinese"),
     aliases = extract_section(lines, "## Aliases"),
     best_for = extract_section(lines, "## Best For"),
+    best_for_zh = extract_section(lines, "## Best For Chinese"),
     stringsAsFactors = FALSE
   )
 })
@@ -43,7 +44,8 @@ if (length(valid_rows) == 0) {
     chart_type = character(0),
     chart_type_zh = character(0),
     aliases = character(0),
-    best_for = character(0)
+    best_for = character(0),
+    best_for_zh = character(0)
   )
 } else {
   index <- do.call(rbind, valid_rows)

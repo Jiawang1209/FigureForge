@@ -9,7 +9,10 @@ missing_files <- required_files[!file.exists(file.path(case_dir, required_files)
 case_md <- file.path(case_dir, "case.md")
 required_headings <- c(
   "## Chart Type",
+  "## Chart Type Chinese",
+  "## Aliases",
   "## Best For",
+  "## Best For Chinese",
   "## Data Schema",
   "## Visual Encoding",
   "## ggplot Components",

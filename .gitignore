@@ -1,2 +1,15 @@
 .DS_Store
 .worktrees/
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+skills/figureforge/cases/**/R.R
+skills/figureforge/cases/**/R2.R
+skills/figureforge/cases/**/DEG_log2FoldChange.csv
+skills/figureforge/cases/**/DEG_result.txt
+skills/figureforge/cases/**/Example_data.csv
+skills/figureforge/cases/**/Example_group.csv
+skills/figureforge/cases/**/shapiro.test_out.csv
+skills/figureforge/cases/**/*.pdf
+!skills/figureforge/cases/**/reproduction.pdf

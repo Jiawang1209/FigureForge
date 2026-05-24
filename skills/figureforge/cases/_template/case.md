@@ -18,6 +18,10 @@ scatter plot, labeled scatter, 散点图, 带标签散点图
 
 Use this section to describe the scientific data scenario where the case is useful.
 
+## Best For Chinese
+
+用中文描述这个案例适合的科学数据场景。
+
 ## Data Schema
 
 - x: numeric or ordered categorical position
