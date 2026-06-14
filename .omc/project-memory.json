@@ -1,0 +1,79 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1781451121202,
+  "projectRoot": "/Users/liuyue/Desktop/Github_repos/FigureForge",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 1,
+      "lastAccessed": 1781451121178,
+      "keyFiles": []
+    },
+    "skills": {
+      "path": "skills",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1781451121180,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "README.md",
+      "accessCount": 3,
+      "lastAccessed": 1781451285371,
+      "type": "file"
+    },
+    {
+      "path": "PROJECT_HANDOFF.md",
+      "accessCount": 1,
+      "lastAccessed": 1781451146516,
+      "type": "file"
+    },
+    {
+      "path": "skills/figureforge/SKILL.md",
+      "accessCount": 1,
+      "lastAccessed": 1781451146820,
+      "type": "file"
+    },
+    {
+      "path": "README.zh.md",
+      "accessCount": 1,
+      "lastAccessed": 1781451280649,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

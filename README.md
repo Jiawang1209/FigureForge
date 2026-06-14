@@ -1,79 +1,140 @@
 # FigureForge
 
-FigureForge is an AI-ready, reproducible case-based skillbase for publication-ready scientific visualization in R and Python. The first version focuses on R and ggplot2 cases built from real figure reproductions.
+**An AI-ready, reproducible, case-based skillbase for publication-ready scientific visualization.**
 
-FigureForge is designed around a simple idea: from reproduction to adaptation. Each curated case should connect a visual example, reproducible plotting data, plotting code, adaptation notes, and QA rules so an AI agent or human contributor can reuse the workflow on new scientific data.
+> From reproduction to adaptation.
 
-FigureForge should support both English and Chinese users. Case metadata and search keywords should include Chinese chart names and aliases such as `柱状图`, `箱线图`, `小提琴图`, `散点图`, `折线图`, `热图`, `分面图`, and `多面板`.
+English · [简体中文](README.zh.md)
 
-## Current Status
+FigureForge turns real publication-figure reproductions into reusable, AI-driven plotting workflows. Each case connects a reference image, reproducible data, plotting code, adaptation notes, and QA rules — so an AI agent (or a human) can pick the closest example and adapt it to a brand-new scientific dataset instead of prompting a model to invent a figure from scratch.
 
-This repository is in the MVP skeleton stage. The project structure, skill workflow, references, and case template are being prepared before the first curated batch of real cases is imported.
+The first release is **R / ggplot2 first**, built from a long-running figure-reproduction series (*在模仿中精进数据可视化*). Python support is planned once the R workflow stabilizes.
 
-The repository does not yet contain the full 100+ case library. Real cases should be added from the existing figure reproduction series after the workflow has been verified on a small representative set.
+---
 
-## MVP Scope
+## Why FigureForge
 
-The first milestone focuses on:
+Generic "make a Nature-style figure" prompts give you a guess. FigureForge gives you **evidence**:
 
-- A FigureForge skill entrypoint for AI-assisted visualization adaptation.
-- Reference documents for case selection, data mapping, ggplot2 patterns, export, and QA.
-- Chinese and English keywords for chart-type discovery.
-- A case folder template for future real reproductions.
-- Lightweight R scripts for case validation, rendering, and indexing.
-- A roadmap toward a 12-20 case R/ggplot2 MVP.
+- **Case-based selection** — start from a real figure that already works, not a blank prompt.
+- **Real code adaptation** — reuse a concrete, reproducible `plot.R`, not synthesized boilerplate.
+- **Data-schema mapping** — map your columns onto a documented case schema.
+- **Visual QA** — verify the result against a reference reproduction and a checklist.
+- **Bilingual by design** — case metadata and search keywords include Chinese chart names and aliases (`柱状图`, `箱线图`, `小提琴图`, `散点图`, `折线图`, `热图`, `分面图`, `多面板`, …).
 
-## Repository Layout
+The asset is not a single instruction file — it's the accumulated gallery of examples, data, scripts, and metadata.
+
+## How it works
+
+```
+Your goal + data  ─▶  search gallery  ─▶  pick closest case  ─▶  map columns
+                                                                      │
+                  publication-ready figure  ◀─  QA checklist  ◀─  adapt plot.R
+```
+
+An AI agent driving the `figureforge` skill will:
+
+1. Clarify your plotting goal, data type, target output, ecosystem, and language.
+2. Search `references/gallery-index.md` and case metadata for matching chart types and aliases.
+3. Open the case's `case.md`, `plot.R`, and data **before editing**.
+4. Build a column-mapping table from your data to the case schema.
+5. Adapt the case-specific script, preserving the useful visual structure.
+6. Render the figure and run the QA checklist.
+7. Report the case used, mapping decisions, outputs, verification, and remaining limits.
+
+## Repository layout
 
 ```text
 FigureForge/
 ├── README.md
-├── PROJECT_HANDOFF.md
-├── docs/
-│   └── superpowers/
-│       ├── specs/
-│       └── plans/
-└── skills/
-    └── figureforge/
-        ├── SKILL.md
-        ├── references/
-        ├── cases/
-        └── scripts/
+├── PROJECT_HANDOFF.md            # vision, positioning, and roadmap
+├── docs/superpowers/            # design spec and implementation plan
+└── skills/figureforge/
+    ├── SKILL.md                 # skill entrypoint and workflow
+    ├── references/              # gallery index + reusable guidance
+    │   ├── gallery-index.md     # case navigation, metadata fields, aliases
+    │   ├── data-mapping.md      # column mapping & Chinese field handling
+    │   ├── ggplot-patterns.md   # recurring ggplot2 components
+    │   ├── theme-and-export.md  # publication export expectations
+    │   └── qa-checklist.md      # final verification checklist
+    ├── cases/                   # case corpus (see note below)
+    │   └── _template/           # format guide — NOT a curated case
+    └── scripts/                 # R helpers (validate / render / index)
 ```
 
-## Case Layout
+### A note on the case corpus
 
-Real cases should use this shape:
+This repository ships the **skill framework** — the workflow, references, helper scripts, and a case template. The full curated case corpus (165+ figure reproductions) lives in `skills/figureforge/cases/` locally but is **gitignored and private by default**, since many cases include third-party reference figures and source data that can't be redistributed.
+
+If you clone this repo, you get everything needed to run the workflow and author your own cases; the original figures and proprietary data are not included.
+
+## Case format
+
+Each real case is a self-contained folder:
 
 ```text
-skills/figureforge/cases/001-case-name/
-├── original.png
-├── reproduction.png
-├── data.csv
-├── plot.R
-└── case.md
+skills/figureforge/cases/NNN-case-name/
+├── case.md            # metadata + adaptation notes (required)
+├── data.csv           # plotting data (required)
+├── plot.R             # reproducible plotting script (required)
+├── reproduction.pdf   # / .png — our reproduction, when available
+└── original.png       # reference image, only if redistribution is allowed
 ```
 
-The `_template` case is a format guide, not a curated figure reproduction.
+`case.md` follows a fixed set of headings so it stays machine-readable and consistent across cases:
 
-## Development Workflow
+```text
+## Chart Type            ## Visual Encoding
+## Chart Type Chinese    ## ggplot Components
+## Aliases               ## Adaptation Notes
+## Best For              ## Common Pitfalls
+## Best For Chinese
+## Data Schema
+```
 
-1. Add or select a real figure reproduction case.
-2. Document the chart type, data schema, visual encodings, ggplot2 components, adaptation notes, pitfalls, and Chinese/English aliases in `case.md`.
-3. Keep the plotting script case-specific and reproducible.
-4. Render the case with `skills/figureforge/scripts/render_case.R`.
-5. Validate the case structure with `skills/figureforge/scripts/validate_case.R`.
-6. Update the gallery index with `skills/figureforge/scripts/index_cases.R`.
-7. Run the QA checklist before calling an adapted figure publication-ready.
+See `skills/figureforge/cases/_template/case.md` for the canonical template. The `_template` folder is a format guide, **not** a curated figure reproduction.
+
+## Helper scripts
+
+All scripts are plain `Rscript` and run from the repo root:
+
+```bash
+# Validate a case folder has the required files and case.md headings
+Rscript skills/figureforge/scripts/validate_case.R <case_dir>
+
+# Render a case's plot.R to a figure file
+Rscript skills/figureforge/scripts/render_case.R <case_dir> [output_path]
+
+# Rebuild the machine-readable case index (CSV)
+Rscript skills/figureforge/scripts/index_cases.R [cases_dir] [output_csv]
+```
+
+`render_case.R` and `validate_case.R` are deliberately kept simple and case-specific — each case stays independently understandable and reproducible rather than being hidden behind a generic plotting framework.
+
+## Authoring a new case
+
+1. Add or select a real figure reproduction.
+2. Fill in `case.md`: chart type, data schema, visual encodings, ggplot2 components, adaptation notes, pitfalls, and Chinese/English aliases.
+3. Keep `plot.R` case-specific and reproducible.
+4. Render it: `Rscript .../render_case.R <case_dir>`.
+5. Validate structure: `Rscript .../validate_case.R <case_dir>`.
+6. Update the index: `Rscript .../index_cases.R`.
+7. Run the QA checklist before calling the figure publication-ready.
 
 ## Roadmap
 
-- Import 12-20 representative R/ggplot2 cases.
-- Verify that an AI agent can select and adapt one case to a new dataset.
-- Expand the curated gallery after the adaptation workflow proves useful.
-- Add Python examples after the R-first workflow stabilizes.
-- Explore a paper, data descriptor, or software/resource publication.
+- [ ] Curate a 12–20 case R/ggplot2 MVP covering bars, boxplots, violins, labeled scatter, trend lines, heatmaps, facets, multi-panel, and complex annotations.
+- [ ] Verify an AI agent can select and adapt one case to a new dataset end-to-end.
+- [ ] Expand the curated gallery once the adaptation workflow proves useful.
+- [ ] Add Python examples after the R-first workflow stabilizes.
+- [ ] Explore a software/resource, data-descriptor, or methods publication.
+
+See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioning.
+
+## Status
+
+Early MVP. The skill workflow, references, scripts, and case template are in place; the curated public case set is being assembled from the private corpus.
 
 ## License
 
-License information has not been selected yet. Add a license before public reuse or publication.
+No license has been selected yet. **Add a license before public reuse or redistribution.** Note that individual cases may reference third-party figures and data under their own terms.
