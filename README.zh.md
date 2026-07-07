@@ -42,6 +42,26 @@ FigureForge 把真实的论文配图复现,沉淀为可复用、可由 AI 驱动
 6. 渲染图形并执行质检清单。
 7. 报告所用案例、映射决策、产出文件、已做的核验以及残留限制。
 
+## Skill + MCP 产品方向
+
+FigureForge 将发展为 **Skill + MCP 双层产品**:
+
+- **Skill 层** —— 教会 AI 智能体按案例工作:选择真实范例、检查元数据和代码、映射用户数据 schema、迁移绘图脚本、渲染并完成质检。
+- **MCP 层** —— 把 FigureForge 暴露为其他 Agent 可调用的工具,让它们无需手动解析整个仓库,就能检索案例、读取元数据、校验案例结构、重建索引、渲染图形,并生成列映射草案。
+
+规划中的 MCP 工具包括:
+
+- `figureforge_health`
+- `figureforge_list_cases`
+- `figureforge_search_cases`
+- `figureforge_get_case`
+- `figureforge_validate_case`
+- `figureforge_build_index`
+- `figureforge_render_case`
+- `figureforge_suggest_mapping`
+
+MCP 服务应保持 **local-first**:它可以读取本地私有案例库,但公开发布时只应包含可再分发的案例与素材。完整设计与开发计划见 [`docs/superpowers/specs/2026-07-07-figureforge-skill-mcp-dual-layer-design.md`](docs/superpowers/specs/2026-07-07-figureforge-skill-mcp-dual-layer-design.md) 和 [`docs/superpowers/plans/2026-07-07-figureforge-skill-mcp-dual-layer.md`](docs/superpowers/plans/2026-07-07-figureforge-skill-mcp-dual-layer.md)。
+
 ## 仓库结构
 
 ```text
@@ -126,6 +146,7 @@ Rscript skills/figureforge/scripts/index_cases.R [cases_dir] [output_csv]
 
 - [ ] 精选 12–20 个 R/ggplot2 案例作为 MVP,覆盖柱状图、箱线图、小提琴图、带标签散点图、趋势线、热图、分面图、多面板与复杂注释。
 - [ ] 验证 AI 智能体能端到端地选取并迁移一个案例到新数据集。
+- [ ] 构建 local-first 的 FigureForge MCP server,支持案例检索、元数据读取、结构校验、索引重建、图形渲染与列映射建议。
 - [ ] 工作流被证明有用后,扩充精选图库。
 - [ ] R 优先工作流稳定后,补充 Python 案例。
 - [ ] 探索软件/资源、数据描述符或方法学方向的发表。

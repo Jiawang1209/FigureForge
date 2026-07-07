@@ -42,6 +42,26 @@ An AI agent driving the `figureforge` skill will:
 6. Render the figure and run the QA checklist.
 7. Report the case used, mapping decisions, outputs, verification, and remaining limits.
 
+## Skill + MCP product direction
+
+FigureForge is designed to grow into a **Skill + MCP dual-layer product**:
+
+- **Skill layer** — teaches AI agents the case-based workflow: choose a real example, inspect its metadata and code, map the user's data schema, adapt the plotting script, render, and QA the result.
+- **MCP layer** — exposes FigureForge as callable tools for other agents, so they can discover cases, inspect metadata, validate case structure, rebuild indexes, render figures, and draft column mappings without manually parsing the repository.
+
+Planned MCP tools include:
+
+- `figureforge_health`
+- `figureforge_list_cases`
+- `figureforge_search_cases`
+- `figureforge_get_case`
+- `figureforge_validate_case`
+- `figureforge_build_index`
+- `figureforge_render_case`
+- `figureforge_suggest_mapping`
+
+The MCP server should be **local-first**: it can use a private local case corpus, while public releases should include only redistributable cases and assets. See [`docs/superpowers/specs/2026-07-07-figureforge-skill-mcp-dual-layer-design.md`](docs/superpowers/specs/2026-07-07-figureforge-skill-mcp-dual-layer-design.md) and [`docs/superpowers/plans/2026-07-07-figureforge-skill-mcp-dual-layer.md`](docs/superpowers/plans/2026-07-07-figureforge-skill-mcp-dual-layer.md) for the full design and implementation plan.
+
 ## Repository layout
 
 ```text
@@ -125,6 +145,7 @@ Rscript skills/figureforge/scripts/index_cases.R [cases_dir] [output_csv]
 
 - [ ] Curate a 12–20 case R/ggplot2 MVP covering bars, boxplots, violins, labeled scatter, trend lines, heatmaps, facets, multi-panel, and complex annotations.
 - [ ] Verify an AI agent can select and adapt one case to a new dataset end-to-end.
+- [ ] Build the local-first FigureForge MCP server for case discovery, inspection, validation, indexing, rendering, and mapping suggestions.
 - [ ] Expand the curated gallery once the adaptation workflow proves useful.
 - [ ] Add Python examples after the R-first workflow stabilizes.
 - [ ] Explore a software/resource, data-descriptor, or methods publication.
