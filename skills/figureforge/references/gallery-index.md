@@ -59,13 +59,16 @@ Do not select by chart name alone. Compare candidates in this order:
 6. installed dependencies;
 7. distribution boundary.
 
-The latest rendered local audit records 35 completed cases: the 15-case Skill
-MVP plus a 20-case complete-corpus wave. In addition to the original families,
+The latest rendered local audit records 55 completed cases: the 15-case Skill
+MVP plus two 20-case complete-corpus waves. In addition to the original families,
 the verified private set now includes multi-track GO circles, fan trees with
 five bar rings, aligned tree/composition panels, annotated phenotype heatmaps,
 radar small multiples, grouped bubble matrices, sunbursts, and genomic synteny
-circles. The corpus currently has 0 blocked and 130 pending cases. All remain
-private-only unless separately approved for redistribution.
+circles. It also includes promoter matrices, STRING PPI networks, PCoA/NMDS,
+alluvial composition, qRT-PCR, symmetric bars, grouped heatmaps, enrichment
+bubbles, and additional phylogeny layouts. The corpus currently has 0 blocked
+and 110 pending cases. All remain private-only unless separately approved for
+redistribution.
 
 For full-corpus work, run `plan_case_batches.R` against a rendered audit. A
 pending case may use `blocked_source_missing` or another supported blocker only

@@ -236,14 +236,17 @@ a separate review and defaults to `private_only`.
 
 ## Verified Skill MVP
 
-The local private corpus contains 165 audited cases. After the first
-complete-corpus wave, 35 cases pass the complete case contract: the original
-15-case MVP plus 20 newly recovered cases. Coverage now also includes
+The local private corpus contains 165 audited cases. After two
+complete-corpus waves, 55 cases pass the complete case contract: the original
+15-case MVP plus 40 newly recovered cases. Coverage now also includes
 multi-track GO enrichment circles, fan trees with five bar rings, aligned
 tree-and-composition panels, annotated phenotype heatmaps, radar small
 multiples, grouped bubble matrices, sunbursts, genomic synteny circles, and
-additional complex phylogenetic annotations. The rendered audit records 35
-completed, 0 blocked, and 130 pending cases. All 165 remain `private_only`
+additional complex phylogenetic annotations. Wave 2 adds promoter-element
+matrices, authentic STRING PPI networks, PCoA/NMDS comparisons, alluvial
+composition plots, qRT-PCR panels, symmetric bars, custom enrichment bubbles,
+grouped heatmaps, and four more phylogeny layouts. The rendered audit records
+55 completed, 0 blocked, and 110 pending cases. All 165 remain `private_only`
 because redistribution has not been approved.
 
 Three new-data migrations prove the workflow goes beyond reproduction:
@@ -261,9 +264,10 @@ ignored `outputs/figureforge-adaptations/`.
 - [x] Complete a 15-case private R/ggplot2 MVP with authentic provenance,
       fresh renders, and recorded visual QA.
 - [x] Complete corpus Wave 1: develop and fully validate 20 additional cases.
+- [x] Complete corpus Wave 2: develop and fully validate 20 additional cases.
 - [x] Verify end-to-end migration on three different new datasets and chart
       families.
-- [ ] Process the remaining 130 private cases to a completed or evidence-backed
+- [ ] Process the remaining 110 private cases to a completed or evidence-backed
       blocked terminal outcome.
 - [ ] Build the local-first FigureForge MCP server only after final Skill and
       corpus acceptance.
@@ -277,8 +281,8 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 **Skill MVP implemented and locally verified.** Discovery, indexing, dependency
 diagnosis, safe rendering, case validation, adaptation validation, templates,
-references, and three new-data proofs are in place. Thirty-five of 165 private
-cases meet the complete contract; 130 remain pending and none are currently
+references, and three new-data proofs are in place. Fifty-five of 165 private
+cases meet the complete contract; 110 remain pending and none are currently
 classified as blocked. The public curated case set is still being prepared.
 The MCP server remains planned, unimplemented, and paused until the Skill and
 case corpus reach final acceptance.

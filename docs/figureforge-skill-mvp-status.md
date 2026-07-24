@@ -12,9 +12,9 @@ implementation remains paused.
 | Acceptance area | Result |
 | --- | --- |
 | Private corpus audit | 165 real case directories classified independently |
-| Completed representative cases | 35 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
-| Current corpus terminal counts | 35 completed, 0 blocked, 130 pending after a rendered 165-case audit |
-| Visual coverage | grouped scatter, bubble, volcano, PCA, fitted trend, ANOVA, donut/sunburst, heatmap, time series, bidirectional bars, phylogeny, multi-ring tree annotation, GO circles, radar, network, genomic synteny, seamless multi-panel, and complex genomic annotations |
+| Completed representative cases | 55 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
+| Current corpus terminal counts | 55 completed, 0 blocked, 110 pending after a rendered 165-case audit |
+| Visual coverage | grouped scatter, bubble, volcano, PCA/PCoA/NMDS, fitted trend, ANOVA, donut/sunburst, heatmap, time series, bidirectional bars, phylogeny, multi-ring tree annotation, GO circles, radar, STRING PPI and custom networks, promoter matrices, genomic synteny, alluvial composition, seamless multi-panel, and complex genomic annotations |
 | New-data migration | 3 different public R datasets migrated to 3 chart families |
 | Skill package | standard metadata, end-to-end workflow, references, template, and official package validation |
 | Public tooling | discovery, index, dependency check, render, case validation, adaptation validation, and corpus audit |
@@ -47,8 +47,8 @@ implementation remains paused.
   --batch-size 20
 ```
 
-Complete-corpus Wave 1 added 20 fully verified cases. The current rendered
-audit records 35 completed, 0 blocked, and 130 pending cases. The audit records
+Complete-corpus Waves 1 and 2 added 40 fully verified cases. The current
+rendered audit records 55 completed, 0 blocked, and 110 pending cases. The audit records
 `terminal_outcome`; `blocked_source_missing` and the other supported blocker
 categories require concrete evidence and never coexist with verified QA.
 
