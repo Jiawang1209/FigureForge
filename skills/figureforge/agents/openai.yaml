@@ -1,0 +1,4 @@
+interface:
+  display_name: "FigureForge"
+  short_description: "Adapt scientific figures from verified cases"
+  default_prompt: "Use $figureforge to select a verified case, map my data, render the adaptation, and record QA."

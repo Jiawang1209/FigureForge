@@ -1,26 +1,65 @@
 # Gallery Index
 
-This file is the curated navigation layer for FigureForge cases.
+The gallery index is FigureForge's local discovery layer. The private case
+corpus is not committed; generate `case-index.csv` from the corpus available on
+the current machine.
+
+## Generate
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/index_cases.R \
+  skills/figureforge/cases \
+  skills/figureforge/references/case-index.csv
+```
+
+The generated CSV is intentionally gitignored because paths and case metadata
+may describe private assets.
+
+## Search
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+  --cases-dir skills/figureforge/cases \
+  --query "相关性 热图 correlation" \
+  --completed-only \
+  --limit 5
+```
+
+Search matches the case ID, title, English and Chinese chart types, aliases,
+scientific use, schema roles, and R packages. Completed cases receive a ranking
+bonus, but scientific fit and schema compatibility still require inspection.
 
 ## Index Fields
 
 | Field | Meaning |
 | --- | --- |
-| case_id | Stable folder prefix such as `001` |
-| title | Human-readable case title |
-| chart_type | Primary chart family |
-| chart_type_zh | Chinese chart family name |
-| aliases | Searchable English and Chinese aliases |
-| best_for | Scientific scenario where the case is useful |
-| best_for_zh | Chinese description of the scientific scenario |
-| required_columns | Columns needed to adapt the case |
-| optional_columns | Columns that improve the figure but are not required |
-| visual_features | Labels, annotations, facets, color scales, layouts, or other notable features |
-| ecosystem | R/ggplot2, Python, or both |
-| status | template, draft, verified |
+| `case_id` | Stable local folder name |
+| `title` | Human-readable case title |
+| `chart_type` | Primary chart family |
+| `chart_type_zh` | Chinese chart family |
+| `aliases` | Searchable English and Chinese aliases |
+| `best_for` / `best_for_zh` | Scientific use in both languages |
+| `required_columns` | Roles parsed from `## Data Schema` |
+| `required_r_packages` | Packages declared by the case |
+| `completion_status` | `raw`, `scaffolded`, `structured`, or `qa_verified` |
+| `distribution_status` | `public_ready` or conservative `private_only` |
+| `case_path` | Absolute local case path |
+| `search_text` | Normalized discovery text |
 
-## MVP Inventory
+## Selection Rule
 
-No real curated cases have been imported yet.
+Do not select by chart name alone. Compare candidates in this order:
 
-Start the MVP with 12-20 representative R/ggplot2 cases covering bars (`柱状图`), boxplots (`箱线图`), violin plots (`小提琴图`), scatter plots with labels (`带标签散点图`), trend lines (`趋势线`), heatmaps (`热图`), facets (`分面图`), multi-panel layouts (`多面板`), and complex annotations (`复杂注释`).
+1. scientific relationship and intended inference;
+2. input shape and required roles;
+3. statistics and annotations;
+4. layout and visual grammar;
+5. verified reproduction evidence;
+6. installed dependencies;
+7. distribution boundary.
+
+The local audit completed a 15-case Skill MVP spanning grouped scatter,
+bubble, volcano, PCA, fitted trends, ANOVA, donut, heatmap, time series,
+bidirectional bars, phylogenetic annotations, network, seamless multi-panel,
+and tree/domain/motif/gene-structure compositions. These remain private-only
+unless separately approved for redistribution.

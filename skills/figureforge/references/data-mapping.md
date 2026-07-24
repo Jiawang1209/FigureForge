@@ -1,37 +1,79 @@
 # Data Mapping
 
-Data mapping translates a user's dataset into the schema expected by a FigureForge case. Source data may use English or Chinese column names, and users should not need to rename columns before the mapping step.
+Data mapping translates a user's actual dataset into the semantic roles used
+by a selected FigureForge case. Preserve the user's original file and column
+names; create explicit aliases only inside the adaptation workspace.
+
+## Inspect Before Mapping
+
+Record:
+
+- file format, delimiter, encoding, row count, and column names;
+- numeric ranges, units, missing values, and non-finite values;
+- unique group and facet levels in intended order;
+- duplicate keys and whether observations are paired or repeated;
+- statistical meaning of summaries, intervals, p-values, and thresholds.
+
+Never infer a unit, pairing key, or statistical denominator from a column name
+alone.
 
 ## Mapping Table
 
-Before editing a plotting script, write a mapping table:
+Write this in `mapping.md` before changing `plot.R`:
 
-| Case role | User column | Required | Transformation |
-| --- | --- | --- | --- |
-| x |  | yes |  |
-| y |  | yes |  |
-| group |  | no |  |
-| facet |  | no |  |
-| label |  | no |  |
-| value |  | no |  |
+| Case role | Input column | Required | Type or unit | Transformation |
+| --- | --- | --- | --- | --- |
+| x |  | yes |  |  |
+| y |  | yes |  |  |
+| group |  | no | categorical | factor order |
+| facet |  | no | categorical |  |
+| label |  | no | text |  |
+| value |  | no | numeric |  |
+
+Add or remove roles to match the selected case exactly. For a heatmap these
+may be `row`, `column`, and `value`; for a tree they may include `tip`,
+`feature_start`, `feature_end`, and `feature_type`.
 
 ## Chinese Field Names
 
-When users provide Chinese data columns, preserve the original column names in the mapping table and create explicit script aliases only when needed by R code.
+Keep original Chinese names in the mapping record:
 
-Example:
+| Case role | Input column | Required | Type or unit | Transformation |
+| --- | --- | --- | --- | --- |
+| x | 处理组 | yes | ordered category | map internally to `group` |
+| y | 平均值 | yes | mg/L | map internally to `value` |
+| color | 土层 | no | category | preserve observed order |
 
-| Case role | User column | Required | Transformation |
-| --- | --- | --- | --- |
-| x | 处理组 | yes | map to `x` inside plotting script |
-| y | 平均值 | yes | map to `y` inside plotting script |
-| group | 土层 | no | preserve order as factor levels |
+Use `check.names = FALSE` when reading CSV if R would otherwise alter names.
 
-## Rules
+## Derived Fields
 
-- Required case roles must map to existing user columns or explicit derived columns.
-- Derived columns must be created before plotting and described in the report.
-- Aesthetic mappings such as color, shape, size, and alpha should preserve the case's visual intent.
-- Factor order should be set deliberately when order affects interpretation.
-- Missing values should be handled before rendering, not hidden silently by geoms.
-- Chinese labels, legends, and annotations should remain in Chinese when that matches the user's target output.
+For each derived field, record:
+
+1. output field name;
+2. source columns;
+3. exact formula or recoding table;
+4. missing-value behavior;
+5. units after transformation;
+6. reason the derivation is scientifically valid.
+
+Examples include `-log10(p)`, confidence intervals, signed correlation classes,
+long-format pivots, category labels, and tree-relative coordinates.
+
+## Rejection Conditions
+
+Stop and resolve the mapping when:
+
+- a required role has no source or justified derivation;
+- units are incompatible;
+- category or sample identifiers are ambiguous;
+- a join changes row coverage unexpectedly;
+- a statistical layer requires replication that the data lacks;
+- values fall outside the case's scale assumptions;
+- an annotation would imply evidence not present in the input.
+
+## Post-Render Checks
+
+Compare the normalized input with plotted marks. Confirm row coverage, factor
+order, scale limits, missing-value handling, labels, derived summaries, and all
+statistics before marking QA verified.

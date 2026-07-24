@@ -34,13 +34,14 @@ FigureForge 把真实的论文配图复现,沉淀为可复用、可由 AI 驱动
 
 驱动 `figureforge` 技能的 AI 智能体会:
 
-1. 澄清你的绘图目标、数据类型、目标输出、技术生态与使用语言。
-2. 在 `references/gallery-index.md` 与案例元数据中检索匹配的图类型与别名。
-3. **动手改写前**,先打开案例的 `case.md`、`plot.R` 与数据文件。
-4. 从你的数据到案例 schema,建立一张列映射表。
-5. 改写案例专属脚本,保留有价值的可视化结构。
-6. 渲染图形并执行质检清单。
-7. 报告所用案例、映射决策、产出文件、已做的核验以及残留限制。
+1. 检查科研问题与真实输入数据结构。
+2. 使用中英文检索案例元数据，并优先选择已经完成的案例。
+3. **动手改写前**，打开案例的 `case.md`、`data.csv`、`plot.R` 和
+   `qa.md`。
+4. 检查依赖并建立明确的字段映射记录。
+5. 在私有案例库之外迁移真实案例脚本。
+6. 渲染、人工视觉检查，再用迁移验证器独立重渲染。
+7. 报告所选案例、映射、命令、输出、QA、分发边界和残留限制。
 
 ## Skill + MCP 产品方向
 
@@ -94,11 +95,13 @@ FigureForge/
 每个真实案例都是一个自包含的文件夹:
 
 ```text
-skills/figureforge/cases/NNN-case-name/
+skills/figureforge/cases/<case-id>/
 ├── case.md            # 元数据 + 迁移说明(必需)
 ├── data.csv           # 绘图数据(必需)
 ├── plot.R             # 可复现绘图脚本(必需)
 ├── reproduction.pdf   # / .png —— 我们的复现图(若有)
+├── qa.md               # 完成案例的明确核验记录
+├── distribution.yml    # 可选；缺失即 private_only
 └── original.png       # 参考图,仅在允许再分发时提供
 ```
 
@@ -110,27 +113,44 @@ skills/figureforge/cases/NNN-case-name/
 ## Aliases               ## Adaptation Notes
 ## Best For              ## Common Pitfalls
 ## Best For Chinese
+## Data Provenance
 ## Data Schema
+## Required R Packages
 ```
 
 模板见 `skills/figureforge/cases/_template/case.md`。`_template` 文件夹只是格式指南,**不是**真实的配图复现案例。
 
 ## 辅助脚本
 
-所有脚本都是纯 `Rscript`,从仓库根目录运行:
+从仓库根目录使用 `/usr/local/bin/Rscript` 运行 R 工作流:
 
 ```bash
 # 校验案例文件夹是否具备必需文件与 case.md 标题
-Rscript skills/figureforge/scripts/validate_case.R <case_dir>
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_case.R <case_dir>
 
-# 将案例的 plot.R 渲染为图像文件
-Rscript skills/figureforge/scripts/render_case.R <case_dir> [output_path]
+# 用中英文元数据和 schema 角色检索案例
+/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+  --query "相关性 热图" --completed-only
 
 # 重建机器可读的案例索引(CSV)
-Rscript skills/figureforge/scripts/index_cases.R [cases_dir] [output_csv]
+/usr/local/bin/Rscript skills/figureforge/scripts/index_cases.R \
+  [cases_dir] [output_csv]
+
+# 检查单个案例声明的全部依赖
+/usr/local/bin/Rscript skills/figureforge/scripts/check_dependencies.R \
+  --case-dir <case_dir> --strict
+
+# 使用案例或新输入执行标准 plot.R 参数契约
+/usr/local/bin/Rscript skills/figureforge/scripts/render_case.R \
+  <case_dir> --input <input_csv> --output <output_path>
+
+# 校验并独立重渲染新数据迁移
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
+  <adaptation_dir> --render --output <validation_output>
 ```
 
-`render_case.R` 与 `validate_case.R` 刻意保持简单、案例专属——让每个案例独立可懂、可复现,而不是被藏进一个通用绘图框架里。
+这些脚本负责检索和核验；绘图逻辑仍保持案例专属、独立可读，而不是藏进
+通用绘图框架。
 
 ## 案例完成度审计
 
@@ -174,18 +194,38 @@ scaffolded（脚手架化）案例不等于已完成案例。成功运行只能�
 
 ## 撰写新案例
 
-1. 添加或选定一个真实的配图复现。
-2. 填写 `case.md`:图类型、数据 schema、可视化编码、ggplot2 组件、迁移说明、易错点,以及中英别名。
-3. 让 `plot.R` 保持案例专属且可复现。
-4. 渲染:`Rscript .../render_case.R <case_dir>`。
-5. 校验结构:`Rscript .../validate_case.R <case_dir>`。
-6. 更新索引:`Rscript .../index_cases.R`。
-7. 在称之为"出版级"之前,跑一遍质检清单。
+1. 添加或选择真实源数据、源代码和复现证据。
+2. 在 `case.md` 填写来源、schema、可视化编码、依赖、迁移说明、易错点和
+   中英文别名。
+3. 在保留原始资料的前提下，把真实数据规范化为 `data.csv`。
+4. 把 `plot.R` 重构为接受明确输入、输出路径。
+5. 在案例目录外渲染，并与真实参考图视觉对照。
+6. 保存完整 `qa.md`，分开发审查另行处理。
+7. 执行 `validate_case.R --complete --render`，再更新本地索引。
+
+## 已验证的 Skill MVP
+
+本地私有案例库共有 165 个已审计案例。其中 15 个代表案例已经通过完整
+案例契约，覆盖分组散点、气泡、火山图、PCA、拟合趋势、ANOVA、扇形图、
+热图、时序图、双向柱形图、进化树注释、网络图、无缝多面板，以及
+进化树/结构域/motif/基因结构四联图。由于尚未获得再分发许可，它们仍为
+`private_only`。
+
+三组不同的新数据迁移证明工作流不只会复现：
+
+- R `HairEyeColor` → 三种标注策略的扇形图；
+- R `USArrests` → 带正负号与绝对值编码的相关性气泡热图；
+- R `ChickWeight` → 四组饮食、95% t 区间和局部插图的时序图。
+
+每组迁移都有不同输入、字段映射、迁移后的 `plot.R`、精确命令、渲染
+PDF、书面 QA 和独立重渲染结果，保存在被忽略的
+`outputs/figureforge-adaptations/`。
 
 ## 路线图
 
-- [ ] 精选 12–20 个 R/ggplot2 案例作为 MVP,覆盖柱状图、箱线图、小提琴图、带标签散点图、趋势线、热图、分面图、多面板与复杂注释。
-- [ ] 验证 AI 智能体能端到端地选取并迁移一个案例到新数据集。
+- [x] 完成 15 个私有 R/ggplot2 MVP 案例的真实来源核对、全新渲染和
+      书面视觉 QA。
+- [x] 使用三份不同新数据和三种图形完成端到端迁移验证。
 - [ ] 构建 local-first 的 FigureForge MCP server,支持案例检索、元数据读取、结构校验、索引重建、图形渲染与列映射建议。
 - [ ] 工作流被证明有用后,扩充精选图库。
 - [ ] R 优先工作流稳定后,补充 Python 案例。
@@ -195,9 +235,11 @@ scaffolded（脚手架化）案例不等于已完成案例。成功运行只能�
 
 ## 当前状态
 
-Skill MVP 开发阶段。工作流、参考文档、公开模板、辅助脚本和案例审计契约
-已经建立。私有语料库目前是候选案例清单；只有通过真实数据核对、全新
-渲染、复现证据和书面 QA 的案例才会计为完成。公开精选案例集仍在整理。
+**Skill MVP 已实现并通过本地验证。** 案例检索、索引、依赖诊断、安全
+渲染、案例验证、迁移验证、模板、参考文档和三组新数据证明已经就绪。
+165 个私有案例中有 15 个满足完整契约，其余案例仍按证据分类，不会被
+描述为已完成。公开精选案例集仍在整理；MCP Server 仍是下一层规划，
+尚未实现。
 
 ## 许可
 

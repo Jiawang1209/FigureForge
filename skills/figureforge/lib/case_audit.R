@@ -103,10 +103,13 @@ detect_distribution <- function(case_dir) {
 render_case_for_audit <- function(
   case_dir,
   output_path,
-  rscript = "/usr/local/bin/Rscript"
+  rscript = "/usr/local/bin/Rscript",
+  input_path = NULL
 ) {
   plot_script <- file.path(case_dir, "plot.R")
-  input_path <- file.path(case_dir, "data.csv")
+  if (is.null(input_path)) {
+    input_path <- file.path(case_dir, "data.csv")
+  }
 
   if (!is_nonempty_file(plot_script) || !is_nonempty_file(input_path)) {
     return(list(
@@ -301,9 +304,17 @@ summarize_audit <- function(results) {
     "",
     "## Recommended Next Actions",
     "",
-    "1. Exclude scaffold-only cases from completed-case counts.",
-    "2. Review runnable authentic cases for the 12–20 case MVP.",
-    "3. Record visual QA and distribution decisions explicitly.",
+    paste0(
+      "1. Treat only the ",
+      count_true(
+        results$runnable &
+          results$reproduced &
+          results$qa_verified
+      ),
+      " runnable + reproduced + QA-verified case(s) as completed."
+    ),
+    "2. Continue authentic source review for scaffolded or unverified cases.",
+    "3. Review distribution independently before publishing any case assets.",
     "4. Keep private corpus paths and generated reports out of Git."
   )
 }

@@ -34,13 +34,17 @@ Your goal + data  ─▶  search gallery  ─▶  pick closest case  ─▶  map
 
 An AI agent driving the `figureforge` skill will:
 
-1. Clarify your plotting goal, data type, target output, ecosystem, and language.
-2. Search `references/gallery-index.md` and case metadata for matching chart types and aliases.
-3. Open the case's `case.md`, `plot.R`, and data **before editing**.
-4. Build a column-mapping table from your data to the case schema.
-5. Adapt the case-specific script, preserving the useful visual structure.
-6. Render the figure and run the QA checklist.
-7. Report the case used, mapping decisions, outputs, verification, and remaining limits.
+1. Inspect the scientific goal and the actual input schema.
+2. Search case metadata in English or Chinese and prioritize completed cases.
+3. Open the case's `case.md`, `data.csv`, `plot.R`, and `qa.md`
+   **before editing**.
+4. Check dependencies and build an explicit field-mapping record.
+5. Adapt the real case-specific script in a workspace outside the private
+   corpus.
+6. Render, visually review, and independently re-render with the adaptation
+   validator.
+7. Report the selected case, mapping, commands, outputs, QA, distribution
+   boundary, and remaining limits.
 
 ## Skill + MCP product direction
 
@@ -93,11 +97,13 @@ If you clone this repo, you get everything needed to run the workflow and author
 Each real case is a self-contained folder:
 
 ```text
-skills/figureforge/cases/NNN-case-name/
+skills/figureforge/cases/<case-id>/
 ├── case.md            # metadata + adaptation notes (required)
 ├── data.csv           # plotting data (required)
 ├── plot.R             # reproducible plotting script (required)
 ├── reproduction.pdf   # / .png — our reproduction, when available
+├── qa.md               # explicit verification record for completed cases
+├── distribution.yml    # optional; absent means private_only
 └── original.png       # reference image, only if redistribution is allowed
 ```
 
@@ -109,27 +115,46 @@ skills/figureforge/cases/NNN-case-name/
 ## Aliases               ## Adaptation Notes
 ## Best For              ## Common Pitfalls
 ## Best For Chinese
+## Data Provenance
 ## Data Schema
+## Required R Packages
 ```
 
 See `skills/figureforge/cases/_template/case.md` for the canonical template. The `_template` folder is a format guide, **not** a curated figure reproduction.
 
 ## Helper scripts
 
-All scripts are plain `Rscript` and run from the repo root:
+Run the R workflow from the repository root with
+`/usr/local/bin/Rscript`:
 
 ```bash
 # Validate a case folder has the required files and case.md headings
-Rscript skills/figureforge/scripts/validate_case.R <case_dir>
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_case.R <case_dir>
 
-# Render a case's plot.R to a figure file
-Rscript skills/figureforge/scripts/render_case.R <case_dir> [output_path]
+# Search English/Chinese metadata and schema roles
+/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+  --query "correlation heatmap" --completed-only
 
 # Rebuild the machine-readable case index (CSV)
-Rscript skills/figureforge/scripts/index_cases.R [cases_dir] [output_csv]
+/usr/local/bin/Rscript skills/figureforge/scripts/index_cases.R \
+  [cases_dir] [output_csv]
+
+# Check every dependency declared by one case
+/usr/local/bin/Rscript skills/figureforge/scripts/check_dependencies.R \
+  --case-dir <case_dir> --strict
+
+# Render a case or a new input through its standard plot.R contract
+/usr/local/bin/Rscript skills/figureforge/scripts/render_case.R \
+  <case_dir> --input <input_csv> --output <output_path>
+
+# Validate and freshly re-render a new-data adaptation
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
+  <adaptation_dir> --render --output <validation_output>
 ```
 
-`render_case.R` and `validate_case.R` are deliberately kept simple and case-specific — each case stays independently understandable and reproducible rather than being hidden behind a generic plotting framework.
+The helpers orchestrate discovery and verification; plotting logic remains
+case-specific and independently readable rather than being hidden behind a
+generic plotting framework.
 
 ## Case Readiness Audit
 
@@ -177,18 +202,41 @@ a separate review and defaults to `private_only`.
 
 ## Authoring a new case
 
-1. Add or select a real figure reproduction.
-2. Fill in `case.md`: chart type, data schema, visual encodings, ggplot2 components, adaptation notes, pitfalls, and Chinese/English aliases.
-3. Keep `plot.R` case-specific and reproducible.
-4. Render it: `Rscript .../render_case.R <case_dir>`.
-5. Validate structure: `Rscript .../validate_case.R <case_dir>`.
-6. Update the index: `Rscript .../index_cases.R`.
-7. Run the QA checklist before calling the figure publication-ready.
+1. Add or select authentic source data, code, and reproduction evidence.
+2. Fill in `case.md`: provenance, schema, visual encodings, dependencies,
+   adaptation notes, pitfalls, and bilingual aliases.
+3. Normalize authentic data into `data.csv` without deleting source assets.
+4. Refactor `plot.R` to accept explicit input and output paths.
+5. Render outside the source directory and compare with the authentic
+   reference.
+6. Save a complete `qa.md`; review distribution separately.
+7. Run `validate_case.R --complete --render`, then rebuild the local index.
+
+## Verified Skill MVP
+
+The local private corpus contains 165 audited cases. Fifteen representative
+cases now pass the complete case contract and cover grouped scatter, bubble,
+volcano, PCA, fitted trends, ANOVA, donut, heatmap, time series,
+bidirectional bars, phylogenetic annotation, network, seamless multi-panel,
+and tree/domain/motif/gene-structure designs. They remain `private_only`
+because redistribution has not been approved.
+
+Three new-data migrations prove the workflow goes beyond reproduction:
+
+- R `HairEyeColor` → three-strategy donut composition;
+- R `USArrests` → signed correlation bubble heatmap;
+- R `ChickWeight` → four-diet time series with 95% t intervals and inset.
+
+Each migration has a different input, field mapping, migrated `plot.R`, exact
+command, rendered PDF, written QA, and successful independent re-render under
+ignored `outputs/figureforge-adaptations/`.
 
 ## Roadmap
 
-- [ ] Curate a 12–20 case R/ggplot2 MVP covering bars, boxplots, violins, labeled scatter, trend lines, heatmaps, facets, multi-panel, and complex annotations.
-- [ ] Verify an AI agent can select and adapt one case to a new dataset end-to-end.
+- [x] Complete a 15-case private R/ggplot2 MVP with authentic provenance,
+      fresh renders, and recorded visual QA.
+- [x] Verify end-to-end migration on three different new datasets and chart
+      families.
 - [ ] Build the local-first FigureForge MCP server for case discovery, inspection, validation, indexing, rendering, and mapping suggestions.
 - [ ] Expand the curated gallery once the adaptation workflow proves useful.
 - [ ] Add Python examples after the R-first workflow stabilizes.
@@ -198,11 +246,13 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 ## Status
 
-Skill MVP development. The workflow, references, public template, helper
-scripts, and case-audit contract are in place. The private corpus is an
-inventory of candidate cases; cases are counted as complete only after
-authentic-data review, fresh rendering, reproduction evidence, and recorded
-QA. The public curated case set is still being prepared.
+**Skill MVP implemented and locally verified.** Discovery, indexing, dependency
+diagnosis, safe rendering, case validation, adaptation validation, templates,
+references, and three new-data proofs are in place. Fifteen of 165 private
+cases meet the complete contract; the rest remain explicitly classified
+rather than being presented as complete. The public curated case set is still
+being prepared. The MCP server remains a planned next layer and is not
+implemented.
 
 ## License
 
