@@ -147,6 +147,16 @@ skills/figureforge/cases/<case-id>/
 # 校验并独立重渲染新数据迁移
 /usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
   <adaptation_dir> --render --output <validation_output>
+
+# 校验有证据支持的终态阻塞记录
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_blocker.R \
+  <case_dir>
+
+# 将待处理案例规划为确定性的证据优先批次
+/usr/local/bin/Rscript skills/figureforge/scripts/plan_case_batches.R \
+  --readiness <case-readiness.csv> \
+  --output <batch-manifest.csv> \
+  --batch-size 20
 ```
 
 这些脚本负责检索和核验；绘图逻辑仍保持案例专属、独立可读，而不是藏进
@@ -176,6 +186,17 @@ skills/figureforge/cases/<case-id>/
 - `qa_verified`：存在明确且完整的 `qa.md` 记录；
 - `public_ready`：已经审核并明确允许公开分发；
 - `private_only`：尚未允许公开，或明确只能私有使用。
+
+完整案例库审计还会记录 `terminal_outcome`：
+
+- `completed`：无脚手架、可运行、有复现证据且 QA 已验证；
+- `blocked`：严格证据记录通过 `validate_blocker.R`；
+- `pending`：尚未满足任何一种终态合同。
+
+支持的阻塞类别包括 `blocked_source_missing`、`blocked_dependency`、
+`blocked_visual_reference`、`blocked_corrupt_asset`、
+`blocked_ambiguous_mapping` 和 `blocked_rights`。已验证 QA 与有效 blocker
+不能并存；工作量和耗时不能作为阻塞证据。
 
 scaffolded（脚手架化）案例不等于已完成案例。成功运行只能证明代码可以
 执行，不能证明视觉一致。缺少分发审核时一律默认为 `private_only`。审计

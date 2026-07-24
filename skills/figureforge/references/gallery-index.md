@@ -43,6 +43,7 @@ bonus, but scientific fit and schema compatibility still require inspection.
 | `required_r_packages` | Packages declared by the case |
 | `completion_status` | `raw`, `scaffolded`, `structured`, or `qa_verified` |
 | `distribution_status` | `public_ready` or conservative `private_only` |
+| `terminal_outcome` | Audit result: `completed`, `blocked`, or `pending` |
 | `case_path` | Absolute local case path |
 | `search_text` | Normalized discovery text |
 
@@ -63,3 +64,8 @@ bubble, volcano, PCA, fitted trends, ANOVA, donut, heatmap, time series,
 bidirectional bars, phylogenetic annotations, network, seamless multi-panel,
 and tree/domain/motif/gene-structure compositions. These remain private-only
 unless separately approved for redistribution.
+
+For full-corpus work, run `plan_case_batches.R` against a rendered audit. A
+pending case may use `blocked_source_missing` or another supported blocker only
+after the record passes `validate_blocker.R`; an unvalidated note remains
+`terminal_outcome = pending`.

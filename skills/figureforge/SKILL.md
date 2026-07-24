@@ -19,6 +19,7 @@ case-specific script, render, and record QA.
   original figures, reproductions, or source scripts.
 - Treat a case as `private_only` unless `distribution.yml` explicitly allows
   redistribution of named assets.
+- A verified QA and a valid blocker cannot coexist.
 - Use `/usr/local/bin/Rscript` for all R workflows in this repository.
 - If no case matches the scientific intent and schema closely enough, state
   the mismatch and either select the nearest case with caveats or author a new
@@ -220,6 +221,27 @@ Audit the full local corpus when readiness evidence changes:
   --render
 ```
 
+Plan the remaining cases in deterministic evidence-first waves:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/plan_case_batches.R \
+  --readiness outputs/figureforge-audit/case-readiness.csv \
+  --output outputs/figureforge-audit/batch-manifest.csv \
+  --batch-size 20
+```
+
+If authentic completion remains unsafe after concrete recovery attempts, use
+the exact `references/blocker-contract.md` structure and validate it:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_blocker.R \
+  "<case_dir>"
+```
+
+Supported categories begin with `blocked_source_missing` and cover only source,
+dependency, visual-reference, corruption, ambiguous-mapping, and rights
+failures. Time or workload is not a blocker.
+
 ## Completion Gates
 
 Keep these claims separate:
@@ -234,11 +256,18 @@ Keep these claims separate:
 A scaffolded case is never complete. A completed case may still be
 `private_only`.
 
+At corpus scale, `terminal_outcome` is:
+
+- `completed` only for a non-scaffolded runnable, reproduced, QA-verified case;
+- `blocked` only for a valid evidence-backed blocker record;
+- `pending` for every other case.
+
 ## References
 
 - `references/gallery-index.md`: discovery fields, ranking, and local index.
 - `references/data-mapping.md`: schema mapping and derived-field rules.
 - `references/adaptation-contract.md`: adaptation workspace and report format.
+- `references/blocker-contract.md`: evidence-backed terminal blockers.
 - `references/ggplot-patterns.md`: reusable ggplot2 components.
 - `references/theme-and-export.md`: publication export expectations.
 - `references/qa-checklist.md`: visual and reproducibility QA contract.

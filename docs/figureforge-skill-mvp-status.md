@@ -36,7 +36,20 @@ implementation remains paused.
 
 /usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
   "<adaptation_dir>" --render --output "<external_output>"
+
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_blocker.R \
+  "<case_dir>"
+
+/usr/local/bin/Rscript skills/figureforge/scripts/plan_case_batches.R \
+  --readiness "<case-readiness.csv>" \
+  --output "<batch-manifest.csv>" \
+  --batch-size 20
 ```
+
+The complete-corpus continuation starts from 15 completed, 0 blocked, and 150
+pending cases. The audit now records `terminal_outcome`; the first supported
+blocker category is `blocked_source_missing`. Private blockers require concrete
+evidence and never coexist with verified QA.
 
 ## New-Data Proofs
 

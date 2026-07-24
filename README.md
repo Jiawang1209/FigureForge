@@ -150,6 +150,16 @@ Run the R workflow from the repository root with
 # Validate and freshly re-render a new-data adaptation
 /usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
   <adaptation_dir> --render --output <validation_output>
+
+# Validate an evidence-backed terminal blocker
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_blocker.R \
+  <case_dir>
+
+# Plan pending cases in deterministic evidence-first waves
+/usr/local/bin/Rscript skills/figureforge/scripts/plan_case_batches.R \
+  --readiness <case-readiness.csv> \
+  --output <batch-manifest.csv> \
+  --batch-size 20
 ```
 
 The helpers orchestrate discovery and verification; plotting logic remains
@@ -181,6 +191,18 @@ The audit records independent evidence flags:
 - `qa_verified`: an explicit, complete `qa.md` record exists;
 - `public_ready`: redistribution was explicitly reviewed and allowed;
 - `private_only`: public readiness is absent or denied.
+
+The complete-corpus audit also records `terminal_outcome`:
+
+- `completed`: non-scaffolded, runnable, reproduced, and QA-verified;
+- `blocked`: a strict evidence record passes `validate_blocker.R`;
+- `pending`: neither terminal contract passes.
+
+Supported categories include `blocked_source_missing`,
+`blocked_dependency`, `blocked_visual_reference`, `blocked_corrupt_asset`,
+`blocked_ambiguous_mapping`, and `blocked_rights`. A verified QA record and a
+valid blocker cannot coexist. Workload and elapsed time are not blocker
+evidence.
 
 Scaffolded cases are not completed cases. A successful render proves execution,
 not visual fidelity. Missing distribution review always defaults to

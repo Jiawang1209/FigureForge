@@ -234,4 +234,38 @@ adaptation_message <- paste(
 )
 stopifnot(grepl("Adaptation validation OK", adaptation_message, fixed = TRUE))
 
+read_repo_text <- function(relative_path) {
+  paste(
+    readLines(file.path(repo_root, relative_path), warn = FALSE),
+    collapse = "\n"
+  )
+}
+skill_text <- read_repo_text("skills/figureforge/SKILL.md")
+readme_en <- read_repo_text("README.md")
+readme_zh <- read_repo_text("README.zh.md")
+gallery_reference <- read_repo_text(
+  "skills/figureforge/references/gallery-index.md"
+)
+blocker_reference <- read_repo_text(
+  "skills/figureforge/references/blocker-contract.md"
+)
+
+for (document in list(skill_text, readme_en, readme_zh)) {
+  stopifnot(grepl("validate_blocker.R", document, fixed = TRUE))
+  stopifnot(grepl("plan_case_batches.R", document, fixed = TRUE))
+  stopifnot(grepl("terminal_outcome", document, fixed = TRUE))
+  stopifnot(grepl("blocked_source_missing", document, fixed = TRUE))
+}
+for (document in list(gallery_reference, blocker_reference)) {
+  stopifnot(grepl("terminal_outcome", document, fixed = TRUE))
+  stopifnot(grepl("blocked_source_missing", document, fixed = TRUE))
+}
+for (document in list(skill_text, blocker_reference)) {
+  stopifnot(grepl(
+    "verified QA and a valid blocker cannot coexist",
+    document,
+    fixed = TRUE
+  ))
+}
+
 message("skill workflow tests: PASS")
