@@ -132,6 +132,35 @@ Rscript skills/figureforge/scripts/index_cases.R [cases_dir] [output_csv]
 
 `render_case.R` 与 `validate_case.R` 刻意保持简单、案例专属——让每个案例独立可懂、可复现,而不是被藏进一个通用绘图框架里。
 
+## 案例完成度审计
+
+拥有 `case.md`、`data.csv` 和 `plot.R` 只能证明案例结构存在，不能证明它
+使用了真实源数据、忠实复现了原图，或者可以公开分发。
+
+使用下面的只读命令审计本地案例库：
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/audit_cases.R \
+  --cases-dir /absolute/path/to/skills/figureforge/cases \
+  --output-dir outputs/figureforge-audit \
+  --rscript /usr/local/bin/Rscript \
+  --render
+```
+
+审计会分别记录七类证据：
+
+- `raw`：存在规范文件之外的原始资料；
+- `scaffolded`：检测到批量生成的临时脚手架；
+- `runnable`：一次隔离的全新渲染成功；
+- `reproduced`：存在非空的复现图文件；
+- `qa_verified`：存在明确且完整的 `qa.md` 记录；
+- `public_ready`：已经审核并明确允许公开分发；
+- `private_only`：尚未允许公开，或明确只能私有使用。
+
+scaffolded（脚手架化）案例不等于已完成案例。成功运行只能证明代码可以
+执行，不能证明视觉一致。缺少分发审核时一律默认为 `private_only`。审计
+报告写入被忽略的 `outputs/`，不得与私有案例信息一起提交。
+
 ## 撰写新案例
 
 1. 添加或选定一个真实的配图复现。
@@ -155,7 +184,9 @@ Rscript skills/figureforge/scripts/index_cases.R [cases_dir] [output_csv]
 
 ## 当前状态
 
-早期 MVP。技能工作流、参考文档、脚本与案例模板已就位;公开的精选案例集正从私有语料中逐步整理产出。
+Skill MVP 开发阶段。工作流、参考文档、公开模板、辅助脚本和案例审计契约
+已经建立。私有语料库目前是候选案例清单；只有通过真实数据核对、全新
+渲染、复现证据和书面 QA 的案例才会计为完成。公开精选案例集仍在整理。
 
 ## 许可
 

@@ -17,5 +17,10 @@ skills/figureforge/cases/**/*.pdf
 # FigureForge case corpus is private/local by default.
 skills/figureforge/cases/**
 !skills/figureforge/cases/**/
+!skills/figureforge/cases/_template/
+!skills/figureforge/cases/_template/case.md
+!skills/figureforge/cases/_template/data.csv
+!skills/figureforge/cases/_template/plot.R
 skills/figureforge/references/case-index.csv
 skills/figureforge/references/case-status.csv
+outputs/

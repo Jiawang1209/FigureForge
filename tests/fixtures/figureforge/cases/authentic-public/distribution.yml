@@ -1,0 +1,6 @@
+redistribution: allowed
+reviewed_assets:
+  - case.md
+  - data.csv
+  - plot.R
+  - reproduction.pdf

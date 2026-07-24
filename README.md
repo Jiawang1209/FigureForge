@@ -131,6 +131,37 @@ Rscript skills/figureforge/scripts/index_cases.R [cases_dir] [output_csv]
 
 `render_case.R` and `validate_case.R` are deliberately kept simple and case-specific — each case stays independently understandable and reproducible rather than being hidden behind a generic plotting framework.
 
+## Case Readiness Audit
+
+Having `case.md`, `data.csv`, and `plot.R` proves only that a case has the
+expected structure. It does not prove that the files use authentic source data,
+faithfully reproduce the original figure, or are safe to redistribute.
+
+Run the read-only audit against a local corpus:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/audit_cases.R \
+  --cases-dir /absolute/path/to/skills/figureforge/cases \
+  --output-dir outputs/figureforge-audit \
+  --rscript /usr/local/bin/Rscript \
+  --render
+```
+
+The audit records independent evidence flags:
+
+- `raw`: additional source assets exist;
+- `scaffolded`: generated placeholder content was detected;
+- `runnable`: an isolated fresh render succeeded;
+- `reproduced`: a non-empty reproduction artifact exists;
+- `qa_verified`: an explicit, complete `qa.md` record exists;
+- `public_ready`: redistribution was explicitly reviewed and allowed;
+- `private_only`: public readiness is absent or denied.
+
+Scaffolded cases are not completed cases. A successful render proves execution,
+not visual fidelity. Missing distribution review always defaults to
+`private_only`. Reports are written under ignored `outputs/` and must not be
+committed with private corpus information.
+
 ## Authoring a new case
 
 1. Add or select a real figure reproduction.
@@ -154,7 +185,11 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 ## Status
 
-Early MVP. The skill workflow, references, scripts, and case template are in place; the curated public case set is being assembled from the private corpus.
+Skill MVP development. The workflow, references, public template, helper
+scripts, and case-audit contract are in place. The private corpus is an
+inventory of candidate cases; cases are counted as complete only after
+authentic-data review, fresh rendering, reproduction evidence, and recorded
+QA. The public curated case set is still being prepared.
 
 ## License
 
