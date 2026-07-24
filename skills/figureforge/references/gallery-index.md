@@ -59,18 +59,23 @@ Do not select by chart name alone. Compare candidates in this order:
 6. installed dependencies;
 7. distribution boundary.
 
-The latest rendered local audit records 75 completed cases: the 15-case Skill
-MVP plus three 20-case complete-corpus waves. In addition to the original families,
-the verified private set now includes multi-track GO circles, fan trees with
-five bar rings, aligned tree/composition panels, annotated phenotype heatmaps,
-radar small multiples, grouped bubble matrices, sunbursts, and genomic synteny
-circles. It also includes promoter matrices, STRING PPI networks, PCoA/NMDS,
-alluvial composition, qRT-PCR, symmetric bars, grouped heatmaps, enrichment
-bubbles, additional phylogeny layouts, raincloud and violin distributions,
-functional-gene bidirectional bars, circular lollipops, Sankey flow, marker
-heatmaps, dual-axis and paired-subject panels, advanced volcano plots,
-chromosome ideograms, radar profiles, and world sampling maps. The corpus
-currently has 0 blocked and 90 pending cases. All remain private-only unless separately approved for
+The latest rendered local audit records 94 completed cases: the 15-case Skill
+MVP plus 79 verified cases from four complete-corpus waves. In addition to the
+original families, the verified private set now includes multi-track GO
+circles, fan trees with five bar rings, aligned tree/composition panels,
+annotated phenotype heatmaps, radar small multiples, grouped bubble matrices,
+sunbursts, and genomic synteny circles. It also includes promoter matrices,
+STRING PPI networks, PCoA/NMDS, alluvial composition, qRT-PCR, symmetric bars,
+grouped heatmaps, enrichment bubbles, additional phylogeny layouts, raincloud
+and violin distributions, functional-gene bidirectional bars, circular
+lollipops, Sankey flow, marker heatmaps, dual-axis and paired-subject panels,
+advanced volcano plots, chromosome ideograms, radar profiles, and world
+sampling maps. The corpus
+also contains PCA with marginal statistics, treemaps, fan glyphs, additional
+GO/KEGG and gene-family layouts, promoter matrices, expression heatmaps,
+qRT-PCR, paired trees, and a source-recovered Nature Microbiology tree. The
+corpus currently has 1 validated `blocked_source_missing` case and 70 pending
+cases. All remain private-only unless separately approved for
 redistribution.
 
 For full-corpus work, run `plan_case_batches.R` against a rendered audit. A

@@ -15,7 +15,7 @@ read_text_safely <- function(path) {
 detect_scaffold <- function(case_dir) {
   candidate_files <- file.path(
     case_dir,
-    c("case.md", "plot.R", "source-script.R")
+    c("case.md", "plot.R")
   )
   text <- paste(unlist(lapply(candidate_files, read_text_safely)), collapse = "\n")
   markers <- c(

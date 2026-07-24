@@ -236,9 +236,9 @@ a separate review and defaults to `private_only`.
 
 ## Verified Skill MVP
 
-The local private corpus contains 165 audited cases. After three
-complete-corpus waves, 75 cases pass the complete case contract: the original
-15-case MVP plus 60 newly recovered cases. Coverage now also includes
+The local private corpus contains 165 audited cases. After four
+complete-corpus waves, 94 cases pass the complete case contract: the original
+15-case MVP plus 79 newly recovered cases. Coverage now also includes
 multi-track GO enrichment circles, fan trees with five bar rings, aligned
 tree-and-composition panels, annotated phenotype heatmaps, radar small
 multiples, grouped bubble matrices, sunbursts, genomic synteny circles, and
@@ -249,8 +249,12 @@ grouped heatmaps, and four more phylogeny layouts. Wave 3 adds raincloud and
 violin distributions, mirrored functional-gene bars, circular lollipops and
 bars, Sankey flow, marker heatmaps, dual-axis and paired-subject plots,
 expression-aware volcano plots, chromosome ideograms, radar profiles, and
-world sampling maps with composition pies. The rendered audit records 75
-completed, 0 blocked, and 90 pending cases. All 165 remain `private_only`
+world sampling maps with composition pies. Wave 4 adds PCA with marginal
+statistics, treemaps, fan glyphs, GO/KEGG panels, circos and gene-family
+layouts, promoter matrices, PPI, expression heatmaps, qRT-PCR, a
+source-recovered Nature Microbiology tree, paired trees, and enrichment
+figures. The rendered audit records 94 completed, 1 evidence-backed
+`blocked_source_missing`, and 70 pending cases. All 165 remain `private_only`
 because redistribution has not been approved.
 
 Three new-data migrations prove the workflow goes beyond reproduction:
@@ -270,9 +274,11 @@ ignored `outputs/figureforge-adaptations/`.
 - [x] Complete corpus Wave 1: develop and fully validate 20 additional cases.
 - [x] Complete corpus Wave 2: develop and fully validate 20 additional cases.
 - [x] Complete corpus Wave 3: develop and fully validate 20 additional cases.
+- [x] Complete corpus Wave 4: verify 19 additional cases and classify 1 case
+      with a validated source-missing blocker.
 - [x] Verify end-to-end migration on three different new datasets and chart
       families.
-- [ ] Process the remaining 90 private cases to a completed or evidence-backed
+- [ ] Process the remaining 70 private cases to a completed or evidence-backed
       blocked terminal outcome.
 - [ ] Build the local-first FigureForge MCP server only after final Skill and
       corpus acceptance.
@@ -286,11 +292,11 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 **Skill MVP implemented and locally verified.** Discovery, indexing, dependency
 diagnosis, safe rendering, case validation, adaptation validation, templates,
-references, and three new-data proofs are in place. Seventy-five of 165 private
-cases meet the complete contract; 90 remain pending and none are currently
-classified as blocked. The public curated case set is still being prepared.
-The MCP server remains planned, unimplemented, and paused until the Skill and
-case corpus reach final acceptance.
+references, and three new-data proofs are in place. Ninety-four of 165 private
+cases meet the complete contract; 70 remain pending and 1 has a validated
+`blocked_source_missing` record. The public curated case set is still being
+prepared. The MCP server remains planned, unimplemented, and paused until the
+Skill and case corpus reach final acceptance.
 
 ## License
 

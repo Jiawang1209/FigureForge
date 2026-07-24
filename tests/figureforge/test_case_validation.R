@@ -32,6 +32,23 @@ scaffold_result <- validate_case_completion(scaffold_dir)
 stopifnot(!isTRUE(scaffold_result$ok))
 stopifnot("scaffold markers" %in% scaffold_result$failed_checks)
 
+preserved_history_dir <- tempfile("figureforge-preserved-source-history-")
+dir.create(preserved_history_dir, recursive = TRUE)
+file.copy(
+  list.files(valid_dir, full.names = TRUE),
+  preserved_history_dir,
+  recursive = TRUE
+)
+writeLines(
+  c(
+    "# Source script was not present in the raw folder.",
+    "# This standardized case uses a compact reproducible data scaffold."
+  ),
+  file.path(preserved_history_dir, "source-script.R")
+)
+preserved_history_result <- validate_case_completion(preserved_history_dir)
+stopifnot(isTRUE(preserved_history_result$ok))
+
 missing_packages_dir <- tempfile("figureforge-missing-packages-")
 dir.create(missing_packages_dir, recursive = TRUE)
 fixture_files <- list.files(valid_dir, full.names = TRUE)

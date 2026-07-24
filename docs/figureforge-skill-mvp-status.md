@@ -12,8 +12,8 @@ implementation remains paused.
 | Acceptance area | Result |
 | --- | --- |
 | Private corpus audit | 165 real case directories classified independently |
-| Completed representative cases | 75 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
-| Current corpus terminal counts | 75 completed, 0 blocked, 90 pending after a rendered 165-case audit |
+| Completed representative cases | 94 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
+| Current corpus terminal counts | 94 completed, 1 validated `blocked_source_missing`, 70 pending after a rendered 165-case audit |
 | Visual coverage | grouped scatter, bubble, expression-aware volcano, PCA/PCoA/NMDS, fitted trend, ANOVA, box/violin/raincloud, donut/sunburst, heatmap, time series, bidirectional and circular bars, dual axes, paired trajectories, phylogeny, multi-ring tree annotation, GO circles, radar, Sankey, STRING PPI and custom networks, chromosome ideograms, promoter matrices, genomic synteny, world sampling maps, alluvial composition, seamless multi-panel, and complex genomic annotations |
 | New-data migration | 3 different public R datasets migrated to 3 chart families |
 | Skill package | standard metadata, end-to-end workflow, references, template, and official package validation |
@@ -47,8 +47,9 @@ implementation remains paused.
   --batch-size 20
 ```
 
-Complete-corpus Waves 1 through 3 added 60 fully verified cases. The current
-rendered audit records 75 completed, 0 blocked, and 90 pending cases. The audit records
+Complete-corpus Waves 1 through 4 added 79 fully verified cases and classified
+one source-missing case with a validated blocker. The current rendered audit
+records 94 completed, 1 blocked, and 70 pending cases. The audit records
 `terminal_outcome`; `blocked_source_missing` and the other supported blocker
 categories require concrete evidence and never coexist with verified QA.
 
