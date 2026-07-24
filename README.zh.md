@@ -161,6 +161,17 @@ scaffolded（脚手架化）案例不等于已完成案例。成功运行只能�
 执行，不能证明视觉一致。缺少分发审核时一律默认为 `private_only`。审计
 报告写入被忽略的 `outputs/`，不得与私有案例信息一起提交。
 
+按照完整案例契约验证一个已经开发的案例，并在案例目录外重新渲染：
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_case.R <case_dir> --complete --render --output <output_path>
+```
+
+默认验证命令只检查结构。`--complete` 还会要求真实数据来源、R 包声明、
+不存在脚手架标记、标准绘图参数契约、复现图证据和已验证的 QA；
+`--render` 再增加一次全新执行证据。公开分发许可仍然是独立审核，缺失时
+默认为 `private_only`。
+
 ## 撰写新案例
 
 1. 添加或选定一个真实的配图复现。

@@ -162,6 +162,19 @@ not visual fidelity. Missing distribution review always defaults to
 `private_only`. Reports are written under ignored `outputs/` and must not be
 committed with private corpus information.
 
+Validate one developed case against the complete contract and perform a fresh
+render outside its source directory:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_case.R <case_dir> --complete --render --output <output_path>
+```
+
+The default validator command checks structure only. `--complete` additionally
+requires authentic-data provenance, declared R packages, no scaffold markers,
+the standard plotting argument contract, reproduction evidence, and verified
+QA. `--render` adds fresh execution evidence. Distribution permission remains
+a separate review and defaults to `private_only`.
+
 ## Authoring a new case
 
 1. Add or select a real figure reproduction.

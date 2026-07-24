@@ -22,7 +22,32 @@ If no case matches well, say so. Recommend the closest case only with clear cave
 5. Adapt the case-specific plotting script while preserving the useful visual structure.
 6. Render the adapted figure.
 7. Run the QA checklist in `references/qa-checklist.md`.
-8. Report the selected case, mapping decisions, rendered outputs, verification performed, and remaining limits.
+8. Run complete validation with an output path outside the source case.
+9. Report the selected case, mapping decisions, rendered outputs, verification performed, and remaining limits.
+
+## Completion Gates
+
+Do not collapse different kinds of evidence into one "works" claim:
+
+- **structural evidence** proves required files and metadata headings exist;
+- **execution evidence** proves a fresh render exited successfully and created
+  a non-empty output;
+- **visual QA evidence** proves an explicit reviewer checked data mapping,
+  visual fidelity, reproducibility, export, and remaining limits;
+- **distribution evidence** proves which exact assets may be redistributed.
+
+A completed private case may lack distribution permission, but it must remain
+`private_only`. A scaffolded case is never complete even when its generic
+script renders.
+
+Run the complete gate:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_case.R <case_dir> --complete --render --output <output_path>
+```
+
+The output path must be outside the source case when validating private or raw
+case material.
 
 ## References
 
