@@ -24,7 +24,7 @@ fixtures_dir <- file.path(repo_root, "tests", "fixtures", "figureforge", "cases"
 catalog <- build_case_catalog(fixtures_dir)
 
 stopifnot(!"_template" %in% catalog$case_id)
-stopifnot(nrow(catalog) == 4L)
+stopifnot(nrow(catalog) == 6L)
 for (field in c(
   "case_id",
   "title",

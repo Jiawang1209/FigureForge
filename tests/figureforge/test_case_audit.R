@@ -21,6 +21,20 @@ stopifnot(file.exists(file.path(public_template, "data.csv")))
 stopifnot(file.exists(file.path(public_template, "plot.R")))
 
 source(file.path(repo_root, "skills", "figureforge", "lib", "case_audit.R"))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "case_validation.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "blocker_validation.R"
+))
 
 fixtures_dir <- file.path(repo_root, "tests", "fixtures", "figureforge", "cases")
 render_dir <- tempfile("figureforge-audit-renders-")
@@ -48,6 +62,33 @@ stopifnot(isTRUE(row_for("authentic-public")$qa_verified))
 stopifnot(isTRUE(row_for("authentic-public")$runnable))
 stopifnot(!isTRUE(row_for("render-fails")$runnable))
 
+valid_blocked <- row_for("blocked-valid")
+stopifnot(isTRUE(valid_blocked$blocked))
+stopifnot(isTRUE(valid_blocked$processed))
+stopifnot(identical(
+  valid_blocked$terminal_outcome,
+  "blocked"
+))
+stopifnot(identical(
+  valid_blocked$blocked_status,
+  "blocked_visual_reference"
+))
+
+invalid_blocked <- row_for("blocked-invalid")
+stopifnot(!isTRUE(invalid_blocked$blocked))
+stopifnot(!isTRUE(invalid_blocked$processed))
+stopifnot(identical(
+  invalid_blocked$terminal_outcome,
+  "pending"
+))
+
+completed <- row_for("authentic-public")
+stopifnot(isTRUE(completed$processed))
+stopifnot(identical(completed$terminal_outcome, "completed"))
+pending <- row_for("scaffolded")
+stopifnot(!isTRUE(pending$processed))
+stopifnot(identical(pending$terminal_outcome, "pending"))
+
 report_dir <- tempfile("figureforge-audit-report-")
 write_audit_reports(results, report_dir)
 
@@ -60,10 +101,13 @@ reported <- read.csv(csv_path, stringsAsFactors = FALSE, check.names = FALSE)
 stopifnot(identical(reported$case_id, sort(reported$case_id)))
 
 summary_text <- paste(readLines(summary_path, warn = FALSE), collapse = "\n")
-stopifnot(grepl("Cases audited: 4", summary_text, fixed = TRUE))
+stopifnot(grepl("Cases audited: 6", summary_text, fixed = TRUE))
 stopifnot(grepl("Scaffolded: 1", summary_text, fixed = TRUE))
-stopifnot(grepl("Runnable: 3", summary_text, fixed = TRUE))
+stopifnot(grepl("Runnable: 5", summary_text, fixed = TRUE))
 stopifnot(grepl("Public-ready: 1", summary_text, fixed = TRUE))
+stopifnot(grepl("Completed: 1", summary_text, fixed = TRUE))
+stopifnot(grepl("Blocked: 1", summary_text, fixed = TRUE))
+stopifnot(grepl("Pending: 4", summary_text, fixed = TRUE))
 stopifnot(grepl(
   "Reproduced means that a non-empty reproduction artifact exists",
   summary_text,

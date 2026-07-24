@@ -21,6 +21,20 @@ source(file.path(
   "lib",
   "case_audit.R"
 ))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "case_validation.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "blocker_validation.R"
+))
 
 usage <- function() {
   paste(

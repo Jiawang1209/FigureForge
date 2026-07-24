@@ -39,6 +39,7 @@ detect_source_assets <- function(case_dir) {
     "data.csv",
     "plot.R",
     "qa.md",
+    "blocker.md",
     "distribution.yml",
     "reproduction.png",
     "reproduction.pdf",
@@ -166,6 +167,7 @@ audit_case <- function(
   case_id <- basename(case_dir)
   source_assets <- detect_source_assets(case_dir)
   distribution <- detect_distribution(case_dir)
+  blocker <- validate_blocker_record(case_dir)
   render <- list(ok = FALSE, status = NA_integer_, log = "Render not attempted")
 
   if (!is.null(render_dir)) {
@@ -177,15 +179,35 @@ audit_case <- function(
     )
   }
 
+  scaffolded <- detect_scaffold(case_dir)
+  reproduced <- detect_reproduction(case_dir)
+  qa_verified <- detect_qa_verified(case_dir)
+  runnable <- isTRUE(render$ok)
+  completed <- runnable && reproduced && qa_verified && !scaffolded
+  blocked <- isTRUE(blocker$ok)
+  processed <- completed || blocked
+  terminal_outcome <- if (completed) {
+    "completed"
+  } else if (blocked) {
+    "blocked"
+  } else {
+    "pending"
+  }
+
   data.frame(
     case_id = case_id,
     raw = length(source_assets) > 0,
-    scaffolded = detect_scaffold(case_dir),
-    runnable = isTRUE(render$ok),
-    reproduced = detect_reproduction(case_dir),
-    qa_verified = detect_qa_verified(case_dir),
+    scaffolded = scaffolded,
+    runnable = runnable,
+    reproduced = reproduced,
+    qa_verified = qa_verified,
     public_ready = isTRUE(distribution$public_ready),
     private_only = !isTRUE(distribution$public_ready),
+    blocked = blocked,
+    blocked_status = if (blocked) blocker$status else "",
+    blocked_summary = if (blocked) blocker$summary else "",
+    processed = processed,
+    terminal_outcome = terminal_outcome,
     has_case_md = is_nonempty_file(file.path(case_dir, "case.md")),
     has_data_csv = is_nonempty_file(file.path(case_dir, "data.csv")),
     has_plot_r = is_nonempty_file(file.path(case_dir, "plot.R")),
@@ -222,6 +244,11 @@ audit_cases <- function(
       qa_verified = logical(0),
       public_ready = logical(0),
       private_only = logical(0),
+      blocked = logical(0),
+      blocked_status = character(0),
+      blocked_summary = character(0),
+      processed = logical(0),
+      terminal_outcome = character(0),
       has_case_md = logical(0),
       has_data_csv = logical(0),
       has_plot_r = logical(0),
@@ -249,6 +276,11 @@ audit_cases <- function(
           qa_verified = FALSE,
           public_ready = FALSE,
           private_only = TRUE,
+          blocked = FALSE,
+          blocked_status = "",
+          blocked_summary = "",
+          processed = FALSE,
+          terminal_outcome = "pending",
           has_case_md = FALSE,
           has_data_csv = FALSE,
           has_plot_r = FALSE,
@@ -281,6 +313,19 @@ summarize_audit <- function(results) {
     paste0("- QA-verified: ", count_true(results$qa_verified)),
     paste0("- Public-ready: ", count_true(results$public_ready)),
     paste0("- Private-only: ", count_true(results$private_only)),
+    paste0(
+      "- Completed: ",
+      sum(results$terminal_outcome == "completed", na.rm = TRUE)
+    ),
+    paste0(
+      "- Blocked: ",
+      sum(results$terminal_outcome == "blocked", na.rm = TRUE)
+    ),
+    paste0(
+      "- Pending: ",
+      sum(results$terminal_outcome == "pending", na.rm = TRUE)
+    ),
+    paste0("- Processed: ", count_true(results$processed)),
     "",
     "## Evidence Boundaries",
     "",
