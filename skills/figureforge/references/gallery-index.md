@@ -59,11 +59,13 @@ Do not select by chart name alone. Compare candidates in this order:
 6. installed dependencies;
 7. distribution boundary.
 
-The local audit completed a 15-case Skill MVP spanning grouped scatter,
-bubble, volcano, PCA, fitted trends, ANOVA, donut, heatmap, time series,
-bidirectional bars, phylogenetic annotations, network, seamless multi-panel,
-and tree/domain/motif/gene-structure compositions. These remain private-only
-unless separately approved for redistribution.
+The latest rendered local audit records 35 completed cases: the 15-case Skill
+MVP plus a 20-case complete-corpus wave. In addition to the original families,
+the verified private set now includes multi-track GO circles, fan trees with
+five bar rings, aligned tree/composition panels, annotated phenotype heatmaps,
+radar small multiples, grouped bubble matrices, sunbursts, and genomic synteny
+circles. The corpus currently has 0 blocked and 130 pending cases. All remain
+private-only unless separately approved for redistribution.
 
 For full-corpus work, run `plan_case_batches.R` against a rendered audit. A
 pending case may use `blocked_source_missing` or another supported blocker only

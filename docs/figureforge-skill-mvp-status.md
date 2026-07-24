@@ -1,6 +1,6 @@
 # FigureForge Skill MVP Status
 
-Date: 2026-07-24
+Date: 2026-07-25
 
 ## Outcome
 
@@ -12,8 +12,9 @@ implementation remains paused.
 | Acceptance area | Result |
 | --- | --- |
 | Private corpus audit | 165 real case directories classified independently |
-| Completed representative cases | 15 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
-| Visual coverage | grouped scatter, bubble, volcano, PCA, fitted trend, ANOVA, donut, heatmap, time series, bidirectional bars, phylogeny, network, seamless multi-panel, and complex genomic annotations |
+| Completed representative cases | 35 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
+| Current corpus terminal counts | 35 completed, 0 blocked, 130 pending after a rendered 165-case audit |
+| Visual coverage | grouped scatter, bubble, volcano, PCA, fitted trend, ANOVA, donut/sunburst, heatmap, time series, bidirectional bars, phylogeny, multi-ring tree annotation, GO circles, radar, network, genomic synteny, seamless multi-panel, and complex genomic annotations |
 | New-data migration | 3 different public R datasets migrated to 3 chart families |
 | Skill package | standard metadata, end-to-end workflow, references, template, and official package validation |
 | Public tooling | discovery, index, dependency check, render, case validation, adaptation validation, and corpus audit |
@@ -46,10 +47,10 @@ implementation remains paused.
   --batch-size 20
 ```
 
-The complete-corpus continuation starts from 15 completed, 0 blocked, and 150
-pending cases. The audit now records `terminal_outcome`; the first supported
-blocker category is `blocked_source_missing`. Private blockers require concrete
-evidence and never coexist with verified QA.
+Complete-corpus Wave 1 added 20 fully verified cases. The current rendered
+audit records 35 completed, 0 blocked, and 130 pending cases. The audit records
+`terminal_outcome`; `blocked_source_missing` and the other supported blocker
+categories require concrete evidence and never coexist with verified QA.
 
 ## New-Data Proofs
 
@@ -75,5 +76,6 @@ their structured results. It must:
 - render only to an explicit output workspace outside the source case;
 - expose planned capability as planned until executable tools and tests exist.
 
-MCP work should begin from these verified Skill contracts, not from assumptions
-about the private corpus.
+MCP work remains paused until all 165 cases have been processed and the Skill
+and corpus pass final acceptance. It should then begin from these verified
+contracts, not from assumptions about the private corpus.

@@ -236,11 +236,14 @@ a separate review and defaults to `private_only`.
 
 ## Verified Skill MVP
 
-The local private corpus contains 165 audited cases. Fifteen representative
-cases now pass the complete case contract and cover grouped scatter, bubble,
-volcano, PCA, fitted trends, ANOVA, donut, heatmap, time series,
-bidirectional bars, phylogenetic annotation, network, seamless multi-panel,
-and tree/domain/motif/gene-structure designs. They remain `private_only`
+The local private corpus contains 165 audited cases. After the first
+complete-corpus wave, 35 cases pass the complete case contract: the original
+15-case MVP plus 20 newly recovered cases. Coverage now also includes
+multi-track GO enrichment circles, fan trees with five bar rings, aligned
+tree-and-composition panels, annotated phenotype heatmaps, radar small
+multiples, grouped bubble matrices, sunbursts, genomic synteny circles, and
+additional complex phylogenetic annotations. The rendered audit records 35
+completed, 0 blocked, and 130 pending cases. All 165 remain `private_only`
 because redistribution has not been approved.
 
 Three new-data migrations prove the workflow goes beyond reproduction:
@@ -257,10 +260,14 @@ ignored `outputs/figureforge-adaptations/`.
 
 - [x] Complete a 15-case private R/ggplot2 MVP with authentic provenance,
       fresh renders, and recorded visual QA.
+- [x] Complete corpus Wave 1: develop and fully validate 20 additional cases.
 - [x] Verify end-to-end migration on three different new datasets and chart
       families.
-- [ ] Build the local-first FigureForge MCP server for case discovery, inspection, validation, indexing, rendering, and mapping suggestions.
-- [ ] Expand the curated gallery once the adaptation workflow proves useful.
+- [ ] Process the remaining 130 private cases to a completed or evidence-backed
+      blocked terminal outcome.
+- [ ] Build the local-first FigureForge MCP server only after final Skill and
+      corpus acceptance.
+- [ ] Expand the public curated gallery after separate distribution review.
 - [ ] Add Python examples after the R-first workflow stabilizes.
 - [ ] Explore a software/resource, data-descriptor, or methods publication.
 
@@ -270,11 +277,11 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 **Skill MVP implemented and locally verified.** Discovery, indexing, dependency
 diagnosis, safe rendering, case validation, adaptation validation, templates,
-references, and three new-data proofs are in place. Fifteen of 165 private
-cases meet the complete contract; the rest remain explicitly classified
-rather than being presented as complete. The public curated case set is still
-being prepared. The MCP server remains a planned next layer and is not
-implemented.
+references, and three new-data proofs are in place. Thirty-five of 165 private
+cases meet the complete contract; 130 remain pending and none are currently
+classified as blocked. The public curated case set is still being prepared.
+The MCP server remains planned, unimplemented, and paused until the Skill and
+case corpus reach final acceptance.
 
 ## License
 
