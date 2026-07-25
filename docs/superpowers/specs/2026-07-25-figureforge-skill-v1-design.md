@@ -101,6 +101,7 @@ Each public case contains:
 ```text
 public-cases/<case-id>/
 ├── case.md
+├── case.yml
 ├── data.csv
 ├── plot.R
 ├── qa.md
@@ -109,6 +110,10 @@ public-cases/<case-id>/
 
 Every case must:
 
+- provide `case.yml` as the versioned machine-readable authority for
+  classification, schema roles, bilingual aliases, QA, distribution, and
+  synthetic-data disclosure, while `case.md` remains the human-readable
+  explanation;
 - accept `input_path` and `output_path` as its first two command-line
   arguments;
 - validate the input file, required columns, types, and critical values;
