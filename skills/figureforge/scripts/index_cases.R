@@ -29,26 +29,73 @@ source(file.path(
   "lib",
   "case_catalog.R"
 ))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "distribution_validation.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "metadata.R"
+))
 
 args <- commandArgs(trailingOnly = TRUE)
-cases_dir <- if (length(args) >= 1) {
-  args[[1]]
-} else {
-  file.path(repo_root, "skills", "figureforge", "cases")
-}
-output_path <- if (length(args) >= 2) {
-  args[[2]]
-} else {
-  file.path(
-    repo_root,
-    "skills",
-    "figureforge",
-    "references",
-    "case-index.csv"
+usage <- function() {
+  paste(
+    "Usage: index_cases.R [cases_dir] [output_csv]",
+    "or index_cases.R --public-cases PATH --output PATH"
   )
 }
 
-index <- build_case_catalog(cases_dir)
+parse_public_cli <- function(args) {
+  result <- list(public_cases = NULL, output = NULL)
+  index <- 1L
+  while (index <= length(args)) {
+    argument <- args[[index]]
+    if (!argument %in% c("--public-cases", "--output") ||
+        index == length(args)) {
+      stop("Unknown or incomplete argument: ", argument, "\n", usage())
+    }
+    value <- args[[index + 1L]]
+    if (argument == "--public-cases") result$public_cases <- value
+    if (argument == "--output") result$output <- value
+    index <- index + 2L
+  }
+  if (is.null(result$public_cases) || is.null(result$output)) {
+    stop("--public-cases and --output are required together\n", usage())
+  }
+  result
+}
+
+if (length(args) > 0L && startsWith(args[[1L]], "--")) {
+  options <- parse_public_cli(args)
+  index <- build_public_catalog(options$public_cases)
+  index$case_path <- NULL
+  output_path <- options$output
+} else {
+  cases_dir <- if (length(args) >= 1L) {
+    args[[1L]]
+  } else {
+    file.path(repo_root, "skills", "figureforge", "cases")
+  }
+  output_path <- if (length(args) >= 2L) {
+    args[[2L]]
+  } else {
+    file.path(
+      repo_root,
+      "skills",
+      "figureforge",
+      "references",
+      "case-index.csv"
+    )
+  }
+  index <- build_case_catalog(cases_dir)
+}
 
 dir.create(dirname(output_path), recursive = TRUE, showWarnings = FALSE)
 write.csv(index, output_path, row.names = FALSE, fileEncoding = "UTF-8")
