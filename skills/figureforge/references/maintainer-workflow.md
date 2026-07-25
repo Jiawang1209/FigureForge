@@ -41,9 +41,16 @@ until authorized visual review. Automated checks never promote
 
 Build distributable archives with `scripts/package_skill.R` and certify them
 with `scripts/verify_release.R`. Verify archive members, sidecar files, member
-sizes, and hashes against the manifest. Private and generated content must
-remain excluded from the package.
+sizes, and hashes against the manifest. Private cases, source figures,
+reproductions, generated renders, and raw transcripts stay outside the public
+package.
 
-Use the repository release documentation and
-[Theme and Export](theme-and-export.md) for the detailed packaging, artifact,
-and rendering contracts.
+## Detailed Contracts
+
+Use the [Adaptation Contract](adaptation-contract.md),
+[Blocker Contract](blocker-contract.md), and [QA Checklist](qa-checklist.md)
+for task evidence. The [schemas directory](../schemas/) defines tracked
+machine-readable contracts. Consult [Theme and Export](theme-and-export.md)
+for rendering requirements and the
+[version-specific release evidence](../../../docs/figureforge-skill-v1.0.1-release.md)
+for the certified archive, sidecars, member sizes, hashes, and exclusions.
