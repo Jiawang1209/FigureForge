@@ -33,6 +33,8 @@ resolve_rscript() {
 
 RSCRIPT=$(resolve_rscript)
 export FIGUREFORGE_RSCRIPT="$RSCRIPT"
+export FIGUREFORGE_PYTHON="$PYTHON"
+export FIGUREFORGE_SKILL_VALIDATOR="$SKILL_VALIDATOR"
 
 if [ ! -x "$PYTHON" ]; then
   echo "Python runtime is unavailable: $PYTHON" >&2
@@ -97,8 +99,9 @@ stage "24 synthetic stress fixtures"
   --output-dir "$VERIFY_ROOT/stress-renders" \
   --report "$VERIFY_ROOT/stress-report.csv" \
   --rscript "$RSCRIPT"
-"$RSCRIPT" -e \
-  "x<-read.csv('$VERIFY_ROOT/stress-report.csv'); stopifnot(nrow(x)==24L, all(x\$passed))"
+FIGUREFORGE_STRESS_REPORT="$VERIFY_ROOT/stress-report.csv" \
+  "$RSCRIPT" -e \
+  'x<-read.csv(Sys.getenv("FIGUREFORGE_STRESS_REPORT")); stopifnot(nrow(x)==24L, all(x$passed))'
 
 stage "30 deterministic bilingual forward evaluations"
 "$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/evaluate_skill.R" \
@@ -106,16 +109,18 @@ stage "30 deterministic bilingual forward evaluations"
   --output-dir "$VERIFY_ROOT/forward-renders" \
   --report "$VERIFY_ROOT/forward-report.csv" \
   --rscript "$RSCRIPT"
-"$RSCRIPT" -e \
-  "x<-read.csv('$VERIFY_ROOT/forward-report.csv'); stopifnot(nrow(x)==30L, all(x\$passed))"
+FIGUREFORGE_FORWARD_REPORT="$VERIFY_ROOT/forward-report.csv" \
+  "$RSCRIPT" -e \
+  'x<-read.csv(Sys.getenv("FIGUREFORGE_FORWARD_REPORT")); stopifnot(nrow(x)==30L, all(x$passed))'
 
 stage "doctor text and JSON"
 "$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/doctor.R" \
   >"$VERIFY_ROOT/doctor.txt"
 "$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/doctor.R" \
   --format json >"$VERIFY_ROOT/doctor.json"
-"$PYTHON" -c \
-  "import json; x=json.load(open('$VERIFY_ROOT/doctor.json', encoding='utf-8')); assert any(c['check_id']=='runtime-rscript' and c['status']=='pass' for c in x['checks'])"
+FIGUREFORGE_DOCTOR_JSON="$VERIFY_ROOT/doctor.json" \
+  "$PYTHON" -c \
+  'import json, os; x=json.load(open(os.environ["FIGUREFORGE_DOCTOR_JSON"], encoding="utf-8")); assert any(c["check_id"]=="runtime-rscript" and c["status"]=="pass" for c in x["checks"])'
 
 stage "archive, manifest, and SHA-256 sidecar"
 "$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/package_skill.R" \
@@ -143,8 +148,9 @@ stage "installed official validation, doctor, search, demo, and rerender"
   --query "相关性热图" \
   --limit 3 \
   --output "$VERIFY_ROOT/installed-search.csv"
-"$RSCRIPT" -e \
-  "x<-read.csv('$VERIFY_ROOT/installed-search.csv'); stopifnot(x\$case_id[[1L]]=='public-correlation-heatmap')"
+FIGUREFORGE_SEARCH_REPORT="$VERIFY_ROOT/installed-search.csv" \
+  "$RSCRIPT" -e \
+  'x<-read.csv(Sys.getenv("FIGUREFORGE_SEARCH_REPORT")); stopifnot(x$case_id[[1L]]=="public-correlation-heatmap")'
 sh "$INSTALLED/examples/public-demo/run_demo.sh" \
   "$VERIFY_ROOT/installed-demo"
 "$RSCRIPT" "$INSTALLED/scripts/validate_adaptation.R" \
@@ -184,8 +190,9 @@ while IFS= read -r relative_r; do
       esac
       ;;
   esac
-  "$RSCRIPT" -e \
-    "parse(file='$REPO_ROOT/$relative_r')" >/dev/null
+  FIGUREFORGE_R_FILE="$REPO_ROOT/$relative_r" \
+    "$RSCRIPT" -e \
+    'parse(file=Sys.getenv("FIGUREFORGE_R_FILE"))' >/dev/null
 done
 
 stage "tracked and packaged private/generated boundary"
@@ -203,8 +210,9 @@ if [ -n "$boundary_hits" ]; then
   echo "$boundary_hits" >&2
   exit 1
 fi
-"$RSCRIPT" -e \
-  "x<-read.csv('$MANIFEST',stringsAsFactors=FALSE,check.names=FALSE); stopifnot(!any(grepl('^skills/figureforge/cases/(?!_template/)',x\$source_path,perl=TRUE)), !any(grepl('^outputs/|[.]log$|(^|/)(reproduction|original)[.]',x\$source_path,perl=TRUE)))"
+FIGUREFORGE_MANIFEST="$MANIFEST" \
+  "$RSCRIPT" -e \
+  'x<-read.csv(Sys.getenv("FIGUREFORGE_MANIFEST"),stringsAsFactors=FALSE,check.names=FALSE); stopifnot(!any(grepl("^skills/figureforge/cases/(?!_template/)",x$source_path,perl=TRUE)), !any(grepl("^outputs/|[.]log$|(^|/)(reproduction|original)[.]",x$source_path,perl=TRUE)))'
 tar -tzf "$ARCHIVE" >"$VERIFY_ROOT/archive-list.txt"
 archive_boundary_hits=$(
   awk '

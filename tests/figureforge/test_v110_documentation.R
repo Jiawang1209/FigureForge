@@ -51,7 +51,8 @@ stopifnot(contains_all(
     "plotting capability enhancer",
     "plot.R",
     "plot.png",
-    "plot.pdf"
+    "plot.pdf",
+    "MCP is planned and unimplemented"
   )
 ))
 stopifnot(contains_all(
@@ -61,8 +62,14 @@ stopifnot(contains_all(
     "绘图能力增强器",
     "plot.R",
     "plot.png",
-    "plot.pdf"
+    "plot.pdf",
+    "MCP 状态为 planned 且尚未实现"
   )
+))
+stopifnot(grepl(
+  "MCP is planned and unimplemented",
+  skill,
+  fixed = TRUE
 ))
 for (document in list(skill, plotting)) {
   stopifnot(contains_all(
@@ -133,6 +140,30 @@ stopifnot(identical(
   tail(verifier_nonempty_lines, 1L),
   'echo "FigureForge Skill v1.1.0 acceptance: PASS"'
 ))
+live_if <- which(
+  verifier_lines == 'if [ "$RUN_LIVE" = "1" ]; then'
+)
+live_else <- which(verifier_lines == "else")
+live_fi <- which(verifier_lines == "fi")
+stopifnot(length(live_if) == 1L)
+live_else <- live_else[live_else > live_if][[1L]]
+live_fi <- live_fi[live_fi > live_else][[1L]]
+live_harness_line <- grep(
+  "scripts/run_figureforge_live_evals.sh",
+  verifier_lines,
+  fixed = TRUE
+)
+plotting_harness_line <- grep(
+  "scripts/run_figureforge_plotting_eval.sh",
+  verifier_lines,
+  fixed = TRUE
+)
+stopifnot(length(live_harness_line) == 1L)
+stopifnot(length(plotting_harness_line) == 1L)
+stopifnot(live_if < live_harness_line)
+stopifnot(live_harness_line < plotting_harness_line)
+stopifnot(plotting_harness_line < live_else)
+stopifnot(live_else < live_fi)
 verifier_terms <- c(
   "FIGUREFORGE_RSCRIPT",
   "FIGUREFORGE_V110_OUTPUT_DIR",
@@ -159,6 +190,27 @@ verifier_terms <- c(
   "FigureForge Skill v1.1.0 acceptance: PASS"
 )
 stopifnot(contains_all(verifier, verifier_terms))
+stopifnot(contains_all(
+  verifier,
+  c(
+    'export FIGUREFORGE_PYTHON="$PYTHON"',
+    'export FIGUREFORGE_SKILL_VALIDATOR="$SKILL_VALIDATOR"',
+    "FIGUREFORGE_STRESS_REPORT",
+    "FIGUREFORGE_FORWARD_REPORT",
+    "FIGUREFORGE_DOCTOR_JSON",
+    "FIGUREFORGE_SEARCH_REPORT",
+    "FIGUREFORGE_R_FILE",
+    "FIGUREFORGE_MANIFEST"
+  )
+))
+for (unsafe_pattern in c(
+  "read.csv('$VERIFY_ROOT",
+  "open('$VERIFY_ROOT",
+  "parse(file='$REPO_ROOT",
+  "read.csv('$MANIFEST"
+)) {
+  stopifnot(!grepl(unsafe_pattern, verifier, fixed = TRUE))
+}
 stopifnot(!grepl(
   "FIGUREFORGE_V101_OUTPUT_DIR",
   verifier,
@@ -195,12 +247,41 @@ documents <- list(
 for (document in documents) {
   lower <- tolower(document)
   stopifnot(!grepl("mcp is implemented", lower, fixed = TRUE))
+  stopifnot(!grepl("mcp server is implemented", lower, fixed = TRUE))
   stopifnot(!grepl(
     "(^|[^[:alpha:]])implemented mcp",
     lower,
     perl = TRUE
   ))
   stopifnot(!grepl("已实现 mcp", lower, fixed = TRUE))
+  stopifnot(!grepl("mcp 服务已实现", lower, fixed = TRUE))
+  stopifnot(!grepl("mcp 已实现", lower, fixed = TRUE))
+}
+
+upgrade_test <- read_document(
+  "tests/figureforge/test_upgrade_compatibility.R"
+)
+stopifnot(contains_all(
+  upgrade_test,
+  c(
+    "Sys.getenv(env_var",
+    '"FIGUREFORGE_RSCRIPT"',
+    '"FIGUREFORGE_PYTHON"',
+    '"FIGUREFORGE_SKILL_VALIDATOR"',
+    "rscript",
+    "python",
+    "skill_validator"
+  )
+))
+for (hardcoded_execution in c(
+  'system2("/usr/local/bin/Rscript"',
+  'system2("/usr/bin/python3"'
+)) {
+  stopifnot(!grepl(
+    hardcoded_execution,
+    upgrade_test,
+    fixed = TRUE
+  ))
 }
 
 message("v1.1.0 documentation tests: PASS")

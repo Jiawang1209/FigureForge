@@ -18,6 +18,25 @@ Use the lifecycle tools at their tracked paths:
 Follow [Gallery Index](gallery-index.md), [QA Checklist](qa-checklist.md), and
 [Adaptation Contract](adaptation-contract.md) for detailed evidence contracts.
 
+## Completion Gates
+
+Case completion requires all four evidence classes:
+
+- structural evidence;
+- execution evidence;
+- visual QA evidence; and
+- distribution evidence.
+
+Maintainers can exercise the combined completion and fresh-render gate while
+keeping generated evidence outside the case directory:
+
+```bash
+Rscript scripts/validate_case.R <case_dir> --complete --render --output <external-output>
+```
+
+The command is a maintainer certification step, not part of the ordinary
+user-facing plotting workflow.
+
 ## Terminal Outcomes
 
 Use `scripts/validate_blocker.R` to validate a supported blocker and

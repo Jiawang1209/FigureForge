@@ -28,6 +28,55 @@ for (library_file in c(
   ))
 }
 
+resolve_executable <- function(env_var, preferred, command_name) {
+  configured <- Sys.getenv(env_var, unset = "")
+  candidate <- if (nzchar(configured)) {
+    configured
+  } else if (file.exists(preferred) && file.access(preferred, 1L) == 0L) {
+    preferred
+  } else {
+    unname(Sys.which(command_name))
+  }
+  if (length(candidate) != 1L ||
+      !nzchar(candidate) ||
+      !file.exists(candidate) ||
+      file.access(candidate, 1L) != 0L) {
+    stop("Unable to resolve executable for ", env_var)
+  }
+  normalizePath(candidate, mustWork = TRUE)
+}
+
+rscript <- resolve_executable(
+  "FIGUREFORGE_RSCRIPT",
+  "/usr/local/bin/Rscript",
+  "Rscript"
+)
+python <- resolve_executable(
+  "FIGUREFORGE_PYTHON",
+  "/usr/bin/python3",
+  "python3"
+)
+skill_validator <- Sys.getenv(
+  "FIGUREFORGE_SKILL_VALIDATOR",
+  unset = ""
+)
+if (!nzchar(skill_validator)) {
+  skill_validator <- file.path(
+    "/Users",
+    "liuyue",
+    ".codex",
+    "skills",
+    ".system",
+    "skill-creator",
+    "scripts",
+    "quick_validate.py"
+  )
+}
+if (!file.exists(skill_validator)) {
+  stop("Official Skill validator is unavailable: ", skill_validator)
+}
+skill_validator <- normalizePath(skill_validator, mustWork = TRUE)
+
 target_version <- readLines(
   file.path(repo_root, "skills", "figureforge", "VERSION"),
   warn = FALSE,
@@ -245,19 +294,9 @@ replace_installed_skill <- function(target, stage, expected_version) {
   if (!identical(stage_version, expected_version)) {
     stop("Staged FigureForge VERSION must be ", expected_version)
   }
-  validator <- file.path(
-    "/Users",
-    "liuyue",
-    ".codex",
-    "skills",
-    ".system",
-    "skill-creator",
-    "scripts",
-    "quick_validate.py"
-  )
   validation <- system2(
-    "/usr/bin/python3",
-    c(shQuote(validator), shQuote(stage)),
+    python,
+    c(shQuote(skill_validator), shQuote(stage)),
     stdout = TRUE,
     stderr = TRUE
   )
@@ -340,7 +379,7 @@ stopifnot(setequal(installed_relative_files, current_package_paths))
 
 run_installed <- function(script, arguments = character(0)) {
   output <- system2(
-    "/usr/local/bin/Rscript",
+    rscript,
     c(
       shQuote(file.path(installed, "scripts", script)),
       shQuote(arguments)
@@ -374,7 +413,7 @@ adaptation_validation <- run_installed(
     adaptation,
     "--render",
     "--output", validation_output,
-    "--rscript", "/usr/local/bin/Rscript"
+    "--rscript", rscript
   )
 )
 stopifnot(adaptation_validation$ok)

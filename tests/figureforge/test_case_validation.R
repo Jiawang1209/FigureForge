@@ -163,21 +163,28 @@ read_repo_text <- function(relative_path) {
   )
 }
 skill_text <- read_repo_text("skills/figureforge/SKILL.md")
-readme_en <- read_repo_text("README.md")
-readme_zh <- read_repo_text("README.zh.md")
+maintainer_workflow <- read_repo_text(
+  "skills/figureforge/references/maintainer-workflow.md"
+)
 
-for (document in list(skill_text, readme_en, readme_zh)) {
-  stopifnot(grepl("--complete --render", document, fixed = TRUE))
-  stopifnot(grepl("--output", document, fixed = TRUE))
-}
-stopifnot(grepl("## Completion Gates", skill_text, fixed = TRUE))
+stopifnot(!grepl("--complete --render", skill_text, fixed = TRUE))
+stopifnot(grepl(
+  "## Completion Gates",
+  maintainer_workflow,
+  fixed = TRUE
+))
+stopifnot(grepl(
+  "Rscript scripts/validate_case.R <case_dir> --complete --render --output <external-output>",
+  maintainer_workflow,
+  fixed = TRUE
+))
 for (boundary in c(
   "structural evidence",
   "execution evidence",
   "visual QA evidence",
   "distribution evidence"
 )) {
-  stopifnot(grepl(boundary, skill_text, fixed = TRUE))
+  stopifnot(grepl(boundary, maintainer_workflow, fixed = TRUE))
 }
 
 message("case validation tests: PASS")
