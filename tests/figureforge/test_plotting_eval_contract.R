@@ -159,7 +159,7 @@ fake_lines <- c(
   "printf '%s\\n' \"$cwd/figureforge-output/plot.png\" >>\"$final_message\"",
   "printf '%s\\n' \"$cwd/figureforge-output/plot.pdf\" >>\"$final_message\"",
   "sed -n '1,240p' \"$cwd/.agents/skills/figureforge/SKILL.md\" >/dev/null",
-  "printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"sed -n 1,240p .agents/skills/figureforge/SKILL.md\",\"exit_code\":0}}'"
+  "printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"/bin/zsh -lc \\\"sed -n 1,240p .agents/skills/figureforge/SKILL.md\\\"\",\"exit_code\":0}}'"
 )
 writeLines(fake_lines, fake_codex, useBytes = TRUE)
 Sys.chmod(fake_codex, mode = "0755")
@@ -244,6 +244,51 @@ stopifnot(all(vapply(
 counter_entries <- readLines(counter_path, warn = FALSE)
 stopifnot(identical(counter_entries, c("plot.R", "plot.R")))
 Sys.unsetenv("FIGUREFORGE_PLOT_COUNTER")
+
+chained_codex <- file.path(fake_root, "chained-read-codex")
+chained_lines <- fake_lines
+wrapped_event <- grepl(
+  "item.completed.*command_execution",
+  chained_lines,
+  fixed = FALSE
+)
+chained_lines[wrapped_event] <- paste0(
+  "printf '%s\\n' ",
+  "'{\"type\":\"item.completed\",\"item\":{",
+  "\"type\":\"command_execution\",",
+  "\"command\":\"/bin/zsh -lc \\\"cd . && sed -n 1,240p ",
+  ".agents/skills/figureforge/SKILL.md\\\"\",",
+  "\"exit_code\":0}}'"
+)
+writeLines(chained_lines, chained_codex, useBytes = TRUE)
+Sys.chmod(chained_codex, mode = "0755")
+chained_output <- file.path(fake_root, "chained-output")
+chained_result <- system2(
+  "bash",
+  c(
+    shQuote(harness_path),
+    "--output-dir",
+    shQuote(chained_output),
+    "--codex",
+    shQuote(chained_codex)
+  ),
+  stdout = TRUE,
+  stderr = TRUE
+)
+if (!is.null(attr(chained_result, "status"))) {
+  stop(
+    "chained Skill-read event was not accepted:\n",
+    paste(chained_result, collapse = "\n"),
+    call. = FALSE
+  )
+}
+chained_summary <- read.csv(
+  file.path(chained_output, "summary.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(chained_summary$skill_loaded[[1L]], "true"))
+stopifnot(identical(chained_summary$passed[[1L]], "true"))
 
 max_image_size <- 100 * 1024^2
 valid_png <- function(path) {
@@ -355,6 +400,46 @@ stopifnot(all(vapply(
   logical(1L)
 )))
 stopifnot(identical(mention_summary$passed[[1L]], "false"))
+
+unquoted_codex <- file.path(fake_root, "unquoted-wrapper-codex")
+unquoted_lines <- fake_lines[
+  !grepl("^sed -n .*SKILL\\.md.*>/dev/null$", fake_lines)
+]
+wrapped_event <- grepl(
+  "item.completed.*command_execution",
+  unquoted_lines,
+  fixed = FALSE
+)
+unquoted_lines[wrapped_event] <- paste0(
+  "printf '%s\\n' ",
+  "'{\"type\":\"item.completed\",\"item\":{",
+  "\"type\":\"command_execution\",",
+  "\"command\":\"/bin/zsh -lc sed -n 1,240p ",
+  ".agents/skills/figureforge/SKILL.md\",",
+  "\"exit_code\":0}}'"
+)
+writeLines(unquoted_lines, unquoted_codex, useBytes = TRUE)
+Sys.chmod(unquoted_codex, mode = "0755")
+unquoted_output <- file.path(fake_root, "unquoted-output")
+unquoted_result <- suppressWarnings(system2(
+  "bash",
+  c(
+    shQuote(harness_path),
+    "--output-dir",
+    shQuote(unquoted_output),
+    "--codex",
+    shQuote(unquoted_codex)
+  ),
+  stdout = TRUE,
+  stderr = TRUE
+))
+stopifnot(identical(attr(unquoted_result, "status"), 1L))
+unquoted_summary <- read.csv(
+  file.path(unquoted_output, "summary.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(unquoted_summary$skill_loaded[[1L]], "false"))
 
 invalid_codex <- file.path(fake_root, "invalid-image-codex")
 invalid_lines <- c(

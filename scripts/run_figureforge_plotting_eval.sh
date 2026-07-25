@@ -85,6 +85,90 @@ skill_path <- normalizePath(
   mustWork = TRUE
 )
 read_commands <- c("awk", "cat", "head", "less", "more", "sed", "tail")
+shell_commands <- c("bash", "sh", "zsh")
+
+shell_words <- function(command) {
+  words <- strsplit(trimws(command), "[[:space:]]+")[[1L]]
+  gsub("^[\"']|[\"']$", "", words)
+}
+
+unwrap_command <- function(command) {
+  wrapper <- regexec(
+    "^([^[:space:]]+)[[:space:]]+(-lc|-c)[[:space:]]+(.+)$",
+    trimws(command)
+  )
+  fields <- regmatches(trimws(command), wrapper)[[1L]]
+  if (length(fields) == 0L) {
+    return(trimws(command))
+  }
+  if (!basename(fields[[2L]]) %in% shell_commands) {
+    return(NA_character_)
+  }
+  inner <- trimws(fields[[4L]])
+  if (nchar(inner) < 2L) {
+    return(NA_character_)
+  }
+  first <- substr(inner, 1L, 1L)
+  last <- substr(inner, nchar(inner), nchar(inner))
+  if (first != last || !first %in% c("\"", "'")) {
+    return(NA_character_)
+  }
+  substr(inner, 2L, nchar(inner) - 1L)
+}
+
+command_reads_skill <- function(command) {
+  inner <- unwrap_command(command)
+  if (is.na(inner)) {
+    return(FALSE)
+  }
+  segments <- strsplit(
+    inner,
+    "[[:space:]]*(?:&&|\\|\\||;)[[:space:]]*",
+    perl = TRUE
+  )[[1L]]
+  current_dir <- workspace_root
+  for (segment in segments) {
+    tokens <- shell_words(segment)
+    if (length(tokens) == 0L || !nzchar(tokens[[1L]])) {
+      next
+    }
+    executable <- basename(tokens[[1L]])
+    if (executable == "cd" && length(tokens) >= 2L) {
+      target_dir <- tokens[[2L]]
+      current_dir <- normalizePath(
+        if (startsWith(target_dir, "/")) {
+          target_dir
+        } else {
+          file.path(current_dir, target_dir)
+        },
+        mustWork = FALSE
+      )
+      next
+    }
+    if (!executable %in% read_commands) {
+      next
+    }
+    targets <- tokens[-1L]
+    targets <- targets[!startsWith(targets, "-")]
+    if (length(targets) == 0L) {
+      next
+    }
+    resolved_targets <- vapply(targets, function(target) {
+      normalizePath(
+        if (startsWith(target, "/")) {
+          target
+        } else {
+          file.path(current_dir, target)
+        },
+        mustWork = FALSE
+      )
+    }, character(1L))
+    if (any(resolved_targets == skill_path)) {
+      return(TRUE)
+    }
+  }
+  FALSE
+}
 
 matched <- tryCatch({
   lines <- readLines(transcript_path, warn = FALSE, encoding = "UTF-8")
@@ -107,28 +191,7 @@ matched <- tryCatch({
         length(item$command) != 1L) {
       return(FALSE)
     }
-    tokens <- strsplit(trimws(item$command), "[[:space:]]+")[[1L]]
-    tokens <- gsub("^[\"']|[\"']$", "", tokens)
-    if (length(tokens) == 0L ||
-        !basename(tokens[[1L]]) %in% read_commands) {
-      return(FALSE)
-    }
-    targets <- tokens[-1L]
-    targets <- targets[!startsWith(targets, "-")]
-    if (length(targets) == 0L) {
-      return(FALSE)
-    }
-    resolved_targets <- vapply(targets, function(target) {
-      if (startsWith(target, "/")) {
-        normalizePath(target, mustWork = FALSE)
-      } else {
-        normalizePath(
-          file.path(workspace_root, target),
-          mustWork = FALSE
-        )
-      }
-    }, character(1L))
-    any(resolved_targets == skill_path)
+    command_reads_skill(item$command)
   }, logical(1L)))
 }, error = function(error) FALSE)
 
