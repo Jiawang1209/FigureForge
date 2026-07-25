@@ -4,16 +4,16 @@ Date: 2026-07-25
 
 ## Outcome
 
-The FigureForge Skill layer is implemented as a locally verifiable MVP. MCP
-implementation remains paused.
+The FigureForge Skill and complete private corpus are locally verifiable. MCP
+remains planned and unimplemented.
 
 ## Evidence
 
 | Acceptance area | Result |
 | --- | --- |
 | Private corpus audit | 165 real case directories classified independently |
-| Completed representative cases | 142 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
-| Current corpus terminal counts | 142 completed, 13 validated blockers, 10 pending after a rendered 165-case audit |
+| Completed representative cases | 152 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
+| Current corpus terminal counts | 152 completed, 13 validated blockers, 0 pending after a rendered 165-case audit |
 | Visual coverage | grouped scatter, bubble, expression-aware volcano, Manhattan, PCA/PCoA/NMDS/UMAP, fitted trend, ANOVA, box/violin/raincloud, donut/sunburst, heatmap, time series and confidence bands, bidirectional and circular bars, dual axes, paired trajectories, phylogeny and taxonomy trees, multi-ring tree annotation, GO circles and reordered labels, enrichment composites, radar, alluvial/Sankey, STRING PPI and custom microbial networks, WGCNA module dendrograms, chromosome ideograms and nucleotide tracks, promoter matrices, genomic synteny, world sampling maps, correlation/Mantel connectors, seamless multi-panel, and complex genomic annotations |
 | New-data migration | 3 different public R datasets migrated to 3 chart families |
 | Skill package | standard metadata, end-to-end workflow, references, template, and official package validation |
@@ -47,9 +47,9 @@ implementation remains paused.
   --batch-size 20
 ```
 
-Complete-corpus Waves 1 through 7 added 127 fully verified cases and classified
-13 cases with validated blockers. The current rendered audit records 142
-completed, 13 blocked, and 10 pending cases. Blockers currently comprise 6
+Complete-corpus Waves 1 through 8 added 137 fully verified cases and classified
+13 cases with validated blockers. The final rendered audit records 152
+completed, 13 blocked, and 0 pending cases. Blockers comprise 6
 `blocked_source_missing`, 4 `blocked_visual_reference`, and 3
 `blocked_ambiguous_mapping`. The audit records `terminal_outcome`; every
 supported blocker category requires concrete evidence and never coexists with
@@ -79,6 +79,7 @@ their structured results. It must:
 - render only to an explicit output workspace outside the source case;
 - expose planned capability as planned until executable tools and tests exist.
 
-MCP work remains paused until all 165 cases have been processed and the Skill
-and corpus pass final acceptance. It should then begin from these verified
-contracts, not from assumptions about the private corpus.
+All 165 cases have now been processed and the Skill/corpus acceptance boundary
+is stable. MCP work has not started; any future implementation should begin as
+a separate task from these verified contracts, not from assumptions about the
+private corpus.

@@ -236,9 +236,9 @@ a separate review and defaults to `private_only`.
 
 ## Verified Skill MVP
 
-The local private corpus contains 165 audited cases. After seven
-complete-corpus waves, 142 cases pass the complete case contract: the original
-15-case MVP plus 127 newly recovered cases. Coverage now also includes
+The local private corpus contains 165 audited cases. After eight
+complete-corpus waves, 152 cases pass the complete case contract: the original
+15-case MVP plus 137 newly recovered cases. Coverage now also includes
 multi-track GO enrichment circles, fan trees with five bar rings, aligned
 tree-and-composition panels, annotated phenotype heatmaps, radar small
 multiples, grouped bubble matrices, sunbursts, genomic synteny circles, and
@@ -263,8 +263,13 @@ microbial correlation networks, single-chromosome composition tracks, circular
 GO panels, and correlation/Mantel connector matrices. Wave 7 adds clustered
 and annotated heatmaps, correlation chords/networks, single and multi-contrast
 differential-expression plots, interaction circos, faceted ANOVA, and advanced
-sampling maps. The rendered audit now records 142 completed, 13
-evidence-backed blocked cases, and 10 pending cases. The blockers comprise 6
+sampling maps. Wave 8 closes the final pending set with pie-node composition
+networks, nested taxonomy circle packing, grouped taxonomic composition bars,
+sign-aware and annotated correlation heatmaps, Venn diagrams, four-panel
+correlation/significance matrices, double-hub regulatory networks, comic-font
+plots, and rotated triangle heatmaps. The final rendered audit records 152
+completed, 13 evidence-backed blocked cases, and zero pending cases. The
+blockers comprise 6
 `blocked_source_missing`, 3 `blocked_ambiguous_mapping`, and 4
 `blocked_visual_reference`. All 165 remain
 `private_only` because redistribution has not been approved.
@@ -294,10 +299,11 @@ ignored `outputs/figureforge-adaptations/`.
       with source-missing, visual-reference, or ambiguous-mapping evidence.
 - [x] Complete corpus Wave 7: verify 18 additional cases and classify 2 cases
       with visual-reference evidence.
+- [x] Complete corpus Wave 8: fully verify the final 10 cases.
 - [x] Verify end-to-end migration on three different new datasets and chart
       families.
-- [ ] Process the remaining 10 private cases to a completed or evidence-backed
-      blocked terminal outcome.
+- [x] Process all 165 private cases to a completed or evidence-backed blocked
+      terminal outcome; no case remains pending.
 - [ ] Build the local-first FigureForge MCP server only after final Skill and
       corpus acceptance.
 - [ ] Expand the public curated gallery after separate distribution review.
@@ -308,13 +314,14 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 ## Status
 
-**Skill MVP implemented and locally verified.** Discovery, indexing, dependency
+**Complete Skill corpus implemented and locally verified.** Discovery, indexing, dependency
 diagnosis, safe rendering, case validation, adaptation validation, templates,
-references, and three new-data proofs are in place. One hundred forty-two of
-165 private cases meet the complete contract; 10 remain pending and 13 have
-validated, case-specific blocker records. The public curated case set is still
-being prepared. The MCP server remains planned, unimplemented, and paused
-until the Skill and case corpus reach final acceptance.
+references, and three new-data proofs are in place. One hundred fifty-two of
+165 private cases meet the complete contract; the other 13 have validated,
+case-specific blocker records, and none remain pending. The public curated
+case set is still being prepared. The MCP server remains planned and
+unimplemented; its future input boundary is documented, but no MCP code was
+added during corpus acceptance.
 
 ## License
 

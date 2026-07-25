@@ -59,8 +59,8 @@ Do not select by chart name alone. Compare candidates in this order:
 6. installed dependencies;
 7. distribution boundary.
 
-The latest rendered local audit records 94 completed cases: the 15-case Skill
-MVP plus 79 verified cases from four complete-corpus waves. In addition to the
+The final rendered local audit records 152 completed cases: the 15-case Skill
+MVP plus 137 verified cases from eight complete-corpus waves. In addition to the
 original families, the verified private set now includes multi-track GO
 circles, fan trees with five bar rings, aligned tree/composition panels,
 annotated phenotype heatmaps, radar small multiples, grouped bubble matrices,
@@ -73,9 +73,12 @@ advanced volcano plots, chromosome ideograms, radar profiles, and world
 sampling maps. The corpus
 also contains PCA with marginal statistics, treemaps, fan glyphs, additional
 GO/KEGG and gene-family layouts, promoter matrices, expression heatmaps,
-qRT-PCR, paired trees, and a source-recovered Nature Microbiology tree. The
-corpus currently has 1 validated `blocked_source_missing` case and 70 pending
-cases. All remain private-only unless separately approved for
+qRT-PCR, paired trees, a source-recovered Nature Microbiology tree, pie-node
+networks, taxonomy circle packing, Venn diagrams, double-hub networks,
+four-panel correlation/significance matrices, and rotated triangle heatmaps.
+The corpus has 13 validated blockers: 6 `blocked_source_missing`, 4
+`blocked_visual_reference`, and 3 `blocked_ambiguous_mapping`; zero cases
+remain pending. All 165 remain private-only unless separately approved for
 redistribution.
 
 For full-corpus work, run `plan_case_batches.R` against a rendered audit. A
