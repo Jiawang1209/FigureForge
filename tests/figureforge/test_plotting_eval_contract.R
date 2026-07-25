@@ -42,7 +42,8 @@ for (phrase in c(
   "plot.R",
   "plot.png",
   "plot.pdf",
-  "independent-rerender"
+  "independent-rerender",
+  ': >"$FINAL_MESSAGE"'
 )) {
   if (!grepl(phrase, harness_text, fixed = TRUE)) {
     stop("plotting harness is missing required text: ", phrase, call. = FALSE)
@@ -122,8 +123,8 @@ fake_lines <- c(
   "    data[[\"喙深_mm\"]],",
   "    col = unname(palette[as.character(species)]),",
   "    pch = 19,",
-  "    xlab = \"喙长 (mm)\",",
-  "    ylab = \"喙深 (mm)\"",
+  "    xlab = \"Bill length (mm)\",",
+  "    ylab = \"Bill depth (mm)\"",
   "  )",
   "  legend(",
   "    \"topright\",",
@@ -197,6 +198,7 @@ rerendered <- file.path(
 )
 stopifnot(all(file.info(delivered)$size > 0))
 stopifnot(all(file.info(rerendered)$size > 0))
+stopifnot(file.exists(file.path(eval_output, "final.txt")))
 stopifnot(identical(
   readLines(
     file.path(eval_output, "independent-rerender-status.txt"),
@@ -231,5 +233,40 @@ stopifnot(all(vapply(
   function(column) identical(column[[1L]], "true"),
   logical(1L)
 )))
+
+failing_codex <- file.path(fake_root, "failing-codex")
+writeLines(
+  c("#!/bin/sh", "exit 23"),
+  failing_codex,
+  useBytes = TRUE
+)
+Sys.chmod(failing_codex, mode = "0755")
+failure_output <- file.path(fake_root, "failure-output")
+failure_result <- suppressWarnings(system2(
+  "bash",
+  c(
+    shQuote(harness_path),
+    "--output-dir",
+    shQuote(failure_output),
+    "--codex",
+    shQuote(failing_codex)
+  ),
+  stdout = TRUE,
+  stderr = TRUE
+))
+stopifnot(identical(attr(failure_result, "status"), 1L))
+audit_files <- file.path(
+  failure_output,
+  c("transcript.jsonl", "final.txt", "codex.stderr")
+)
+stopifnot(all(file.exists(audit_files)))
+failure_summary <- read.csv(
+  file.path(failure_output, "summary.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(nrow(failure_summary) == 1L)
+stopifnot(failure_summary$exit_status[[1L]] == 23L)
+stopifnot(identical(failure_summary$passed[[1L]], "false"))
 
 message("plotting eval contract tests: PASS")

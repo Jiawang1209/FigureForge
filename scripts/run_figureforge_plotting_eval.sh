@@ -91,6 +91,9 @@ printf '%s\n' "$WORKSPACE_ROOT" >"$OUTPUT_DIR/workspace-root.txt"
 TRANSCRIPT="$OUTPUT_DIR/transcript.jsonl"
 STDERR_LOG="$OUTPUT_DIR/codex.stderr"
 FINAL_MESSAGE="$OUTPUT_DIR/final.txt"
+: >"$TRANSCRIPT"
+: >"$STDERR_LOG"
+: >"$FINAL_MESSAGE"
 PROMPT='Use $figureforge with scatter.csv. Draw a publication-ready scatter plot of 喙长_mm versus 喙深_mm colored by 物种. Work without asking about presentation details. Create figureforge-output/plot.R, plot.png, and plot.pdf, execute the script, inspect the outputs, and return the three paths. Before acting, read the installed Skill.'
 codex_args=(exec --ephemeral --skip-git-repo-check --sandbox workspace-write -C "$WORKSPACE_ROOT" --json -o "$FINAL_MESSAGE")
 if [ -n "$MODEL" ]; then
