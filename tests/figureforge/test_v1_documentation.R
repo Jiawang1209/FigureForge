@@ -34,8 +34,8 @@ stopifnot(file.exists(release_path))
 release <- read_repo_document("docs/figureforge-skill-v1-release.md")
 
 english_terms <- c(
-  "1.0.0",
-  "12 public cases",
+  "1.0.1",
+  "15 public cases",
   "24 synthetic stress fixtures",
   "doctor.R",
   "create_adaptation.R",
@@ -56,8 +56,8 @@ stopifnot(all(vapply(
 )))
 
 chinese_terms <- c(
-  "1.0.0",
-  "12 个公开案例",
+  "1.0.1",
+  "15 个公开案例",
   "24 个合成压力测试夹具",
   "doctor.R",
   "create_adaptation.R",
@@ -80,6 +80,8 @@ stopifnot(all(vapply(
 combined <- paste(english, chinese, status, release, sep = "\n")
 stopifnot(grepl("public-bar-grouped", release, fixed = TRUE))
 stopifnot(grepl("public-multipanel", release, fixed = TRUE))
+stopifnot(grepl("1.0.0", release, fixed = TRUE))
+stopifnot(grepl("12", release, fixed = TRUE))
 stopifnot(grepl("24", release, fixed = TRUE))
 stopifnot(grepl("165", release, fixed = TRUE))
 stopifnot(grepl("MCP", release, fixed = TRUE))

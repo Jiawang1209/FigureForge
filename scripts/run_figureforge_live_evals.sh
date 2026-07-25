@@ -6,6 +6,18 @@ OUTPUT_DIR="$REPO_ROOT/outputs/figureforge-v101/live-evals/current"
 CODEX_BIN=${CODEX_BIN:-codex}
 MODEL=${FIGUREFORGE_LIVE_EVAL_MODEL:-}
 
+if [ -n "${FIGUREFORGE_RSCRIPT:-}" ]; then
+  RSCRIPT=$FIGUREFORGE_RSCRIPT
+elif [ -x /usr/local/bin/Rscript ]; then
+  RSCRIPT=/usr/local/bin/Rscript
+else
+  RSCRIPT=$(command -v Rscript || true)
+fi
+if [ -z "$RSCRIPT" ] || [ ! -x "$RSCRIPT" ]; then
+  echo "Unable to resolve Rscript for live evaluations" >&2
+  exit 2
+fi
+
 usage() {
   echo "Usage: run_figureforge_live_evals.sh [--output-dir PATH] [--codex PATH] [--model MODEL]"
 }
@@ -40,7 +52,7 @@ mkdir -p "$OUTPUT_DIR"
 
 ARCHIVE="$OUTPUT_DIR/figureforge-skill.tar.gz"
 MANIFEST="$OUTPUT_DIR/release-manifest.csv"
-"/usr/local/bin/Rscript" \
+"$RSCRIPT" \
   "$REPO_ROOT/skills/figureforge/scripts/package_skill.R" \
   --archive "$ARCHIVE" \
   --manifest "$MANIFEST" \

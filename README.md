@@ -12,53 +12,136 @@ The first release is **R / ggplot2 first**, built from a long-running figure-rep
 
 ---
 
-## FigureForge Skill 1.0.0
+## FigureForge Skill 1.0.1
 
-The public v1 release is independently usable without the private corpus. It
-ships 12 public cases, 24 synthetic stress fixtures, bilingual schema-aware
-search, dependency diagnosis, protected external adaptation workspaces,
-non-authoritative visual QA, and allowlist-based packaging.
+FigureForge Skill 1.0.1 is independently usable without the private corpus.
+It ships 15 public cases: 3 authentic open-data cases with recorded provenance,
+licenses, hashes, attribution, and human-verified QA, plus 12 synthetic
+demonstration cases that make no scientific claims. The release also includes
+24 synthetic stress fixtures and 30 deterministic bilingual forward
+evaluations. MCP is planned and unimplemented.
 
-All shipped case datasets are generated examples marked
-`synthetic_test_fixture: true`; they make no scientific claims. Automated QA
-keeps `Status: review_required` and cannot grant verified status. The local
-165-case private corpus is not distributed. MCP is planned and unimplemented.
+Release inventory: 15 public cases, 3 authentic open-data cases, 12 synthetic demonstration cases, 24 stress fixtures, and 30 deterministic bilingual forward evaluations.
 
-Run the public workflow from the repository root:
+The local 165-case private corpus, source figures, reproductions, audit output,
+and live-evaluation transcripts are never packaged. Each public case's
+`case.yml`, `distribution.yml`, `source.yml` when present, and `qa.md` control
+its claims and distribution boundary.
+
+### Install and discover
+
+Build the public-only archive, manifest, and adjacent SHA-256 sidecar:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R
-/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+Rscript skills/figureforge/scripts/package_skill.R \
+  --archive /tmp/figureforge-skill-1.0.1.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.1-manifest.csv
+```
+
+Install it into a repository Skill root:
+
+```bash
+mkdir -p .agents/skills
+tar -xzf /tmp/figureforge-skill-1.0.1.tar.gz -C .agents/skills
+test -s .agents/skills/figureforge/SKILL.md
+```
+
+For a user-level installation, extract into the corresponding user Skill root
+instead. The archive itself is rooted at `figureforge/`; it never creates an
+extra `skills/figureforge/` layer.
+
+Set the installed root for copyable commands:
+
+```bash
+export FIGUREFORGE_SKILL_ROOT="$PWD/.agents/skills/figureforge"
+```
+
+Codex discovers the Skill from `.agents/skills/figureforge`. Explicit requests
+may use `$figureforge`; data-only English or Chinese visualization requests
+are also covered by the Skill description.
+
+### Runtime and public workflow
+
+Subprocess-capable commands resolve Rscript in this order: explicit
+`--rscript`, `FIGUREFORGE_RSCRIPT`, the `/usr/local/bin/Rscript`
+compatibility path, then `Rscript` on `PATH`. An invalid explicit choice fails
+instead of silently falling through.
+
+```bash
+export FIGUREFORGE_RSCRIPT="${FIGUREFORGE_RSCRIPT:-Rscript}"
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/doctor.R"
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
   --public --query "相关性 heatmap" --limit 5
-/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/match_schema.R" \
   --case public-timeseries-band --input <input.csv> --output <match.csv>
-/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/create_adaptation.R" \
   --case public-timeseries-band --input <input.csv> \
   --workspace <external_adaptation_dir>
-/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/visual_qa.R" \
   --render <external_adaptation_dir>/output.pdf \
   --report <external_report_dir>/visual-qa.json
 ```
 
-Run the deterministic Chinese-column demo:
+Keep every adaptation and render outside the installed Skill. The packaged
+demo enforces that boundary. Synthetic adaptations remain
+`Status: review_required` until authorized human review; automated QA never
+grants verified status.
 
 ```bash
-sh examples/public-demo/run_demo.sh /tmp/figureforge-public-demo
+sh "$FIGUREFORGE_SKILL_ROOT/examples/public-demo/run_demo.sh" \
+  /tmp/figureforge-public-demo
 ```
 
-Build a public-only archive and manifest:
+### Verify, evaluate, and upgrade
+
+Verify the outer sidecar, archive structure, allowlisted members, byte counts,
+and every file hash before installation:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/package_skill.R \
-  --archive /tmp/figureforge-skill-1.0.0.tar.gz \
-  --manifest /tmp/figureforge-skill-1.0.0-manifest.csv
+Rscript skills/figureforge/scripts/verify_release.R \
+  --archive /tmp/figureforge-skill-1.0.1.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.1-manifest.csv \
+  --extract-dir /tmp/figureforge-skill-1.0.1-verified
 ```
 
-Install by copying `skills/figureforge/` into your Codex Skills directory, or
-extract the packaged archive. To upgrade, preserve every adaptation outside
-the Skill directory and replace the entire installed version. See
-[`docs/figureforge-skill-v1-release.md`](docs/figureforge-skill-v1-release.md)
-for the release boundary and evidence.
+Run the deterministic bilingual evaluation catalog:
+
+```bash
+Rscript skills/figureforge/scripts/evaluate_skill.R \
+  --catalog skills/figureforge/references/trigger-evals-v1.csv \
+  --output-dir /tmp/figureforge-forward-evals \
+  --report /tmp/figureforge-forward-evals.csv \
+  --rscript "${FIGUREFORGE_RSCRIPT:-Rscript}"
+```
+
+Live Codex trigger probes are an explicit, bounded release gate:
+
+```bash
+bash scripts/run_figureforge_live_evals.sh \
+  --output-dir outputs/figureforge-v101/live-evals/manual
+```
+
+For a 1.0.0-to-1.0.1 upgrade, preserve external adaptations, verify 1.0.1 in a
+sibling staging directory, rename the existing exact
+`.agents/skills/figureforge` target to a target-specific backup, atomically
+rename the verified stage into place, validate it, and only then remove that
+exact backup. Do not merge files into the old directory: full replacement
+prevents stale v1.0.0 libraries from surviving.
+
+See
+[`docs/figureforge-skill-v1.0.1-release.md`](docs/figureforge-skill-v1.0.1-release.md)
+for the release boundary, source hashes, test evidence, and local-only release
+policy.
 
 ## Why FigureForge
 
@@ -362,12 +445,13 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 ## Status
 
-**FigureForge Skill 1.0.0 is the public release candidate.** It includes 12
-public synthetic cases and 24 stress fixtures. One hundred fifty-two of 165
-private cases meet the complete local contract; the other 13 have validated,
-case-specific blocker records, and none remain pending. The private corpus is
-not part of the public package. The MCP server remains planned and
-unimplemented.
+**FigureForge Skill 1.0.1 is the locally certified release candidate.** It
+includes 15 public cases (3 authentic open-data and 12 synthetic
+demonstrations), 24 stress fixtures, and 30 deterministic bilingual forward
+evaluations. One hundred fifty-two of 165 private cases meet the complete
+local contract; the other 13 have validated case-specific blocker records, and
+none remain pending. The private corpus is not part of the public package.
+MCP is planned and unimplemented; no MCP endpoint or server is shipped.
 
 ## License
 

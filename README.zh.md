@@ -12,51 +12,125 @@ FigureForge 把真实的论文配图复现,沉淀为可复用、可由 AI 驱动
 
 ---
 
-## FigureForge Skill 1.0.0
+## FigureForge Skill 1.0.1
 
-公开 v1 版本不依赖私有案例库即可独立使用，包含 12 个公开案例、
-24 个合成压力测试夹具、中英文 schema 检索、依赖诊断、受保护的外部迁移
-工作区、非权威视觉 QA 和基于 allowlist 的安全打包。
+FigureForge Skill 1.0.1 不依赖私有案例库即可独立使用。发布清单包含
+15 个公开案例，其中 3 个真实开放数据案例记录了来源、许可、哈希、署名和
+人工 verified QA，另有 12 个合成演示案例用于展示软件行为且不承载科研
+结论。版本还包含 24 个合成压力测试夹具和 30 条确定性双语前向评测。
+MCP 状态为 planned 且尚未实现。
 
-所有随包数据均为生成的示例，并声明 `synthetic_test_fixture: true`，不承载
-科研结论。自动 QA 只能保留 `Status: review_required`，不能授予 verified
-状态。本地 165 个案例组成的私有案例库不会被分发。MCP 状态为 planned，
-尚未实现。
+本地 165 个案例组成的私有案例库、原始参考图、reproduction、审计输出和
+实时触发转录都不会进入公开包。每个公开案例的 `case.yml`、
+`distribution.yml`、可选的 `source.yml` 与 `qa.md` 决定其声明和分发边界。
 
-从仓库根目录执行公开工作流：
+### 安装与发现
+
+生成仅包含公开资产的压缩包、清单及相邻 SHA-256 sidecar：
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R
-/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+Rscript skills/figureforge/scripts/package_skill.R \
+  --archive /tmp/figureforge-skill-1.0.1.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.1-manifest.csv
+```
+
+安装到仓库级 Skill 根目录：
+
+```bash
+mkdir -p .agents/skills
+tar -xzf /tmp/figureforge-skill-1.0.1.tar.gz -C .agents/skills
+test -s .agents/skills/figureforge/SKILL.md
+```
+
+用户级安装可改为对应的用户 Skill 根目录。压缩包本身以 `figureforge/`
+为根，不会额外生成 `skills/figureforge/` 嵌套层。
+
+为后续命令设置安装根目录：
+
+```bash
+export FIGUREFORGE_SKILL_ROOT="$PWD/.agents/skills/figureforge"
+```
+
+Codex 可从 `.agents/skills/figureforge` 发现该 Skill。显式请求可以使用
+`$figureforge`；只有真实列名、中文或英文图形需求的隐式请求也包含在触发
+说明中。
+
+### R 运行时与公开工作流
+
+需要启动子 R 进程的命令按以下顺序解析 Rscript：显式 `--rscript`、
+`FIGUREFORGE_RSCRIPT`、兼容路径 `/usr/local/bin/Rscript`，最后是
+`PATH` 中的 `Rscript`。显式配置无效时会直接失败，不会静默降级。
+
+```bash
+export FIGUREFORGE_RSCRIPT="${FIGUREFORGE_RSCRIPT:-Rscript}"
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/doctor.R"
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
   --public --query "相关性 heatmap" --limit 5
-/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/match_schema.R" \
   --case public-timeseries-band --input <input.csv> --output <match.csv>
-/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/create_adaptation.R" \
   --case public-timeseries-band --input <input.csv> \
   --workspace <external_adaptation_dir>
-/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+
+"$FIGUREFORGE_RSCRIPT" \
+  "$FIGUREFORGE_SKILL_ROOT/scripts/visual_qa.R" \
   --render <external_adaptation_dir>/output.pdf \
   --report <external_report_dir>/visual-qa.json
 ```
 
-运行固定种子的中文列名演示：
+所有迁移工作区和渲染输出都必须位于安装目录之外。随包演示会强制执行该
+边界。合成案例的迁移结果在获得授权人工检查前保持
+`Status: review_required`；自动 QA 永远不能授予 verified 状态。
 
 ```bash
-sh examples/public-demo/run_demo.sh /tmp/figureforge-public-demo
+sh "$FIGUREFORGE_SKILL_ROOT/examples/public-demo/run_demo.sh" \
+  /tmp/figureforge-public-demo
 ```
 
-生成仅包含公开资产的压缩包和清单：
+### 验证、评测与升级
+
+安装前验证外层 sidecar、压缩包结构、allowlist 成员、字节数和每个文件的
+哈希：
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/package_skill.R \
-  --archive /tmp/figureforge-skill-1.0.0.tar.gz \
-  --manifest /tmp/figureforge-skill-1.0.0-manifest.csv
+Rscript skills/figureforge/scripts/verify_release.R \
+  --archive /tmp/figureforge-skill-1.0.1.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.1-manifest.csv \
+  --extract-dir /tmp/figureforge-skill-1.0.1-verified
 ```
 
-安装时可将 `skills/figureforge/` 整体复制到 Codex Skills 目录，或解压打包
-产物。升级时先确保所有迁移工作区都位于 Skill 目录之外，再整体替换已安装
-版本。发布边界与验证证据见
-[`docs/figureforge-skill-v1-release.md`](docs/figureforge-skill-v1-release.md)。
+运行确定性双语评测目录：
+
+```bash
+Rscript skills/figureforge/scripts/evaluate_skill.R \
+  --catalog skills/figureforge/references/trigger-evals-v1.csv \
+  --output-dir /tmp/figureforge-forward-evals \
+  --report /tmp/figureforge-forward-evals.csv \
+  --rscript "${FIGUREFORGE_RSCRIPT:-Rscript}"
+```
+
+真实 Codex 触发探针是显式启用且有界的发布门：
+
+```bash
+bash scripts/run_figureforge_live_evals.sh \
+  --output-dir outputs/figureforge-v101/live-evals/manual
+```
+
+从 1.0.0 升级到 1.0.1 时，先保留外部 adaptation，在已安装目录旁验证
+1.0.1 暂存目录；再把精确的 `.agents/skills/figureforge` 目标重命名为
+目标专属备份，原子重命名暂存版本并完成验证，最后只删除该精确备份。不要
+把新旧文件合并到同一目录，否则会留下过期的 v1.0.0 文件。
+
+发布边界、来源哈希、测试证据和仅本地发布政策见
+[`docs/figureforge-skill-v1.0.1-release.md`](docs/figureforge-skill-v1.0.1-release.md)。
 
 ## 为什么是 FigureForge
 
@@ -339,10 +413,11 @@ PDF、书面 QA 和独立重渲染结果，保存在被忽略的
 
 ## 当前状态
 
-**FigureForge Skill 1.0.0 已进入公开发布候选状态。** 当前包含 12 个公开
-合成案例和 24 个压力测试夹具。165 个私有案例中有 152 个满足完整契约，
-其余 13 个具有通过校验的案例级阻塞记录，待处理数为 0；私有案例库不进入
-公开包。MCP Server 仍为 planned 且尚未实现。
+**FigureForge Skill 1.0.1 已完成本地发布候选认证。** 当前包含 15 个公开
+案例（3 个真实开放数据案例和 12 个合成演示案例）、24 个压力测试夹具和
+30 条确定性双语前向评测。165 个私有案例中有 152 个满足完整契约，其余
+13 个具有通过校验的案例级阻塞记录，待处理数为 0；私有案例库不进入公开
+包。MCP 状态为 planned 且尚未实现，当前不分发 MCP endpoint 或 server。
 
 ## 许可
 

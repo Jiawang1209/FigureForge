@@ -4,49 +4,65 @@ Date: 2026-07-25
 
 ## Outcome
 
-FigureForge Skill 1.0.0 is a public, independently usable release candidate.
-The complete private corpus remains a local optional extension. MCP remains
-planned and unimplemented.
+FigureForge Skill 1.0.1 is a locally certified, independently usable release
+candidate. The complete private corpus remains a local optional extension.
+MCP remains planned and unimplemented.
 
 ## Evidence
 
 | Acceptance area | Result |
 | --- | --- |
-| Public gallery | 12 redistributable synthetic cases with machine-readable metadata |
+| Public gallery | 15 public cases: 3 authentic open-data cases with verified provenance/QA and 12 synthetic demonstration cases |
 | Stress suite | 24 synthetic stress fixtures across all 12 public families |
+| Forward evaluation | 30 deterministic English/Chinese rows; Top-1, Top-3, mapping, render, and safe rejection all passed |
+| Live trigger gate | Explicit 1/1; implicit 10/10, exceeding the 100% and 90% thresholds |
 | Public workflow | doctor, bilingual search, schema match, protected workspace, render, visual QA, and independent validation |
-| Public packaging | allowlist manifest and archive exclude the private corpus, local indexes, source figures, and generated output |
+| Public packaging | install-shaped archive, manifest, SHA-256 sidecar, structural verifier, and per-member checksum validation |
+| Upgrade | v1.0.0 is atomically replaced by v1.0.1 without stale files; preserved external adaptation hashes and independent rerender pass |
 | Private corpus audit | 165 real case directories classified independently |
 | Completed representative cases | 152 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
 | Current corpus terminal counts | 152 completed, 13 validated blockers, 0 pending after a rendered 165-case audit |
 | Visual coverage | grouped scatter, bubble, expression-aware volcano, Manhattan, PCA/PCoA/NMDS/UMAP, fitted trend, ANOVA, box/violin/raincloud, donut/sunburst, heatmap, time series and confidence bands, bidirectional and circular bars, dual axes, paired trajectories, phylogeny and taxonomy trees, multi-ring tree annotation, GO circles and reordered labels, enrichment composites, radar, alluvial/Sankey, STRING PPI and custom microbial networks, WGCNA module dendrograms, chromosome ideograms and nucleotide tracks, promoter matrices, genomic synteny, world sampling maps, correlation/Mantel connectors, seamless multi-panel, and complex genomic annotations |
 | New-data migration | 3 different public R datasets migrated to 3 chart families |
-| Skill package | standard metadata, end-to-end workflow, references, template, and official package validation |
+| Skill package | `.agents/skills/figureforge` layout, standard metadata, packaged demo, and official installed-package validation |
 | Public tooling | discovery, index, dependency check, render, case validation, adaptation validation, and corpus audit |
 | Distribution | all local completed cases remain `private_only`; generated audit and adaptation artifacts remain ignored |
 
 ## Public Skill Commands
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+export FIGUREFORGE_RSCRIPT="${FIGUREFORGE_RSCRIPT:-Rscript}"
+
+"$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/search_cases.R \
   --public --query "<terms>"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R \
+"$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/doctor.R \
   --case "<public-case-id>" --strict
 
-/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+"$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/match_schema.R \
   --case "<public-case-id>" --input "<input_csv>" --output "<match.csv>"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+"$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/create_adaptation.R \
   --case "<public-case-id>" --input "<input_csv>" \
   --workspace "<external_adaptation>"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+"$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/visual_qa.R \
   --render "<external_adaptation>/output.pdf" \
   --report "<external_report>/visual-qa.json"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/package_skill.R \
-  --archive "<external_archive>" --manifest "<external_manifest>"
+"$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/package_skill.R \
+  --archive /tmp/figureforge-skill-1.0.1.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.1-manifest.csv
+
+"$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/verify_release.R \
+  --archive /tmp/figureforge-skill-1.0.1.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.1-manifest.csv
+
+"$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/evaluate_skill.R \
+  --catalog skills/figureforge/references/trigger-evals-v1.csv \
+  --output-dir /tmp/figureforge-evals \
+  --report /tmp/figureforge-evals.csv \
+  --rscript "$FIGUREFORGE_RSCRIPT"
 
 sh examples/public-demo/run_demo.sh "<external_demo_output>"
 ```
@@ -83,7 +99,8 @@ their structured results. It must:
 - render only to an explicit output workspace outside the source case;
 - expose planned capability as planned until executable tools and tests exist.
 
-All 165 cases have now been processed and the Skill/corpus acceptance boundary
-is stable. MCP work has not started; any future implementation should begin as
-a separate task from these verified contracts, not from assumptions about the
-private corpus.
+All 165 private cases have now been processed and the Skill/corpus acceptance
+boundary is stable. The public v1.0.1 release adds only reviewed public assets;
+private cases remain local. MCP work has not started; any future implementation
+must begin as a separate task from these verified contracts, not from
+assumptions about the private corpus.
