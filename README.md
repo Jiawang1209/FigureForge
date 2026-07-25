@@ -236,9 +236,9 @@ a separate review and defaults to `private_only`.
 
 ## Verified Skill MVP
 
-The local private corpus contains 165 audited cases. After six
-complete-corpus waves, 124 cases pass the complete case contract: the original
-15-case MVP plus 109 newly recovered cases. Coverage now also includes
+The local private corpus contains 165 audited cases. After seven
+complete-corpus waves, 142 cases pass the complete case contract: the original
+15-case MVP plus 127 newly recovered cases. Coverage now also includes
 multi-track GO enrichment circles, fan trees with five bar rings, aligned
 tree-and-composition panels, annotated phenotype heatmaps, radar small
 multiples, grouped bubble matrices, sunbursts, genomic synteny circles, and
@@ -260,10 +260,13 @@ WGCNA module trees, metabolite IQR intervals, and reordered GO labels. Wave 6
 adds an annotated single-cell UMAP, confidence-band time series, alluvial
 composition, PPI layout comparisons, paired differential-expression bubbles,
 microbial correlation networks, single-chromosome composition tracks, circular
-GO panels, and correlation/Mantel connector matrices. The rendered audit now
-records 124 completed, 11 evidence-backed blocked cases, and 30 pending cases.
-The blockers comprise 6 `blocked_source_missing`, 3
-`blocked_ambiguous_mapping`, and 2 `blocked_visual_reference`. All 165 remain
+GO panels, and correlation/Mantel connector matrices. Wave 7 adds clustered
+and annotated heatmaps, correlation chords/networks, single and multi-contrast
+differential-expression plots, interaction circos, faceted ANOVA, and advanced
+sampling maps. The rendered audit now records 142 completed, 13
+evidence-backed blocked cases, and 10 pending cases. The blockers comprise 6
+`blocked_source_missing`, 3 `blocked_ambiguous_mapping`, and 4
+`blocked_visual_reference`. All 165 remain
 `private_only` because redistribution has not been approved.
 
 Three new-data migrations prove the workflow goes beyond reproduction:
@@ -289,9 +292,11 @@ ignored `outputs/figureforge-adaptations/`.
       with source-missing, visual-reference, or ambiguous-mapping evidence.
 - [x] Complete corpus Wave 6: verify 14 additional cases and classify 6 cases
       with source-missing, visual-reference, or ambiguous-mapping evidence.
+- [x] Complete corpus Wave 7: verify 18 additional cases and classify 2 cases
+      with visual-reference evidence.
 - [x] Verify end-to-end migration on three different new datasets and chart
       families.
-- [ ] Process the remaining 30 private cases to a completed or evidence-backed
+- [ ] Process the remaining 10 private cases to a completed or evidence-backed
       blocked terminal outcome.
 - [ ] Build the local-first FigureForge MCP server only after final Skill and
       corpus acceptance.
@@ -305,8 +310,8 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 **Skill MVP implemented and locally verified.** Discovery, indexing, dependency
 diagnosis, safe rendering, case validation, adaptation validation, templates,
-references, and three new-data proofs are in place. One hundred twenty-four of
-165 private cases meet the complete contract; 30 remain pending and 11 have
+references, and three new-data proofs are in place. One hundred forty-two of
+165 private cases meet the complete contract; 10 remain pending and 13 have
 validated, case-specific blocker records. The public curated case set is still
 being prepared. The MCP server remains planned, unimplemented, and paused
 until the Skill and case corpus reach final acceptance.

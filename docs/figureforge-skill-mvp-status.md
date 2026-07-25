@@ -12,8 +12,8 @@ implementation remains paused.
 | Acceptance area | Result |
 | --- | --- |
 | Private corpus audit | 165 real case directories classified independently |
-| Completed representative cases | 124 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
-| Current corpus terminal counts | 124 completed, 11 validated blockers, 30 pending after a rendered 165-case audit |
+| Completed representative cases | 142 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
+| Current corpus terminal counts | 142 completed, 13 validated blockers, 10 pending after a rendered 165-case audit |
 | Visual coverage | grouped scatter, bubble, expression-aware volcano, Manhattan, PCA/PCoA/NMDS/UMAP, fitted trend, ANOVA, box/violin/raincloud, donut/sunburst, heatmap, time series and confidence bands, bidirectional and circular bars, dual axes, paired trajectories, phylogeny and taxonomy trees, multi-ring tree annotation, GO circles and reordered labels, enrichment composites, radar, alluvial/Sankey, STRING PPI and custom microbial networks, WGCNA module dendrograms, chromosome ideograms and nucleotide tracks, promoter matrices, genomic synteny, world sampling maps, correlation/Mantel connectors, seamless multi-panel, and complex genomic annotations |
 | New-data migration | 3 different public R datasets migrated to 3 chart families |
 | Skill package | standard metadata, end-to-end workflow, references, template, and official package validation |
@@ -47,10 +47,10 @@ implementation remains paused.
   --batch-size 20
 ```
 
-Complete-corpus Waves 1 through 6 added 109 fully verified cases and classified
-11 cases with validated blockers. The current rendered audit records 124
-completed, 11 blocked, and 30 pending cases. Blockers currently comprise 6
-`blocked_source_missing`, 2 `blocked_visual_reference`, and 3
+Complete-corpus Waves 1 through 7 added 127 fully verified cases and classified
+13 cases with validated blockers. The current rendered audit records 142
+completed, 13 blocked, and 10 pending cases. Blockers currently comprise 6
+`blocked_source_missing`, 4 `blocked_visual_reference`, and 3
 `blocked_ambiguous_mapping`. The audit records `terminal_outcome`; every
 supported blocker category requires concrete evidence and never coexists with
 verified QA.
