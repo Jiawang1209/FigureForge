@@ -28,6 +28,20 @@ source(file.path(
   "lib",
   "stress_fixtures.R"
 ))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "metadata.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "stress_runner.R"
+))
 
 public_cases_dir <- file.path(
   repo_root,
@@ -136,5 +150,77 @@ stopifnot(identical(
   relative_hashes(first_dir),
   relative_hashes(cli_dir)
 ))
+
+source_paths <- sort(c(
+  list.files(
+    public_cases_dir,
+    recursive = TRUE,
+    full.names = TRUE
+  ),
+  list.files(
+    tracked_dir,
+    recursive = TRUE,
+    full.names = TRUE
+  )
+))
+source_hashes_before <- tools::md5sum(source_paths)
+source_mtimes_before <- file.info(source_paths)$mtime
+
+run_output_dir <- tempfile("figureforge-stress-run-")
+results <- run_stress_suite(
+  tracked_dir,
+  public_cases_dir,
+  run_output_dir,
+  rscript = "/usr/local/bin/Rscript"
+)
+stopifnot(nrow(results) == 24L)
+stopifnot(all(results$observed_outcome == results$expected_outcome))
+stopifnot(all(results$passed))
+stopifnot(all(results$synthetic_test_fixture))
+success_rows <- results$observed_outcome == "success"
+stopifnot(all(file.exists(results$output_path[success_rows])))
+stopifnot(all(file.info(results$output_path[success_rows])$size > 0L))
+failure_rows <- results$observed_outcome == "failure"
+stopifnot(all(nzchar(results$failure_category[failure_rows])))
+stopifnot(all(!file.exists(results$output_path[failure_rows])))
+stopifnot(identical(
+  source_hashes_before,
+  tools::md5sum(source_paths)
+))
+stopifnot(identical(
+  source_mtimes_before,
+  file.info(source_paths)$mtime
+))
+
+runner_cli <- file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "scripts",
+  "run_stress_tests.R"
+)
+cli_output_dir <- tempfile("figureforge-stress-run-cli-")
+cli_report <- tempfile("figureforge-stress-run-cli-", fileext = ".csv")
+runner_log <- tempfile("figureforge-stress-run-cli-", fileext = ".log")
+runner_status <- system2(
+  "/usr/local/bin/Rscript",
+  shQuote(c(
+    runner_cli,
+    "--fixtures", tracked_dir,
+    "--public-cases", public_cases_dir,
+    "--output-dir", cli_output_dir,
+    "--report", cli_report
+  )),
+  stdout = runner_log,
+  stderr = runner_log
+)
+stopifnot(identical(as.integer(runner_status), 0L))
+cli_results <- read.csv(
+  cli_report,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(nrow(cli_results) == 24L)
+stopifnot(all(cli_results$passed))
 
 message("stress fixture tests: PASS")
