@@ -44,14 +44,19 @@ for (phrase in c(
   "plot.pdf",
   "independent-rerender",
   ': >"$FINAL_MESSAGE"',
-  "json.loads",
-  "IHDR",
-  "%PDF-",
-  "%%EOF"
+  'requireNamespace("jsonlite"',
+  'requireNamespace("png"',
+  "plotting evaluation requires R packages jsonlite and png",
+  "png::readPNG",
+  "pdfinfo",
+  "pdftoppm"
 )) {
   if (!grepl(phrase, harness_text, fixed = TRUE)) {
     stop("plotting harness is missing required text: ", phrase, call. = FALSE)
   }
+}
+if (grepl("python", harness_text, ignore.case = TRUE)) {
+  stop("plotting harness must not depend on Python", call. = FALSE)
 }
 stopifnot(file.exists(fixture_path))
 
@@ -67,6 +72,11 @@ if (!nzchar(rscript)) {
   }
 }
 stopifnot(nzchar(rscript), file.exists(rscript))
+stopifnot(requireNamespace("jsonlite", quietly = TRUE))
+stopifnot(requireNamespace("png", quietly = TRUE))
+pdfinfo <- Sys.which("pdfinfo")
+pdftoppm <- Sys.which("pdftoppm")
+stopifnot(nzchar(pdfinfo), nzchar(pdftoppm))
 
 counter_path <- file.path(fake_root, "plot-r-invocations.txt")
 profile_path <- file.path(fake_root, "plot-counter.Rprofile")
@@ -235,32 +245,55 @@ counter_entries <- readLines(counter_path, warn = FALSE)
 stopifnot(identical(counter_entries, c("plot.R", "plot.R")))
 Sys.unsetenv("FIGUREFORGE_PLOT_COUNTER")
 
-raw_contains <- function(bytes, text) {
-  length(grepRaw(charToRaw(text), bytes, fixed = TRUE)) > 0L
-}
+max_image_size <- 100 * 1024^2
 valid_png <- function(path) {
-  bytes <- readBin(path, what = "raw", n = 24L)
-  if (length(bytes) < 24L ||
-      !identical(
-        bytes[1L:8L],
-        as.raw(c(137L, 80L, 78L, 71L, 13L, 10L, 26L, 10L))
-      ) ||
-      !identical(rawToChar(bytes[13L:16L]), "IHDR")) {
+  info <- file.info(path)
+  if (is.na(info$size) || info$size <= 0 || info$size > max_image_size) {
     return(FALSE)
   }
-  decode_uint32 <- function(value) {
-    sum(as.integer(value) * 256^(3L:0L))
+  decoded <- tryCatch(
+    png::readPNG(path),
+    error = function(error) NULL
+  )
+  if (is.null(decoded)) {
+    return(FALSE)
   }
-  decode_uint32(bytes[17L:20L]) > 0 &&
-    decode_uint32(bytes[21L:24L]) > 0
+  dimensions <- dim(decoded)
+  length(dimensions) >= 2L && all(dimensions[1L:2L] > 0L)
 }
+validation_dir <- file.path(fake_root, "test-render-validation")
+dir.create(validation_dir)
 valid_pdf <- function(path) {
-  size <- file.info(path)$size
-  bytes <- readBin(path, what = "raw", n = size)
-  length(bytes) >= 5L &&
-    identical(rawToChar(bytes[1L:5L]), "%PDF-") &&
-    raw_contains(bytes, "trailer") &&
-    raw_contains(bytes, "%%EOF")
+  info <- file.info(path)
+  if (is.na(info$size) || info$size <= 0 || info$size > max_image_size) {
+    return(FALSE)
+  }
+  metadata <- suppressWarnings(system2(
+    pdfinfo,
+    shQuote(path),
+    stdout = TRUE,
+    stderr = TRUE
+  ))
+  if (!is.null(attr(metadata, "status"))) {
+    return(FALSE)
+  }
+  pages <- grep("^Pages:", metadata, value = TRUE)
+  if (length(pages) != 1L ||
+      as.integer(trimws(sub("^Pages:", "", pages))) < 1L) {
+    return(FALSE)
+  }
+  render_prefix <- tempfile("page-", tmpdir = validation_dir)
+  render_result <- suppressWarnings(system2(
+    pdftoppm,
+    c(
+      "-f", "1", "-singlefile", "-png",
+      shQuote(path), shQuote(render_prefix)
+    ),
+    stdout = TRUE,
+    stderr = TRUE
+  ))
+  is.null(attr(render_result, "status")) &&
+    valid_png(paste0(render_prefix, ".png"))
 }
 image_paths <- c(delivered[2L:3L], rerendered)
 stopifnot(length(unique(normalizePath(image_paths))) == 4L)
@@ -340,8 +373,17 @@ invalid_lines <- c(
   "cat >\"$cwd/figureforge-output/plot.R\" <<'INVALID_R'",
   "args <- commandArgs(trailingOnly = TRUE)",
   "dir.create(args[[2L]], recursive = TRUE, showWarnings = FALSE)",
-  "writeLines(\"not a PNG\", file.path(args[[2L]], \"plot.png\"))",
-  "writeLines(\"not a PDF\", file.path(args[[2L]], \"plot.pdf\"))",
+  "png_spoof <- as.raw(c(",
+  "  137, 80, 78, 71, 13, 10, 26, 10,",
+  "  0, 0, 0, 13, 73, 72, 68, 82,",
+  "  0, 0, 0, 1, 0, 0, 0, 1",
+  "))",
+  "writeBin(png_spoof, file.path(args[[2L]], \"plot.png\"))",
+  "pdf_spoof <- charToRaw(paste0(",
+  "  \"%PDF-1.4\\n1 0 obj\\n<<>>\\nendobj\\n\",",
+  "  \"trailer\\n<<>>\\n%%EOF\\n\"",
+  "))",
+  "writeBin(pdf_spoof, file.path(args[[2L]], \"plot.pdf\"))",
   "INVALID_R",
   paste(
     shQuote(rscript),
