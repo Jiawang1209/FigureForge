@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-multipanel
+title_en: Faceted multi-panel response display
+title_zh: 分面多面板响应图
+chart_family: composition
+chart_subfamily: multi_panel
+aliases_en: multi panel|faceted plot|small multiples
+aliases_zh: 多面板|分面图|小多图
+scientific_intents: multi-context comparison|panel composition
+required_roles: panel:character:categorical|x:numeric:continuous|y:numeric:continuous|group:character:categorical|lower:numeric:continuous|upper:numeric:continuous
+optional_roles:
+annotations: uncertainty_band
+layouts: faceted|multi_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

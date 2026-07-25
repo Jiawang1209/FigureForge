@@ -1,0 +1,13 @@
+panel,x,y,group,lower,upper
+Panel_A,1,2.0,Control,1.7,2.3
+Panel_A,2,2.5,Control,2.2,2.8
+Panel_A,3,3.0,Control,2.7,3.3
+Panel_A,1,2.3,Treatment,2.0,2.6
+Panel_A,2,3.0,Treatment,2.6,3.4
+Panel_A,3,3.8,Treatment,3.4,4.2
+Panel_B,1,5.0,Control,4.6,5.4
+Panel_B,2,4.7,Control,4.3,5.1
+Panel_B,3,4.4,Control,4.0,4.8
+Panel_B,1,5.1,Treatment,4.7,5.5
+Panel_B,2,5.6,Treatment,5.2,6.0
+Panel_B,3,6.0,Treatment,5.6,6.4

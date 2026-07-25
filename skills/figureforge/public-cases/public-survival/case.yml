@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-survival
+title_en: Survival curve with confidence interval
+title_zh: 带置信区间的生存曲线
+chart_family: survival
+chart_subfamily: kaplan_meier
+aliases_en: survival curve|Kaplan Meier|time to event
+aliases_zh: 生存曲线|Kaplan-Meier曲线|事件时间
+scientific_intents: time to event|group survival comparison
+required_roles: group:character:categorical|time:numeric:temporal|survival:numeric:continuous|lower:numeric:continuous|upper:numeric:continuous
+optional_roles:
+annotations: confidence_interval
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

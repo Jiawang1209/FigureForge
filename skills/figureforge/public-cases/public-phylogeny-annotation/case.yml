@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-phylogeny-annotation
+title_en: Annotated phylogeny layout
+title_zh: 带注释进化树布局
+chart_family: tree
+chart_subfamily: phylogeny_annotation
+aliases_en: phylogenetic tree|tree annotation|cladogram
+aliases_zh: 进化树|树注释|系统发育树
+scientific_intents: hierarchy|tip group annotation
+required_roles: node:character:identifier|parent:character:identifier|x:numeric:continuous|y:numeric:continuous|label:character:categorical|clade:character:categorical|is_tip:logical:categorical
+optional_roles:
+annotations: tip_label|clade_color
+layouts: rectangular_tree
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

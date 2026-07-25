@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-volcano
+title_en: Differential-feature volcano plot
+title_zh: 差异特征火山图
+chart_family: omics
+chart_subfamily: volcano
+aliases_en: volcano plot|differential features|fold change
+aliases_zh: 火山图|差异分析|倍数变化
+scientific_intents: differential screening|effect significance
+required_roles: feature:character:identifier|log2_fold_change:numeric:continuous|adjusted_p:numeric:continuous|class:character:categorical
+optional_roles:
+annotations: thresholds|feature_class
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

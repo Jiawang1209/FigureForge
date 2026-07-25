@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-network
+title_en: Deterministic node-edge network
+title_zh: 确定性节点边网络图
+chart_family: network
+chart_subfamily: node_edge
+aliases_en: network graph|node edge|interaction network
+aliases_zh: 网络图|节点边图|互作网络
+scientific_intents: relationship topology|group connectivity
+required_roles: record_type:character:categorical|node_id:character:identifier|x:numeric:continuous|y:numeric:continuous
+optional_roles: node_label:character:categorical|group:character:categorical|source:character:identifier|target:character:identifier
+annotations: node_label|group_color
+layouts: deterministic_coordinates
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

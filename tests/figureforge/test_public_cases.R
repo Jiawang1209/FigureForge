@@ -52,9 +52,22 @@ first_wave <- c(
   "public-correlation-heatmap",
   "public-enrichment-bubble"
 )
+second_wave <- c(
+  "public-volcano",
+  "public-network",
+  "public-survival",
+  "public-phylogeny-annotation",
+  "public-gene-structure",
+  "public-multipanel"
+)
+expected_cases <- c(first_wave, second_wave)
 
 stopifnot(dir.exists(public_cases_dir))
-stopifnot(all(dir.exists(file.path(public_cases_dir, first_wave))))
+stopifnot(all(dir.exists(file.path(public_cases_dir, expected_cases))))
+stopifnot(setequal(
+  basename(list.dirs(public_cases_dir, recursive = FALSE)),
+  expected_cases
+))
 
 validator_cli <- file.path(
   repo_root,
@@ -65,7 +78,7 @@ validator_cli <- file.path(
 )
 stopifnot(file.exists(validator_cli))
 
-for (case_id in first_wave) {
+for (case_id in expected_cases) {
   case_dir <- file.path(public_cases_dir, case_id)
   source_files <- sort(list.files(
     case_dir,

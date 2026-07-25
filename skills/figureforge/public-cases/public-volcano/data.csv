@@ -1,0 +1,11 @@
+feature,log2_fold_change,adjusted_p,class
+F01,-2.4,0.0008,Down
+F02,-1.7,0.0060,Down
+F03,-0.8,0.1200,Not_significant
+F04,-0.2,0.7400,Not_significant
+F05,0.3,0.5100,Not_significant
+F06,0.9,0.0900,Not_significant
+F07,1.5,0.0120,Up
+F08,2.2,0.0012,Up
+F09,2.8,0.0002,Up
+F10,-2.9,0.0003,Down

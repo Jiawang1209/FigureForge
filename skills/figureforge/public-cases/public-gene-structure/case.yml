@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-gene-structure
+title_en: Gene feature structure track
+title_zh: 基因特征结构轨道图
+chart_family: gene_structure
+chart_subfamily: feature_track
+aliases_en: gene structure|motif track|domain diagram
+aliases_zh: 基因结构|motif图|结构域图
+scientific_intents: feature architecture|coordinate comparison
+required_roles: gene:character:categorical|feature:character:categorical|start:numeric:continuous|end:numeric:continuous|strand:character:categorical|track:integer:categorical
+optional_roles:
+annotations: feature_color|strand
+layouts: aligned_tracks
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

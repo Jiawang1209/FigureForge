@@ -1,0 +1,11 @@
+group,time,survival,lower,upper
+Control,0,1.00,1.00,1.00
+Control,2,0.88,0.74,0.97
+Control,4,0.72,0.55,0.86
+Control,6,0.55,0.37,0.72
+Control,8,0.39,0.22,0.57
+Treatment,0,1.00,1.00,1.00
+Treatment,2,0.94,0.82,0.99
+Treatment,4,0.86,0.70,0.95
+Treatment,6,0.75,0.57,0.88
+Treatment,8,0.63,0.44,0.78

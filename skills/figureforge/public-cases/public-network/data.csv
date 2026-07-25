@@ -1,0 +1,9 @@
+record_type,node_id,node_label,x,y,group,source,target
+node,N1,Alpha,0.0,1.0,Core,,
+node,N2,Beta,-1.0,0.0,Core,,
+node,N3,Gamma,1.0,0.0,Peripheral,,
+node,N4,Delta,0.0,-1.0,Peripheral,,
+edge,,,,,,N1,N2
+edge,,,,,,N1,N3
+edge,,,,,,N2,N4
+edge,,,,,,N3,N4

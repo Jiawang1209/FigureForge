@@ -1,0 +1,8 @@
+gene,feature,start,end,strand,track
+Gene_A,Exon,0,180,+,1
+Gene_A,Domain,240,460,+,1
+Gene_A,Exon,520,700,+,1
+Gene_B,Exon,0,120,-,2
+Gene_B,Motif,190,260,-,2
+Gene_B,Domain,330,610,-,2
+Gene_B,Exon,660,760,-,2
