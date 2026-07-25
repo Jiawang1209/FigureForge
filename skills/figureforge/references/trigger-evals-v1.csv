@@ -1,0 +1,31 @@
+eval_id,language,outcome,query,expected_top1,fixture_id,expected_rejection
+eval-en-001,en,select,grouped bar,public-bar-grouped,,
+eval-en-002,en,select,raincloud,public-distribution-raincloud,,
+eval-en-003,en,select,correlation heatmap,public-correlation-heatmap,,
+eval-en-004,en,select,volcano plot,public-volcano,,
+eval-en-005,en,select,survival curve,public-survival,,
+eval-en-006,en,select,network graph,public-network,,
+eval-en-007,en,map_render,scatter,public-scatter-fit,map-scatter,
+eval-en-008,en,map_render,time series,public-timeseries-band,map-timeseries,
+eval-en-009,en,map_render,enrichment bubble,public-enrichment-bubble,map-enrichment,
+eval-en-010,en,reject,grouped bar,public-bar-grouped,reject-missing,missing_required_role
+eval-en-011,en,reject,scatter,public-scatter-fit,reject-type,incompatible_type
+eval-en-012,en,reject,raincloud,public-distribution-raincloud,reject-cardinality,incompatible_cardinality
+eval-en-013,en,reject,scatter,public-scatter-fit,reject-protected,protected_output
+eval-en-014,en,reject,private reference figure,,reject-private,private_asset
+eval-en-015,en,reject,scatter,public-scatter-fit,reject-unsafe,unsafe_transformation
+eval-zh-001,zh,select,分组柱状图,public-bar-grouped,,
+eval-zh-002,zh,select,雨云图,public-distribution-raincloud,,
+eval-zh-003,zh,select,相关性热图,public-correlation-heatmap,,
+eval-zh-004,zh,select,火山图,public-volcano,,
+eval-zh-005,zh,select,生存曲线,public-survival,,
+eval-zh-006,zh,select,网络图,public-network,,
+eval-zh-007,zh,map_render,散点图,public-scatter-fit,map-scatter,
+eval-zh-008,zh,map_render,时序图,public-timeseries-band,map-timeseries,
+eval-zh-009,zh,map_render,富集气泡图,public-enrichment-bubble,map-enrichment,
+eval-zh-010,zh,reject,分组柱状图,public-bar-grouped,reject-missing,missing_required_role
+eval-zh-011,zh,reject,散点图,public-scatter-fit,reject-type,incompatible_type
+eval-zh-012,zh,reject,雨云图,public-distribution-raincloud,reject-cardinality,incompatible_cardinality
+eval-zh-013,zh,reject,散点图,public-scatter-fit,reject-protected,protected_output
+eval-zh-014,zh,reject,私有参考图,,reject-private,private_asset
+eval-zh-015,zh,reject,散点图,public-scatter-fit,reject-unsafe,unsafe_transformation

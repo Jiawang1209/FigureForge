@@ -1,0 +1,4 @@
+role,input_column,transformation
+group,cohort,identity
+value,measurement,identity
+sample_id,sample,identity

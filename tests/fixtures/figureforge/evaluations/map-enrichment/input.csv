@@ -1,0 +1,5 @@
+pathway,ratio,q_value,n_genes,ontology
+Defense response,0.32,0.001,18,BP
+Cell signaling,0.25,0.008,14,BP
+Membrane complex,0.21,0.015,11,CC
+Transport activity,0.18,0.031,9,MF

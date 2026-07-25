@@ -1,0 +1,3 @@
+expected_case_id: public-enrichment-bubble
+source_scope: public
+output_scope: evaluation

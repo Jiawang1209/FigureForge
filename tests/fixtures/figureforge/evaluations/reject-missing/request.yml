@@ -1,0 +1,3 @@
+expected_case_id: public-bar-grouped
+source_scope: public
+output_scope: evaluation

@@ -1,0 +1,6 @@
+role,input_column,transformation
+term,pathway,identity
+gene_ratio,ratio,identity
+adjusted_p,q_value,identity
+count,n_genes,identity
+category,ontology,identity

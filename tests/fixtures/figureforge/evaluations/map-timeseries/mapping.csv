@@ -1,0 +1,6 @@
+role,input_column,transformation
+time,visit,identity
+estimate,mean_value,identity
+lower,ci_low,identity
+upper,ci_high,identity
+group,cohort,identity

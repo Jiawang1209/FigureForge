@@ -1,0 +1,3 @@
+role,input_column,transformation
+treatment,treatment_name,identity
+response,response_value,identity

@@ -1,0 +1,4 @@
+role,input_column,transformation
+predictor,x_value,identity
+response,y_value,identity
+group,taxon,identity

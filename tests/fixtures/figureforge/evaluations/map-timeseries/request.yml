@@ -1,0 +1,3 @@
+expected_case_id: public-timeseries-band
+source_scope: public
+output_scope: evaluation

@@ -1,0 +1,3 @@
+expected_case_id: private-local-reference
+source_scope: private
+output_scope: evaluation
