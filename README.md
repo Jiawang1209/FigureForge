@@ -18,6 +18,10 @@ current scope and remains a possible future direction.
 
 ## FigureForge Skill 1.1.0
 
+FigureForge Skill 1.1.0 is the current implementation and release candidate.
+Its live-model and release certification remain pending.
+FigureForge Skill 1.0.1 remains the latest locally certified release.
+
 ### User quick start
 
 Ask your AI agent:

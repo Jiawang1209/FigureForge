@@ -17,6 +17,9 @@ FigureForge 默认使用 **R / ggplot2**，遇到特定科研图形时按需使�
 
 ## FigureForge Skill 1.1.0
 
+FigureForge Skill 1.1.0 是当前实现与发布候选版本。真实模型与发布认证仍待完成。
+FigureForge Skill 1.0.1 仍是最新完成本地认证的发布版本。
+
 ### 用户快速开始
 
 向 AI 智能体提出：
