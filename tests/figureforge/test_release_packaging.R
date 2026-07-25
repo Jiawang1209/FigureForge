@@ -42,10 +42,12 @@ version_path <- file.path(
   "figureforge",
   "VERSION"
 )
-stopifnot(identical(
-  readLines(version_path, warn = FALSE, encoding = "UTF-8"),
-  "1.0.0"
-))
+current_version <- readLines(
+  version_path,
+  warn = FALSE,
+  encoding = "UTF-8"
+)
+stopifnot(identical(current_version, "1.0.1"))
 
 output_dir <- tempfile("figureforge-package-test-")
 dir.create(output_dir, recursive = TRUE)
@@ -181,7 +183,10 @@ expect_release_error(
   "symlink"
 )
 
-archive_path <- file.path(output_dir, "figureforge-skill-1.0.0.tar.gz")
+archive_path <- file.path(
+  output_dir,
+  paste0("figureforge-skill-", current_version, ".tar.gz")
+)
 package <- package_figureforge_skill(
   repo_root,
   archive_path,
