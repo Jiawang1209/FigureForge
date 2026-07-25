@@ -36,10 +36,11 @@ public_cases_dir <- file.path(
   "public-cases"
 )
 catalog <- build_public_catalog(public_cases_dir)
-stopifnot(nrow(catalog) == 12L)
+stopifnot(nrow(catalog) == 15L)
 stopifnot(identical(catalog$case_id, sort(catalog$case_id)))
 stopifnot(all(catalog$distribution_status == "public_ready"))
-stopifnot(all(catalog$synthetic_test_fixture))
+stopifnot(sum(catalog$synthetic_test_fixture) == 12L)
+stopifnot(sum(!catalog$synthetic_test_fixture) == 3L)
 stopifnot(!any(grepl("/cases/", catalog$case_path, fixed = TRUE)))
 
 index_script <- file.path(
@@ -91,7 +92,7 @@ written <- read.csv(
   stringsAsFactors = FALSE,
   check.names = FALSE
 )
-stopifnot(nrow(written) == 12L)
+stopifnot(nrow(written) == 15L)
 stopifnot(!"case_path" %in% names(written))
 stopifnot(identical(written$case_id, sort(written$case_id)))
 

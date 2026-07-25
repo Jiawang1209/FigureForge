@@ -1,0 +1,17 @@
+schema_version: 1
+source_type: authentic_open_data
+publisher: U.S. Geological Survey
+dataset_title: USGS Earthquake Catalog
+canonical_url: https://earthquake.usgs.gov/fdsnws/event/1/
+retrieval_url: https://earthquake.usgs.gov/fdsnws/event/1/query.csv?starttime=2024-01-01&endtime=2024-02-01&minmagnitude=5&orderby=time-asc
+retrieval_date: 2026-07-25
+upstream_version: fixed 2024-01-01 through 2024-02-01 query retrieved 2026-07-25
+upstream_sha256: 39d0e2be2a0c36784fd7ff8b9335e43fa7583b65dbb3db79ddda65423c55148d
+normalized_sha256: 74f833c5a61a9d4d784fc9dfc80d061e4b1ba2523087e0302ad7f785f1c63f5e
+license: public-domain
+license_url: https://www.usgs.gov/data-management/data-licensing
+attribution: U.S. Geological Survey Earthquake Hazards Program
+selected_fields: time|depth|mag|place
+normalization: selected declared fields|retained finite depth and magnitude|sorted by time and place
+synthetic_test_fixture: false
+scientific_claims: descriptive_only

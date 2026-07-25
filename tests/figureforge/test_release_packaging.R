@@ -96,7 +96,7 @@ stopifnot(sum(grepl(
   "^figureforge/public-cases/[^/]+/distribution.yml$",
   manifest$package_path,
   perl = TRUE
-)) == 12L)
+)) == 15L)
 
 tracked <- system2(
   "git",

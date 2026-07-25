@@ -1,0 +1,17 @@
+schema_version: 1
+source_type: authentic_open_data
+publisher: Allison Horst and palmerpenguins contributors
+dataset_title: Palmer Penguins
+canonical_url: https://github.com/allisonhorst/palmerpenguins
+retrieval_url: https://raw.githubusercontent.com/allisonhorst/palmerpenguins/main/inst/extdata/penguins.csv
+retrieval_date: 2026-07-25
+upstream_version: main branch snapshot retrieved 2026-07-25
+upstream_sha256: f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93
+normalized_sha256: 86071627c1cbbd8492763e3a8eb8efc0961f6bfea689dc21f8946e56d401e78e
+license: CC0-1.0
+license_url: https://creativecommons.org/publicdomain/zero/1.0/
+attribution: Data collected by Dr. Kristen Gorman and Palmer Station LTER; packaged by Allison Horst
+selected_fields: species|bill_length_mm|bill_depth_mm|body_mass_g|sex
+normalization: selected declared fields|removed rows missing any selected field|sorted by species and bill measurements
+synthetic_test_fixture: false
+scientific_claims: descriptive_only

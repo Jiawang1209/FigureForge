@@ -28,6 +28,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "checksums.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "distribution_validation.R"
 ))
 source(file.path(
@@ -61,6 +68,12 @@ second_wave <- c(
   "public-multipanel"
 )
 expected_cases <- c(first_wave, second_wave)
+expected_cases <- c(
+  expected_cases,
+  "authentic-palmer-penguins-scatter",
+  "authentic-usgs-earthquakes-bubble",
+  "authentic-world-bank-population-timeseries"
+)
 
 stopifnot(dir.exists(public_cases_dir))
 stopifnot(all(dir.exists(file.path(public_cases_dir, expected_cases))))
@@ -92,8 +105,11 @@ for (case_id in expected_cases) {
   metadata_result <- validate_case_metadata(metadata)
   stopifnot(isTRUE(metadata_result$ok))
   stopifnot(identical(metadata$case_id, case_id))
-  stopifnot(identical(metadata$qa_status, "review_required"))
-  stopifnot(isTRUE(metadata$synthetic_test_fixture))
+  if (isTRUE(metadata$synthetic_test_fixture)) {
+    stopifnot(identical(metadata$qa_status, "review_required"))
+  } else {
+    stopifnot(identical(metadata$qa_status, "verified"))
+  }
 
   distribution_result <- validate_distribution(case_dir)
   stopifnot(isTRUE(distribution_result$ok))

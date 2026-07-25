@@ -11,3 +11,5 @@ survival,kaplan_meier,Kaplan Meier curve,生存曲线
 tree,phylogeny_annotation,Annotated phylogeny,带注释进化树
 gene_structure,feature_track,Gene feature track,基因结构图
 composition,multi_panel,Multi panel composition,多面板组合图
+scatter,bubble,Bubble scatter,气泡散点图
+time_series,longitudinal,Longitudinal time series,纵向时序图

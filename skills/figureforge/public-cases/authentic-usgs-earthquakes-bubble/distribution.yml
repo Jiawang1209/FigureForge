@@ -1,0 +1,11 @@
+schema_version: 2
+distribution_status: public_ready
+source_type: authentic_open_data
+synthetic_test_fixture: false
+scientific_claims: descriptive_only
+origin: USGS FDSN Event Web Service
+copyright_holder: U.S. Geological Survey
+license: public-domain
+review_date: 2026-07-25
+reviewer: FigureForge release review
+assets: case.md|case.yml|data.csv|plot.R|qa.md|distribution.yml|source.yml

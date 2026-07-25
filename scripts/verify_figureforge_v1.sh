@@ -45,7 +45,7 @@ for case_dir in "$PUBLIC_CASES"/*; do
     --output "$VERIFY_ROOT/public-renders/$case_id.pdf" \
     --rscript "$RSCRIPT"
 done
-[ "$case_count" -eq 12 ]
+[ "$case_count" -eq 15 ]
 
 stage "24 synthetic stress scenarios"
 "$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/run_stress_tests.R" \

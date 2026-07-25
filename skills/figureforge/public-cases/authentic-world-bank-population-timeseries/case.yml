@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: authentic-world-bank-population-timeseries
+title_en: World Bank population time series
+title_zh: 世界银行人口时序图
+chart_family: time_series
+chart_subfamily: longitudinal
+aliases_en: population trend|country time series|World Bank population
+aliases_zh: 人口趋势|国家时序|世界银行人口
+scientific_intents: longitudinal comparison|population|country comparison
+required_roles: time:integer:temporal|estimate:numeric:continuous|group:character:categorical
+optional_roles: identifier:character:identifier
+annotations: direct_points
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: verified
+distribution_status: public_ready
+synthetic_test_fixture: false

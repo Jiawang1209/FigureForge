@@ -1,0 +1,11 @@
+schema_version: 2
+distribution_status: public_ready
+source_type: authentic_open_data
+synthetic_test_fixture: false
+scientific_claims: descriptive_only
+origin: Palmer Penguins open dataset
+copyright_holder: Palmer Station LTER and Kristen Gorman
+license: CC0-1.0
+review_date: 2026-07-25
+reviewer: FigureForge release review
+assets: case.md|case.yml|data.csv|plot.R|qa.md|distribution.yml|source.yml

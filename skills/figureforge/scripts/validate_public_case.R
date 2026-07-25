@@ -34,6 +34,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "checksums.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "distribution_validation.R"
 ))
 source(file.path(

@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: authentic-palmer-penguins-scatter
+title_en: Palmer Penguins bill measurements
+title_zh: 帕尔默企鹅喙部测量散点图
+chart_family: scatter
+chart_subfamily: fitted_scatter
+aliases_en: penguins scatter|bill measurements|species regression
+aliases_zh: 企鹅散点图|喙部测量|物种拟合
+scientific_intents: association|morphology|species comparison
+required_roles: predictor:numeric:continuous|response:numeric:continuous|group:character:categorical
+optional_roles: size:numeric:continuous|sex:character:categorical
+annotations: fitted_line
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: verified
+distribution_status: public_ready
+synthetic_test_fixture: false

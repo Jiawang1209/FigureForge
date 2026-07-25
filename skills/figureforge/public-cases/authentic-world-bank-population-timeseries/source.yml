@@ -1,0 +1,17 @@
+schema_version: 1
+source_type: authentic_open_data
+publisher: World Bank
+dataset_title: Population, total SP.POP.TOTL
+canonical_url: https://data.worldbank.org/indicator/SP.POP.TOTL
+retrieval_url: https://api.worldbank.org/v2/country/CHN;USA;IND;BRA;ZAF/indicator/SP.POP.TOTL?date=2000:2023&format=json&per_page=500
+retrieval_date: 2026-07-25
+upstream_version: API lastupdated 2026-07-13
+upstream_sha256: 0c516b92077b8cb39972a34a3be14230a84adcbed3db921023b9182e9068e9d0
+normalized_sha256: ad9749b12908ac679a9fce4e1ba91e72fdeb260a1a14de958e289488a088427a
+license: CC-BY-4.0
+license_url: https://datacatalog.worldbank.org/public-licenses
+attribution: World Bank, Population total SP.POP.TOTL, API snapshot retrieved 2026-07-25
+selected_fields: countryiso3code|country.value|date|value
+normalization: flattened country records|renamed fields|kept finite year and population|sorted by country code and year
+synthetic_test_fixture: false
+scientific_claims: descriptive_only

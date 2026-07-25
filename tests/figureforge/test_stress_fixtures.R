@@ -68,9 +68,20 @@ validate_fixture_root <- function(root) {
   stopifnot(nrow(manifest) == 24L)
   stopifnot(all(manifest$synthetic_test_fixture))
   stopifnot(all(nzchar(manifest$seed)))
+  public_dirs <- list.dirs(
+    public_cases_dir,
+    recursive = FALSE,
+    full.names = TRUE
+  )
+  synthetic_case_ids <- basename(public_dirs[vapply(
+    public_dirs,
+    function(case_dir) {
+      isTRUE(read_case_metadata(case_dir)$synthetic_test_fixture)
+    },
+    logical(1)
+  )])
   stopifnot(all(
-    basename(list.dirs(public_cases_dir, recursive = FALSE)) %in%
-      manifest$public_case_id
+    synthetic_case_ids %in% manifest$public_case_id
   ))
   stopifnot(all(table(manifest$public_case_id) == 2L))
   stopifnot(setequal(unique(manifest$outcome), c("success", "failure")))

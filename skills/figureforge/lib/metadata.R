@@ -46,7 +46,9 @@ figureforge_public_taxonomy <- function() {
       "survival",
       "tree",
       "gene_structure",
-      "composition"
+      "composition",
+      "scatter",
+      "time_series"
     ),
     subfamily = c(
       "grouped_stacked",
@@ -60,7 +62,9 @@ figureforge_public_taxonomy <- function() {
       "kaplan_meier",
       "phylogeny_annotation",
       "feature_track",
-      "multi_panel"
+      "multi_panel",
+      "bubble",
+      "longitudinal"
     ),
     title_en = c(
       "Grouped or stacked bar",
@@ -74,7 +78,9 @@ figureforge_public_taxonomy <- function() {
       "Kaplan Meier curve",
       "Annotated phylogeny",
       "Gene feature track",
-      "Multi panel composition"
+      "Multi panel composition",
+      "Bubble scatter",
+      "Longitudinal time series"
     ),
     title_zh = c(
       "分组或堆积柱状图",
@@ -88,7 +94,9 @@ figureforge_public_taxonomy <- function() {
       "生存曲线",
       "带注释进化树",
       "基因结构图",
-      "多面板组合图"
+      "多面板组合图",
+      "气泡散点图",
+      "纵向时序图"
     ),
     stringsAsFactors = FALSE
   )

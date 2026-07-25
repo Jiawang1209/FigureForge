@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: authentic-usgs-earthquakes-bubble
+title_en: January 2024 magnitude 5+ earthquakes
+title_zh: 2024年1月5级以上地震气泡图
+chart_family: scatter
+chart_subfamily: bubble
+aliases_en: earthquake bubble|magnitude depth|seismic events
+aliases_zh: 地震气泡图|震级深度|地震事件
+scientific_intents: event overview|magnitude|depth|time
+required_roles: time:datetime:temporal|depth:numeric:continuous|magnitude:numeric:continuous
+optional_roles: label:character:categorical
+annotations: size_encoding|color_encoding
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: verified
+distribution_status: public_ready
+synthetic_test_fixture: false
