@@ -96,7 +96,7 @@ for r_file in $(find skills/figureforge tests/figureforge \
   /usr/local/bin/Rscript -e "parse(file='$r_file')" >/dev/null || exit 1
 done
 
-python3 /Users/liuyue/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
+/usr/bin/python3 /Users/liuyue/.codex/skills/.system/skill-creator/scripts/quick_validate.py \
   skills/figureforge
 
 git diff --check

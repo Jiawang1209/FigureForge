@@ -1,0 +1,10 @@
+schema_version: 1
+distribution_status: public_ready
+synthetic_test_fixture: true
+scientific_claims: none
+origin: generated-by-FigureForge
+copyright_holder: FigureForge contributors
+license: CC0-1.0
+review_date: 2026-07-25
+reviewer: FigureForge release review
+assets: case.md|case.yml|data.csv|qa.md|distribution.yml

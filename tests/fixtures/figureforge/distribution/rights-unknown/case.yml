@@ -1,0 +1,5 @@
+schema_version: 1
+case_id: rights-unknown-fixture
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true
