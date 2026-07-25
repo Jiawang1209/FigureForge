@@ -1,4 +1,4 @@
 interface:
   display_name: "FigureForge"
-  short_description: "Adapt data with public scientific figure patterns"
-  default_prompt: "Use $figureforge to inspect my data, search authentic or synthetic public cases from the installed Skill path, create an external adaptation, render it, and preserve case-specific QA such as review_required until authorized human review."
+  short_description: "Create publication-ready R plots from real data"
+  default_prompt: "Use $figureforge to inspect the real data, choose a primary case and optional secondary patterns, write and run a standalone plot.R, and return plot.R, plot.png, and plot.pdf."
