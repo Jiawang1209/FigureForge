@@ -134,6 +134,25 @@ FigureForge Skill v1.0 acceptance: PASS
 
 No archive, render, private case, private index, or audit output is committed.
 
+## Acceptance Matrix
+
+| Requirement | Direct evidence |
+| --- | --- |
+| Public-only redistribution | `validate_distribution.R`, `distribution.yml`, and `test_distribution_validation.R` |
+| 12 public cases | `public-cases/`, `public-case-index.csv`, and 12 external renders in the verifier |
+| 24 deterministic stress fixtures | `tests/fixtures/figureforge/stress/manifest.csv` and `run_stress_tests.R` |
+| Safe external workspace | `create_adaptation.R` plus protected-root and non-empty-target negative tests |
+| Layered dependency diagnosis | `doctor.R` text/JSON checks and strict case diagnostics |
+| Bilingual schema-aware discovery | paired English/Chinese search and `match_schema.R` acceptance checks |
+| Non-authoritative visual QA | `visual_qa.R`, JSON schema, blank/nonblank fixtures, and forbidden-source-path test |
+| Human QA boundary | generated `qa.md` remains `review_required`; automation cannot write verified status |
+| Public demo | Chinese-column deterministic input, explicit mapping, two independent PDF renders |
+| Version and packaging | `VERSION` 1.0.0, changelog, MIT license, 128-file manifest/archive identity |
+| Private/public separation | no private case, reproduction/original asset, private index, output, or log is tracked or packaged |
+| Clean-clone operation | `test_v1_acceptance.R` clones the current branch and reruns the verifier without the private corpus |
+| Documentation parity | `test_v1_documentation.R` checks both READMEs and every documented public command |
+| MCP deferral | docs state planned and unimplemented; the v1 release contains no MCP Server |
+
 ## Future MCP Boundary
 
 A future local-first MCP may wrap the stable public inputs:

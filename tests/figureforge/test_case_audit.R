@@ -35,8 +35,15 @@ source(file.path(
   "lib",
   "blocker_validation.R"
 ))
+source(file.path(
+  repo_root,
+  "tests",
+  "figureforge",
+  "helpers",
+  "materialize_case_fixtures.R"
+))
 
-fixtures_dir <- file.path(repo_root, "tests", "fixtures", "figureforge", "cases")
+fixtures_dir <- materialize_case_fixtures(repo_root)
 render_dir <- tempfile("figureforge-audit-renders-")
 dir.create(render_dir, recursive = TRUE)
 

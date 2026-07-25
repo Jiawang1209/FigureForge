@@ -36,6 +36,7 @@ files <- files[
       perl = TRUE
     )
 ]
+files <- files[file.exists(file.path(repo_root, files))]
 for (relative in files) {
   source_path <- file.path(repo_root, relative)
   target_path <- file.path(clean_root, relative)

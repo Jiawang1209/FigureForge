@@ -80,6 +80,20 @@ stopifnot(sum(grepl(
   perl = TRUE
 )) == 12L)
 
+tracked <- system2(
+  "git",
+  c("-C", shQuote(repo_root), "ls-files"),
+  stdout = TRUE,
+  stderr = TRUE
+)
+stopifnot(is.null(attr(tracked, "status")))
+tracked <- tracked[file.exists(file.path(repo_root, tracked))]
+stopifnot(!any(grepl(
+  "(^|/)(reproduction|original)\\.",
+  tracked,
+  perl = TRUE
+)))
+
 archive_path <- file.path(output_dir, "figureforge-skill-1.0.0.tar.gz")
 package <- package_figureforge_skill(
   repo_root,

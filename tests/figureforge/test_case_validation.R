@@ -17,8 +17,15 @@ source(file.path(
   "lib",
   "case_validation.R"
 ))
+source(file.path(
+  repo_root,
+  "tests",
+  "figureforge",
+  "helpers",
+  "materialize_case_fixtures.R"
+))
 
-fixtures_dir <- file.path(repo_root, "tests", "fixtures", "figureforge", "cases")
+fixtures_dir <- materialize_case_fixtures(repo_root)
 valid_dir <- file.path(fixtures_dir, "authentic-public")
 scaffold_dir <- file.path(fixtures_dir, "scaffolded")
 

@@ -19,8 +19,15 @@ source(file.path(
   "lib",
   "adaptation_validation.R"
 ))
+source(file.path(
+  repo_root,
+  "tests",
+  "figureforge",
+  "helpers",
+  "materialize_case_fixtures.R"
+))
 
-fixtures_dir <- file.path(repo_root, "tests", "fixtures", "figureforge", "cases")
+fixtures_dir <- materialize_case_fixtures(repo_root)
 catalog <- build_case_catalog(fixtures_dir)
 
 stopifnot(!"_template" %in% catalog$case_id)
