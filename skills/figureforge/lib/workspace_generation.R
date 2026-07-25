@@ -129,8 +129,17 @@ write_mapping_draft <- function(metadata, path, mapping_path = NULL) {
   if (!"required" %in% names(mapping)) {
     mapping$required <- mapping$role %in% metadata$required_roles$role
   }
+  package_lines <- paste0("- ", metadata$required_packages)
+  if (length(package_lines) == 0L) package_lines <- "- base"
   lines <- c(
-    "# Adaptation Field Mapping",
+    "# Adaptation Mapping",
+    "",
+    "## Selected Case",
+    "",
+    paste0("- Case ID: `", metadata$case_id, "`"),
+    paste0("- Title: ", metadata$title_en, " / ", metadata$title_zh),
+    "",
+    "## Field Mapping",
     "",
     "Complete and review this mapping before rendering.",
     "",
@@ -156,6 +165,23 @@ write_mapping_draft <- function(metadata, path, mapping_path = NULL) {
       )
     )
   }
+  lines <- c(
+    lines,
+    "",
+    "## Transformations",
+    "",
+    "Record executable renames, derived fields, units, and factor ordering.",
+    "",
+    "## Required R Packages",
+    "",
+    package_lines,
+    "",
+    "## Run Command",
+    "",
+    "```bash",
+    "/usr/local/bin/Rscript plot.R input.csv output.pdf",
+    "```"
+  )
   writeLines(lines, path, useBytes = TRUE)
 }
 

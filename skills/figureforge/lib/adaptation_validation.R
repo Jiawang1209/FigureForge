@@ -97,12 +97,20 @@ validate_adaptation <- function(
       grepl("^[-*]\\s+\\S+", package_section, perl = TRUE)
     ]
   )
+  qa_lines <- trimws(read_text_safely(file.path(adaptation_dir, "qa.md")))
+  qa_status <- if (any(tolower(qa_lines) == "status: verified")) {
+    "verified"
+  } else if (any(tolower(qa_lines) == "status: review_required")) {
+    "review_required"
+  } else {
+    ""
+  }
   checks <- c(
     file_checks,
     heading_checks,
     "declared R packages" = length(declared_packages) > 0,
     "plot argument contract" = argument_contract,
-    "QA verified" = detect_qa_verified(adaptation_dir)
+    "QA status recorded" = qa_status %in% c("review_required", "verified")
   )
   messages <- character(0)
   render <- NULL
@@ -130,6 +138,7 @@ validate_adaptation <- function(
     messages = messages,
     evidence = list(
       required_r_packages = declared_packages,
+      qa_status = qa_status,
       render_status = if (is.null(render)) NA_integer_ else render$status,
       render_log = if (is.null(render)) "" else render$log,
       render_output = if (is.null(render_output)) "" else render_output

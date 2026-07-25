@@ -1,0 +1,60 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -ne 1 ]; then
+  echo "Usage: run_demo.sh EXTERNAL_OUTPUT_DIR" >&2
+  exit 2
+fi
+
+RSCRIPT=/usr/local/bin/Rscript
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
+OUTPUT_DIR=$1
+PREP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/figureforge-demo.XXXXXX")
+trap 'rm -rf "$PREP_DIR"' EXIT HUP INT TERM
+
+CHINESE_INPUT="$PREP_DIR/input-zh.csv"
+MAPPING="$PREP_DIR/mapping.csv"
+MATCH_REPORT="$PREP_DIR/schema-match.csv"
+
+"$RSCRIPT" "$SCRIPT_DIR/generate_input.R" "$CHINESE_INPUT"
+printf '%s\n' \
+  'role,input_column' \
+  'time,时间' \
+  'estimate,均值' \
+  'lower,下限' \
+  'upper,上限' \
+  'group,处理组' >"$MAPPING"
+
+"$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/match_schema.R" \
+  --case public-timeseries-band \
+  --input "$CHINESE_INPUT" \
+  --mapping "$MAPPING" \
+  --output "$MATCH_REPORT"
+
+"$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/create_adaptation.R" \
+  --case public-timeseries-band \
+  --input "$CHINESE_INPUT" \
+  --mapping "$MAPPING" \
+  --workspace "$OUTPUT_DIR"
+
+"$RSCRIPT" "$SCRIPT_DIR/generate_input.R" \
+  --canonicalize "$OUTPUT_DIR/input.csv" "$PREP_DIR/input-canonical.csv"
+mv "$PREP_DIR/input-canonical.csv" "$OUTPUT_DIR/input.csv"
+cp "$MATCH_REPORT" "$OUTPUT_DIR/schema-match.csv"
+
+"$RSCRIPT" "$OUTPUT_DIR/plot.R" \
+  "$OUTPUT_DIR/input.csv" \
+  "$OUTPUT_DIR/output.pdf"
+
+"$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/visual_qa.R" \
+  --render "$OUTPUT_DIR/output.pdf" \
+  --report "$OUTPUT_DIR/visual-qa.json"
+
+"$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/validate_adaptation.R" \
+  "$OUTPUT_DIR" \
+  --render \
+  --output "$OUTPUT_DIR/validation-output.pdf" \
+  --rscript "$RSCRIPT"
+
+echo "FigureForge public demo: PASS"
