@@ -43,6 +43,21 @@ assert_absent <- function(text, phrase, label) {
     stop(label, " contains forbidden phrase: ", phrase, call. = FALSE)
   }
 }
+assert_artifact_return_block <- function(text, label) {
+  artifact_block <- paste0(
+    "return:[[:blank:]]*(?:\\r?\\n[[:blank:]]*)+",
+    "-[[:blank:]]*`?plot\\.r`?[[:blank:]]*",
+    "(?:\\r?\\n[[:blank:]]*)+-[[:blank:]]*`?plot\\.png`?[[:blank:]]*",
+    "(?:\\r?\\n[[:blank:]]*)+-[[:blank:]]*`?plot\\.pdf`?"
+  )
+  if (!grepl(artifact_block, text, ignore.case = TRUE, perl = TRUE)) {
+    stop(
+      label,
+      " must couple return: with plot.R, plot.png, and plot.pdf bullets",
+      call. = FALSE
+    )
+  }
+}
 frontmatter_end <- which(skill_lines[-1L] == "---")[[1L]] + 1L
 frontmatter <- skill_lines[2L:(frontmatter_end - 1L)]
 description <- sub(
@@ -67,22 +82,21 @@ assert_contains(
   "rscript plot.r <input-file> <output-directory>",
   "SKILL.md"
 )
-assert_contains(
-  skill_plain_lower,
-  "return plot.r, plot.png, and plot.pdf.",
-  "SKILL.md"
-)
+assert_artifact_return_block(skill_text, "SKILL.md")
 assert_contains(
   skill_plain_lower,
   paste(
-    "choose one primary case for overall composition;",
-    "use secondary cases only for optional local patterns."
+    "choose one primary case for overall composition and",
+    "use secondary cases only for useful local patterns."
   ),
   "SKILL.md"
 )
 assert_contains(
   skill_plain_lower,
-  "ask only when unresolved ambiguity changes scientific meaning.",
+  paste(
+    "ask the user only when unresolved ambiguity would change",
+    "the scientific meaning."
+  ),
   "SKILL.md"
 )
 assert_contains(
@@ -118,7 +132,7 @@ default_prompt_lower <- tolower(default_prompt)
 agent_prompt_requirements <- c(
   "$figureforge",
   "inspect the real data",
-  "choose one primary case",
+  "choose a primary case",
   "optional secondary patterns",
   "write and run a standalone plot.r",
   "return plot.r, plot.png, and plot.pdf"
