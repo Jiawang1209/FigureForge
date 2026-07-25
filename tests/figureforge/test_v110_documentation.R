@@ -123,6 +123,16 @@ for (harness in c(
 }
 
 verifier <- read_document("scripts/verify_figureforge_v110.sh")
+verifier_lines <- readLines(
+  verifier_path,
+  warn = FALSE,
+  encoding = "UTF-8"
+)
+verifier_nonempty_lines <- verifier_lines[nzchar(trimws(verifier_lines))]
+stopifnot(identical(
+  tail(verifier_nonempty_lines, 1L),
+  'echo "FigureForge Skill v1.1.0 acceptance: PASS"'
+))
 verifier_terms <- c(
   "FIGUREFORGE_RSCRIPT",
   "FIGUREFORGE_V110_OUTPUT_DIR",
