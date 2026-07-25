@@ -12,6 +12,52 @@ FigureForge 把真实的论文配图复现,沉淀为可复用、可由 AI 驱动
 
 ---
 
+## FigureForge Skill 1.0.0
+
+公开 v1 版本不依赖私有案例库即可独立使用，包含 12 个公开案例、
+24 个合成压力测试夹具、中英文 schema 检索、依赖诊断、受保护的外部迁移
+工作区、非权威视觉 QA 和基于 allowlist 的安全打包。
+
+所有随包数据均为生成的示例，并声明 `synthetic_test_fixture: true`，不承载
+科研结论。自动 QA 只能保留 `Status: review_required`，不能授予 verified
+状态。本地 165 个案例组成的私有案例库不会被分发。MCP 状态为 planned，
+尚未实现。
+
+从仓库根目录执行公开工作流：
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R
+/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+  --public --query "相关性 heatmap" --limit 5
+/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+  --case public-timeseries-band --input <input.csv> --output <match.csv>
+/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+  --case public-timeseries-band --input <input.csv> \
+  --workspace <external_adaptation_dir>
+/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+  --render <external_adaptation_dir>/output.pdf \
+  --report <external_report_dir>/visual-qa.json
+```
+
+运行固定种子的中文列名演示：
+
+```bash
+sh examples/public-demo/run_demo.sh /tmp/figureforge-public-demo
+```
+
+生成仅包含公开资产的压缩包和清单：
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/package_skill.R \
+  --archive /tmp/figureforge-skill-1.0.0.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.0-manifest.csv
+```
+
+安装时可将 `skills/figureforge/` 整体复制到 Codex Skills 目录，或解压打包
+产物。升级时先确保所有迁移工作区都位于 Skill 目录之外，再整体替换已安装
+版本。发布边界与验证证据见
+[`docs/figureforge-skill-v1-release.md`](docs/figureforge-skill-v1-release.md)。
+
 ## 为什么是 FigureForge
 
 通用的"画一张 Nature 风格的图"提示,给你的只是一次猜测。FigureForge 给你的是**证据**:
@@ -293,12 +339,12 @@ PDF、书面 QA 和独立重渲染结果，保存在被忽略的
 
 ## 当前状态
 
-**完整 Skill 案例库已实现并通过本地验证。** 案例检索、索引、依赖诊断、安全
-渲染、案例验证、迁移验证、模板、参考文档和三组新数据证明已经就绪。
-165 个私有案例中有 152 个满足完整契约，其余 13 个具有通过校验的案例级
-阻塞记录，待处理数为 0。公开精选案例集仍在整理；MCP Server 仍是规划项且
-尚未实现，后续输入边界已经文档化，本次案例库验收没有加入任何 MCP 代码。
+**FigureForge Skill 1.0.0 已进入公开发布候选状态。** 当前包含 12 个公开
+合成案例和 24 个压力测试夹具。165 个私有案例中有 152 个满足完整契约，
+其余 13 个具有通过校验的案例级阻塞记录，待处理数为 0；私有案例库不进入
+公开包。MCP Server 仍为 planned 且尚未实现。
 
 ## 许可
 
-尚未选定许可协议。**在公开复用或再分发前请先添加许可。** 注意:个别案例可能引用受其自身条款约束的第三方配图与数据。
+公开框架采用仓库 MIT [`LICENSE`](LICENSE)。每个公开案例另有明确的
+`distribution.yml`。私有案例和第三方源素材不属于公开发布范围。

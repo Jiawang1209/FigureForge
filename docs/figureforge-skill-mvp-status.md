@@ -4,13 +4,18 @@ Date: 2026-07-25
 
 ## Outcome
 
-The FigureForge Skill and complete private corpus are locally verifiable. MCP
-remains planned and unimplemented.
+FigureForge Skill 1.0.0 is a public, independently usable release candidate.
+The complete private corpus remains a local optional extension. MCP remains
+planned and unimplemented.
 
 ## Evidence
 
 | Acceptance area | Result |
 | --- | --- |
+| Public gallery | 12 redistributable synthetic cases with machine-readable metadata |
+| Stress suite | 24 synthetic stress fixtures across all 12 public families |
+| Public workflow | doctor, bilingual search, schema match, protected workspace, render, visual QA, and independent validation |
+| Public packaging | allowlist manifest and archive exclude the private corpus, local indexes, source figures, and generated output |
 | Private corpus audit | 165 real case directories classified independently |
 | Completed representative cases | 152 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
 | Current corpus terminal counts | 152 completed, 13 validated blockers, 0 pending after a rendered 165-case audit |
@@ -24,27 +29,26 @@ remains planned and unimplemented.
 
 ```bash
 /usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
-  --query "<terms>" --completed-only
+  --public --query "<terms>"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/check_dependencies.R \
-  --case-dir "<case_dir>" --strict
+/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R \
+  --case "<public-case-id>" --strict
 
-/usr/local/bin/Rscript skills/figureforge/scripts/render_case.R \
-  "<case_dir>" --input "<input_csv>" --output "<output_path>"
+/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+  --case "<public-case-id>" --input "<input_csv>" --output "<match.csv>"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/validate_case.R \
-  "<case_dir>" --complete --render --output "<external_output>"
+/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+  --case "<public-case-id>" --input "<input_csv>" \
+  --workspace "<external_adaptation>"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
-  "<adaptation_dir>" --render --output "<external_output>"
+/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+  --render "<external_adaptation>/output.pdf" \
+  --report "<external_report>/visual-qa.json"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/validate_blocker.R \
-  "<case_dir>"
+/usr/local/bin/Rscript skills/figureforge/scripts/package_skill.R \
+  --archive "<external_archive>" --manifest "<external_manifest>"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/plan_case_batches.R \
-  --readiness "<case-readiness.csv>" \
-  --output "<batch-manifest.csv>" \
-  --batch-size 20
+sh examples/public-demo/run_demo.sh "<external_demo_output>"
 ```
 
 Complete-corpus Waves 1 through 8 added 137 fully verified cases and classified

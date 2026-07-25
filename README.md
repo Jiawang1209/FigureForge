@@ -12,6 +12,54 @@ The first release is **R / ggplot2 first**, built from a long-running figure-rep
 
 ---
 
+## FigureForge Skill 1.0.0
+
+The public v1 release is independently usable without the private corpus. It
+ships 12 public cases, 24 synthetic stress fixtures, bilingual schema-aware
+search, dependency diagnosis, protected external adaptation workspaces,
+non-authoritative visual QA, and allowlist-based packaging.
+
+All shipped case datasets are generated examples marked
+`synthetic_test_fixture: true`; they make no scientific claims. Automated QA
+keeps `Status: review_required` and cannot grant verified status. The local
+165-case private corpus is not distributed. MCP is planned and unimplemented.
+
+Run the public workflow from the repository root:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R
+/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+  --public --query "相关性 heatmap" --limit 5
+/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+  --case public-timeseries-band --input <input.csv> --output <match.csv>
+/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+  --case public-timeseries-band --input <input.csv> \
+  --workspace <external_adaptation_dir>
+/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+  --render <external_adaptation_dir>/output.pdf \
+  --report <external_report_dir>/visual-qa.json
+```
+
+Run the deterministic Chinese-column demo:
+
+```bash
+sh examples/public-demo/run_demo.sh /tmp/figureforge-public-demo
+```
+
+Build a public-only archive and manifest:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/package_skill.R \
+  --archive /tmp/figureforge-skill-1.0.0.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.0-manifest.csv
+```
+
+Install by copying `skills/figureforge/` into your Codex Skills directory, or
+extract the packaged archive. To upgrade, preserve every adaptation outside
+the Skill directory and replace the entire installed version. See
+[`docs/figureforge-skill-v1-release.md`](docs/figureforge-skill-v1-release.md)
+for the release boundary and evidence.
+
 ## Why FigureForge
 
 Generic "make a Nature-style figure" prompts give you a guess. FigureForge gives you **evidence**:
@@ -314,15 +362,16 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 ## Status
 
-**Complete Skill corpus implemented and locally verified.** Discovery, indexing, dependency
-diagnosis, safe rendering, case validation, adaptation validation, templates,
-references, and three new-data proofs are in place. One hundred fifty-two of
-165 private cases meet the complete contract; the other 13 have validated,
-case-specific blocker records, and none remain pending. The public curated
-case set is still being prepared. The MCP server remains planned and
-unimplemented; its future input boundary is documented, but no MCP code was
-added during corpus acceptance.
+**FigureForge Skill 1.0.0 is the public release candidate.** It includes 12
+public synthetic cases and 24 stress fixtures. One hundred fifty-two of 165
+private cases meet the complete local contract; the other 13 have validated,
+case-specific blocker records, and none remain pending. The private corpus is
+not part of the public package. The MCP server remains planned and
+unimplemented.
 
 ## License
 
-No license has been selected yet. **Add a license before public reuse or redistribution.** Note that individual cases may reference third-party figures and data under their own terms.
+The public framework is available under the repository MIT
+[`LICENSE`](LICENSE). Each public case has its own explicit
+`distribution.yml`. Private cases and third-party source assets are not
+covered by the public release.

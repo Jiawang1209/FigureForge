@@ -1,0 +1,136 @@
+# FigureForge Skill 1.0.0 Release
+
+Date: 2026-07-25
+
+## Release Boundary
+
+FigureForge Skill 1.0.0 is a public R-first Skill that runs without the local
+private corpus. The public framework uses the repository MIT license. Every
+public case is separately allowlisted by `distribution.yml`, uses generated
+data marked `synthetic_test_fixture: true`, and remains
+`Status: review_required`.
+
+The 165-case private corpus is an optional local extension and is not packaged.
+The release also excludes third-party source figures, original or reproduction
+images, private indexes, audit reports, logs, and renders. Automated visual QA
+never grants verified status. MCP is planned and unimplemented.
+
+## Public Cases
+
+The 12 public case IDs are:
+
+1. `public-bar-grouped`
+2. `public-correlation-heatmap`
+3. `public-distribution-raincloud`
+4. `public-enrichment-bubble`
+5. `public-gene-structure`
+6. `public-multipanel`
+7. `public-network`
+8. `public-phylogeny-annotation`
+9. `public-scatter-fit`
+10. `public-survival`
+11. `public-timeseries-band`
+12. `public-volcano`
+
+Together they cover grouped/stacked bars, distribution and raincloud
+comparisons, fitted scatter, uncertainty-band time series, correlation
+heatmaps, enrichment bubbles, volcano plots, networks, survival, annotated
+phylogeny, gene feature tracks, and multi-panel composition.
+
+## Synthetic Stress Fixtures
+
+The 24 fixture IDs are:
+
+- `bar-chinese-columns`
+- `bar-renamed-en`
+- `distribution-missing-values`
+- `distribution-outliers`
+- `enrichment-sparse-groups`
+- `enrichment-zero-p`
+- `gene-negative-coordinate`
+- `gene-overlapping-features`
+- `heatmap-invalid-correlation`
+- `heatmap-reordered-factors`
+- `multipanel-many-facets`
+- `multipanel-missing-optional`
+- `network-chinese-labels`
+- `network-unknown-node`
+- `phylogeny-missing-parent`
+- `phylogeny-reordered-nodes`
+- `scatter-long-labels`
+- `scatter-missing-required`
+- `survival-imbalanced-groups`
+- `survival-invalid-probability`
+- `timeseries-duplicate-key`
+- `timeseries-irregular-dates`
+- `volcano-large-input`
+- `volcano-negative-p`
+
+They include 15 successful adaptations and 9 expected failures covering
+missing roles, duplicate keys, invalid values, and referential integrity.
+
+## Public Workflow
+
+The stable command boundary is:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R
+/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+  --public --query "<English or Chinese terms>"
+/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+  --case "<public-case-id>" --input "<input.csv>" --output "<match.csv>"
+/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+  --case "<public-case-id>" --input "<input.csv>" \
+  --workspace "<external_adaptation>"
+/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+  --render "<external_adaptation>/output.pdf" \
+  --report "<external_report>/visual-qa.json"
+/usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
+  "<external_adaptation>" --render --output "<independent_output>"
+```
+
+The public demo is:
+
+```bash
+sh examples/public-demo/run_demo.sh /tmp/figureforge-public-demo
+```
+
+## Package and Upgrade
+
+Build the allowlisted package outside the repository:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/package_skill.R \
+  --archive /tmp/figureforge-skill-1.0.0.tar.gz \
+  --manifest /tmp/figureforge-skill-1.0.0-manifest.csv
+```
+
+Install by copying `skills/figureforge/` into a Codex Skills directory or by
+extracting the archive. Keep user adaptations outside the installed Skill.
+Upgrade by replacing the whole installed version so old and new library files
+cannot mix.
+
+## Validation
+
+Stage-level verification runs every `tests/figureforge/*.R` test, parses every
+public R file, runs the official `quick_validate.py`, and checks
+`git diff --check`. The final clean-clone verifier is added in the release
+acceptance stage; this document will record its exact count and PASS line after
+that stage executes.
+
+No archive, render, private case, private index, or audit output is committed.
+
+## Future MCP Boundary
+
+A future local-first MCP may wrap the stable public inputs:
+
+- explicit public or authorized local case root;
+- English or Chinese query plus optional input schema;
+- public case ID and explicit role mapping;
+- external input, workspace, render, report, and validation paths;
+- structured dependency, match, render, and QA-check results;
+- independent readiness and distribution states.
+
+The MCP must default to public assets, fail closed on distribution, never
+return private data or third-party images, and never treat automated checks as
+human verification. No MCP Server is implemented in 1.0.0.
