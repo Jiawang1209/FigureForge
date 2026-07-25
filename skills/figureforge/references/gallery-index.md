@@ -1,8 +1,30 @@
 # Gallery Index
 
-The gallery index is FigureForge's local discovery layer. The private case
-corpus is not committed; generate `case-index.csv` from the corpus available on
-the current machine.
+The tracked public gallery is FigureForge's default discovery layer. It
+contains 12 redistributable cases under `public-cases/`; every dataset is a
+declared synthetic fixture with `Status: review_required`.
+
+## Public Search
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+  --public \
+  --query "相关性 热图 correlation" \
+  --explain-scores \
+  --limit 5
+```
+
+Add `--schema "<input.csv>"` to rank by required-role compatibility. The
+deterministic tracked catalog is `references/public-case-index.csv`.
+
+The 24 synthetic stress fixtures under `tests/fixtures/figureforge/stress`
+exercise compatible and intentionally invalid adaptations. They are test
+inputs, not gallery cases and not scientific evidence.
+
+## Optional Private Index
+
+Private cases are optional local extensions and are not committed. Generate
+`case-index.csv` only from an explicitly available local corpus:
 
 ## Generate
 
@@ -15,7 +37,7 @@ the current machine.
 The generated CSV is intentionally gitignored because paths and case metadata
 may describe private assets.
 
-## Search
+Search that explicit private root separately:
 
 ```bash
 /usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
@@ -28,6 +50,9 @@ may describe private assets.
 Search matches the case ID, title, English and Chinese chart types, aliases,
 scientific use, schema roles, and R packages. Completed cases receive a ranking
 bonus, but scientific fit and schema compatibility still require inspection.
+
+Public search uses the machine-readable `case.yml` taxonomy and reports score
+components. Private search uses the legacy Markdown-derived local catalog.
 
 ## Index Fields
 
@@ -59,7 +84,7 @@ Do not select by chart name alone. Compare candidates in this order:
 6. installed dependencies;
 7. distribution boundary.
 
-The final rendered local audit records 152 completed cases: the 15-case Skill
+An optional local audit records 152 completed cases: the 15-case Skill
 MVP plus 137 verified cases from eight complete-corpus waves. In addition to the
 original families, the verified private set now includes multi-track GO
 circles, fan trees with five bar rings, aligned tree/composition panels,
@@ -85,3 +110,5 @@ For full-corpus work, run `plan_case_batches.R` against a rendered audit. A
 pending case may use `blocked_source_missing` or another supported blocker only
 after the record passes `validate_blocker.R`; an unvalidated note remains
 `terminal_outcome = pending`.
+
+Automated search and execution evidence do not constitute human visual QA.

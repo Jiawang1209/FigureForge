@@ -1,7 +1,9 @@
 # Adaptation Contract
 
-An adaptation proves that a verified case can migrate to different data. Keep
-the workspace outside the source case directory.
+An adaptation tests whether a public case can migrate to different data. Keep
+the workspace outside every source case directory. Public gallery data and
+synthetic stress fixtures are examples only; user input is copied into the
+external workspace.
 
 ## Required Files
 
@@ -11,6 +13,7 @@ adaptation-name/
 ├── mapping.md
 ├── plot.R
 ├── qa.md
+├── adaptation.yml
 └── output.pdf or output.png
 ```
 
@@ -18,7 +21,10 @@ adaptation-name/
 - `mapping.md`: selected case, role-to-column mapping, transformations,
   dependencies, and exact run command.
 - `plot.R`: migrated case code accepting input and output paths.
-- `qa.md`: explicit data, visual, reproducibility, export, and limit review.
+- `qa.md`: starts at `Status: review_required`; it records data, visual,
+  reproducibility, export, and limit review.
+- `adaptation.yml`: source case ID, script hash, FigureForge version, input
+  origin, and QA state.
 - output: a fresh non-empty render.
 
 ## mapping.md Headings
@@ -56,7 +62,7 @@ only to `output_path`.
 ```markdown
 # Adaptation QA
 
-Status: verified
+Status: review_required
 
 ## Data
 
@@ -69,8 +75,18 @@ Status: verified
 ## Limits
 ```
 
-Do not set `Status: verified` until the rendered output has been visually
-reviewed. Record any intentional departure from the selected case.
+Automated checks never grant verified status. Do not set `Status: verified`
+until a human has visually reviewed the output and its scientific mapping.
+Record any intentional departure from the selected case.
+
+Create the protected workspace with:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+  --case "<public-case-id>" \
+  --input "<user_input.csv>" \
+  --workspace "<external_adaptation_dir>"
+```
 
 ## Validation
 
@@ -83,4 +99,6 @@ reviewed. Record any intentional departure from the selected case.
 ```
 
 Validation checks required files and headings, declared packages, the standard
-argument contract, verified QA, fresh execution, and a non-empty output.
+argument contract, human-reviewed QA, fresh execution, and a non-empty output.
+The fresh render is independent execution evidence, not a substitute for the
+human visual review.

@@ -1,4 +1,4 @@
 interface:
   display_name: "FigureForge"
-  short_description: "Adapt scientific figures from verified cases"
-  default_prompt: "Use $figureforge to select a verified case, map my data, render the adaptation, and record QA."
+  short_description: "Adapt data with public scientific figure patterns"
+  default_prompt: "Use $figureforge to inspect my data, search the public gallery, create an external adaptation, render it, and keep QA at review_required until human review."

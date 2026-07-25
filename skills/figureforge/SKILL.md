@@ -5,20 +5,28 @@ description: Use when selecting, reproducing, adapting, or QA-checking publicati
 
 # FigureForge
 
-FigureForge turns verified scientific-figure reproductions into evidence-based
-new-data adaptations. Select the closest real case, inspect its actual
-metadata, code, and data, map the user's fields explicitly, migrate the
-case-specific script, render, and record QA.
+FigureForge turns public scientific-figure patterns into auditable new-data
+adaptations. Select the closest public case, inspect its metadata, code, and
+synthetic data, map the user's fields explicitly, migrate the case-specific
+script, render, and record QA.
+
+The installed public gallery is the default and is independently usable.
+Every shipped dataset declares `synthetic_test_fixture: true`; it demonstrates
+software behavior and carries no scientific claim. `Status: review_required`
+is the safe initial QA state, and automated visual QA never grants verified
+status. Private cases are optional local extensions.
+MCP is planned and unimplemented.
 
 ## Non-Negotiable Rules
 
-- Prefer a verified real case over a generic plotting scaffold.
-- Read `case.md`, `data.csv`, `plot.R`, and `qa.md` before adapting a case.
+- Prefer a schema-compatible public case over a generic plotting scaffold.
+- Read `case.md`, `case.yml`, `data.csv`, `plot.R`, `qa.md`, and
+  `distribution.yml` before adapting a public case.
 - Never infer completion from file presence or a successful render alone.
 - Work outside the source case directory; do not overwrite private inputs,
   original figures, reproductions, or source scripts.
-- Treat a case as `private_only` unless `distribution.yml` explicitly allows
-  redistribution of named assets.
+- Treat every local extension as `private_only` unless `distribution.yml`
+  explicitly allows redistribution of named assets.
 - A verified QA and a valid blocker cannot coexist.
 - Use `/usr/local/bin/Rscript` for all R workflows in this repository.
 - If no case matches the scientific intent and schema closely enough, state
@@ -43,18 +51,37 @@ Chinese columns merely to fit a case.
 
 ### 1. Find candidate cases
 
-Search English and Chinese metadata, schema roles, aliases, and dependencies:
+Start by checking the runtime and public gallery:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R
+
+/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+  --public \
+  --query "<chart, science, or schema terms>" \
+  --explain-scores \
+  --limit 5
+```
+
+Search accepts English or Chinese scientific intent, family, alias, or role
+terms. Add `--schema "<input.csv>"` to include input-column compatibility in
+the score. The canonical tracked catalog is
+`references/public-case-index.csv`; the default public case root is
+`skills/figureforge/public-cases`.
+
+Private cases are optional local extensions. Use an explicit root only when
+the user has authorized access:
 
 ```bash
 /usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
-  --cases-dir skills/figureforge/cases \
+  --cases-dir "<private_cases_dir>" \
   --query "<chart, science, or schema terms>" \
   --completed-only \
   --limit 5
 ```
 
-If no completed case matches, repeat without `--completed-only`, but do not
-present a scaffolded or structurally incomplete case as verified.
+Never present a scaffolded, structurally incomplete, or private case as a
+distributed public asset.
 
 Rank candidates by:
 
@@ -67,15 +94,15 @@ Rank candidates by:
 
 ### 2. Inspect the selected case
 
-Read the selected `case.md`, `data.csv`, `plot.R`, `qa.md`, and any authentic
-source files needed to understand transformations. Compare the reference and
-reproduction visually when available.
+Read the selected `case.md`, `case.yml`, `data.csv`, `plot.R`, `qa.md`, and
+`distribution.yml`. Public data are synthetic fixtures; inspect them as schema
+examples, not scientific evidence.
 
 Check dependencies before migration:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/check_dependencies.R \
-  --case-dir "<case_dir>" \
+/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R \
+  --case "<public-case-id>" \
   --strict
 ```
 
@@ -84,19 +111,27 @@ implementation is used, document the visible differences and verify them.
 
 ### 3. Create an isolated adaptation workspace
 
-Create a new directory outside `skills/figureforge/cases/`. It must contain:
+First generate a schema-match report:
 
-```text
-input.csv
-plot.R
-mapping.md
-qa.md
-output.pdf or output.png
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+  --case "<public-case-id>" \
+  --input "<user_input.csv>" \
+  --output "<external_workspace_parent>/schema-match.csv"
 ```
 
-Use `references/adaptation-contract.md` for exact file and heading contracts.
-Copy only code that may be used locally; never redistribute private case data,
-reference images, or reproductions.
+Then create a protected adaptation workspace outside the Skill:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+  --case "<public-case-id>" \
+  --input "<user_input.csv>" \
+  --workspace "<external_adaptation_dir>"
+```
+
+The generator rejects any workspace overlapping public or private source roots
+and refuses a non-empty destination. Use
+`references/adaptation-contract.md` for the exact files and headings.
 
 ### 4. Map fields before changing code
 
@@ -142,7 +177,36 @@ Render with explicit paths:
   "<adaptation_dir>/output.pdf"
 ```
 
-Then perform a fresh machine-verifiable render:
+### 7. Perform visual QA
+
+Create a non-authoritative machine report outside source case directories:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+  --render "<adaptation_dir>/output.pdf" \
+  --report "<external_report_dir>/visual-qa.json"
+```
+
+Add `--reference "<trusted_reference>"` only when redistribution and access
+permit it. The report status remains `review_required`,
+`tool_check_failed`, or `not_applicable`; it never grants verified status and
+never edits `qa.md`.
+
+Then use `references/qa-checklist.md` for human review. Verify:
+
+- data coverage, units, missingness, derived values, and factor order;
+- scientific meaning of every aesthetic and annotation;
+- fidelity to the selected case's useful structure;
+- legibility, clipping, overlaps, scales, legends, and panel alignment;
+- output format, dimensions, and resolution;
+- every remaining limitation.
+
+Only a human or explicitly authorized visual review may replace
+`Status: review_required` with `Status: verified`.
+
+### 8. Independently re-render
+
+After the human QA record is complete, validate with a separate output:
 
 ```bash
 /usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
@@ -152,21 +216,10 @@ Then perform a fresh machine-verifiable render:
   --rscript /usr/local/bin/Rscript
 ```
 
-### 7. Perform visual QA
+This fresh render is reproducibility evidence; it does not perform or replace
+human visual review.
 
-Use `references/qa-checklist.md`. Verify:
-
-- data coverage, units, missingness, derived values, and factor order;
-- scientific meaning of every aesthetic and annotation;
-- fidelity to the selected case's useful structure;
-- legibility, clipping, overlaps, scales, legends, and panel alignment;
-- output format, dimensions, and resolution;
-- every remaining limitation.
-
-Only a human or explicitly authorized visual review may set
-`Status: verified`.
-
-### 8. Report the result
+### 9. Report the result
 
 Return:
 

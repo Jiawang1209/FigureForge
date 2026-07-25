@@ -2,6 +2,10 @@
 
 Run this checklist before calling a FigureForge adaptation complete.
 
+Start public adaptations with `Status: review_required`. Automated checks can
+inspect file structure, dimensions, blank output, and reference dimensions,
+but automated visual QA never grants verified status.
+
 ## Data
 
 - Required columns are present or explicitly derived.
@@ -64,6 +68,18 @@ State every unresolved visual, dependency, or source-data limitation.
 
 Set `Status: verified` only after a human or explicitly authorized visual
 review. A successful render cannot set this status automatically.
+
+Before human review, generate an external automated report:
+
+```bash
+/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+  --render "<adaptation_dir>/output.pdf" \
+  --report "<external_report_dir>/visual-qa.json"
+```
+
+Its status remains `review_required`, `tool_check_failed`, or
+`not_applicable`. Synthetic stress fixtures may exercise this workflow, but
+they cannot establish scientific or visual correctness.
 
 Distribution review is separate from visual QA. Record it in
 `distribution.yml`:
