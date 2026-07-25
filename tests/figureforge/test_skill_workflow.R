@@ -261,15 +261,32 @@ maintainer_path <- file.path(
   "references",
   "maintainer-workflow.md"
 )
-stopifnot(file.exists(maintainer_path))
+if (!file.exists(maintainer_path)) {
+  stop("Missing required path: ", maintainer_path, call. = FALSE)
+}
 maintainer_reference <- read_repo_text(
   "skills/figureforge/references/maintainer-workflow.md"
 )
 
-stopifnot(grepl("validate_blocker.R", maintainer_reference, fixed = TRUE))
-stopifnot(grepl("plan_case_batches.R", maintainer_reference, fixed = TRUE))
-stopifnot(!grepl("validate_blocker.R", skill_text, fixed = TRUE))
-stopifnot(!grepl("plan_case_batches.R", skill_text, fixed = TRUE))
+maintainer_commands <- c(
+  "validate_blocker.R",
+  "plan_case_batches.R",
+  "audit_cases.R",
+  "package_skill.R",
+  "verify_release.R"
+)
+for (command in maintainer_commands) {
+  if (!grepl(command, maintainer_reference, fixed = TRUE)) {
+    stop(
+      "maintainer-workflow.md is missing required command: ",
+      command,
+      call. = FALSE
+    )
+  }
+  if (grepl(command, skill_text, fixed = TRUE)) {
+    stop("SKILL.md contains maintainer-only command: ", command, call. = FALSE)
+  }
+}
 for (document in list(
   gallery_reference,
   blocker_reference,

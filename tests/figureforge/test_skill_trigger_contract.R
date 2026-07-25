@@ -32,6 +32,17 @@ skill_lines <- readLines(skill_path, warn = FALSE, encoding = "UTF-8")
 skill_text <- paste(skill_lines, collapse = "\n")
 skill_lower <- tolower(skill_text)
 skill_plain <- gsub("`", "", gsub("\\s+", " ", skill_text))
+skill_plain_lower <- tolower(skill_plain)
+assert_contains <- function(text, phrase, label) {
+  if (!grepl(phrase, text, fixed = TRUE)) {
+    stop(label, " is missing required phrase: ", phrase, call. = FALSE)
+  }
+}
+assert_absent <- function(text, phrase, label) {
+  if (grepl(phrase, text, fixed = TRUE)) {
+    stop(label, " contains forbidden phrase: ", phrase, call. = FALSE)
+  }
+}
 frontmatter_end <- which(skill_lines[-1L] == "---")[[1L]] + 1L
 frontmatter <- skill_lines[2L:(frontmatter_end - 1L)]
 description <- sub(
@@ -50,18 +61,35 @@ stopifnot(grepl("Chinese or English", description, fixed = TRUE))
 stopifnot(length(strsplit(description, "\\s+")[[1L]]) <= 45L)
 stopifnot(!grepl("then", description, ignore.case = TRUE))
 
-stopifnot(grepl("case-enhanced", skill_lower, fixed = TRUE))
-stopifnot(grepl(
-  "rscript plot.r <input-file> <output-directory>",
+assert_contains(skill_lower, "case-enhanced", "SKILL.md")
+assert_contains(
   skill_lower,
-  fixed = TRUE
-))
-stopifnot(grepl("scientific meaning", skill_lower, fixed = TRUE))
-stopifnot(grepl(
-  "MCP is planned and unimplemented.",
+  "rscript plot.r <input-file> <output-directory>",
+  "SKILL.md"
+)
+assert_contains(
+  skill_plain_lower,
+  "return plot.r, plot.png, and plot.pdf.",
+  "SKILL.md"
+)
+assert_contains(
+  skill_plain_lower,
+  paste(
+    "choose one primary case for overall composition;",
+    "use secondary cases only for optional local patterns."
+  ),
+  "SKILL.md"
+)
+assert_contains(
+  skill_plain_lower,
+  "ask only when unresolved ambiguity changes scientific meaning.",
+  "SKILL.md"
+)
+assert_contains(
   skill_text,
-  fixed = TRUE
-))
+  "MCP is planned and unimplemented.",
+  "SKILL.md"
+)
 stopifnot(!grepl(
   paste(
     "Read case.md, case.yml, data.csv, plot.R, qa.md, and",
@@ -71,19 +99,40 @@ stopifnot(!grepl(
   fixed = TRUE
 ))
 
-agent_text <- paste(
-  readLines(agent_path, warn = FALSE, encoding = "UTF-8"),
-  collapse = "\n"
+agent_lines <- readLines(agent_path, warn = FALSE, encoding = "UTF-8")
+default_prompt_lines <- grep(
+  "^\\s*default_prompt:\\s*",
+  agent_lines,
+  value = TRUE
 )
-agent_lower <- tolower(agent_text)
-stopifnot(grepl("\\$figureforge", agent_text))
-stopifnot(grepl("inspect the real data", agent_lower, fixed = TRUE))
-stopifnot(grepl("primary case", agent_lower, fixed = TRUE))
-stopifnot(grepl("plot.r", agent_lower, fixed = TRUE))
-stopifnot(grepl("plot.png", agent_lower, fixed = TRUE))
-stopifnot(grepl("plot.pdf", agent_lower, fixed = TRUE))
-stopifnot(!grepl("external adaptation", agent_lower, fixed = TRUE))
-stopifnot(!grepl("/usr/local/bin/Rscript", agent_text, fixed = TRUE))
+if (length(default_prompt_lines) != 1L) {
+  stop("openai.yaml must contain exactly one anchored default_prompt", call. = FALSE)
+}
+default_prompt <- trimws(sub(
+  "^\\s*default_prompt:\\s*",
+  "",
+  default_prompt_lines[[1L]]
+))
+default_prompt <- gsub("^['\"]|['\"]$", "", default_prompt)
+default_prompt_lower <- tolower(default_prompt)
+agent_prompt_requirements <- c(
+  "$figureforge",
+  "inspect the real data",
+  "choose one primary case",
+  "optional secondary patterns",
+  "write and run a standalone plot.r",
+  "return plot.r, plot.png, and plot.pdf"
+)
+for (phrase in agent_prompt_requirements) {
+  assert_contains(default_prompt_lower, phrase, "default_prompt")
+}
+for (phrase in c(
+  "mcp server",
+  "external adaptation",
+  "/usr/local/bin/rscript"
+)) {
+  assert_absent(default_prompt_lower, phrase, "default_prompt")
+}
 
 stopifnot(file.exists(live_eval_path))
 stopifnot(identical(
