@@ -47,7 +47,7 @@ current_version <- readLines(
   warn = FALSE,
   encoding = "UTF-8"
 )
-stopifnot(identical(current_version, "1.0.1"))
+stopifnot(identical(current_version, "1.1.0"))
 
 output_dir <- tempfile("figureforge-package-test-")
 dir.create(output_dir, recursive = TRUE)
@@ -89,6 +89,12 @@ stopifnot(!any(grepl(
 )))
 stopifnot(any(
   manifest$package_path == "figureforge/references/public-case-index.csv"
+))
+stopifnot(any(
+  manifest$package_path == "figureforge/references/plotting-workflow.md"
+))
+stopifnot(any(
+  manifest$package_path == "figureforge/references/maintainer-workflow.md"
 ))
 stopifnot(any(manifest$package_path == "figureforge/SKILL.md"))
 stopifnot(any(

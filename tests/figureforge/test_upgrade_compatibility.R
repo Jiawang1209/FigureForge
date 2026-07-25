@@ -28,6 +28,14 @@ for (library_file in c(
   ))
 }
 
+target_version <- readLines(
+  file.path(repo_root, "skills", "figureforge", "VERSION"),
+  warn = FALSE,
+  encoding = "UTF-8"
+)
+stopifnot(length(target_version) == 1L)
+stopifnot(nzchar(target_version))
+
 baseline_commit <- "fe00d2a"
 fixture_path <- file.path(
   repo_root,
@@ -194,17 +202,23 @@ adaptation_mapping <- file.path(adaptation, "mapping.md")
 before_input_hash <- figureforge_sha256(adaptation_input)
 before_mapping_hash <- figureforge_sha256(adaptation_mapping)
 
-release_archive <- file.path(test_root, "figureforge-skill-1.0.1.tar.gz")
+release_archive <- file.path(
+  test_root,
+  paste0("figureforge-skill-", target_version, ".tar.gz")
+)
 release_manifest <- file.path(
   test_root,
-  "figureforge-skill-1.0.1-manifest.csv"
+  paste0("figureforge-skill-", target_version, "-manifest.csv")
 )
 current_package <- package_figureforge_skill(
   repo_root,
   release_archive,
   release_manifest
 )
-staging_root <- file.path(skill_root, ".figureforge-stage-v1.0.1")
+staging_root <- file.path(
+  skill_root,
+  paste0(".figureforge-stage-v", target_version)
+)
 verified <- verify_figureforge_release(
   release_archive,
   release_manifest,
@@ -288,14 +302,14 @@ replace_installed_skill <- function(target, stage, expected_version) {
   invisible(target)
 }
 
-replace_installed_skill(installed, staged_skill, "1.0.1")
+replace_installed_skill(installed, staged_skill, target_version)
 stopifnot(identical(
   readLines(
     file.path(installed, "VERSION"),
     warn = FALSE,
     encoding = "UTF-8"
   ),
-  "1.0.1"
+  target_version
 ))
 stopifnot(identical(
   before_input_hash,
@@ -317,12 +331,12 @@ installed_relative_files <- paste0(
   ))
 )
 v100_package_paths <- baseline_manifest$package_path
-v101_package_paths <- current_package$manifest$package_path
+current_package_paths <- current_package$manifest$package_path
 stopifnot(!any(
-  setdiff(v100_package_paths, v101_package_paths) %in%
+  setdiff(v100_package_paths, current_package_paths) %in%
     installed_relative_files
 ))
-stopifnot(setequal(installed_relative_files, v101_package_paths))
+stopifnot(setequal(installed_relative_files, current_package_paths))
 
 run_installed <- function(script, arguments = character(0)) {
   output <- system2(

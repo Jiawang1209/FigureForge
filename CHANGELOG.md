@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.0 - 2026-07-25
+
+- Refocused the Skill on natural-language, real-data R plotting.
+- Made standalone `plot.R`, `plot.png`, and `plot.pdf` the default delivery,
+  with an independent fresh rerender before handoff.
+- Established one primary case plus optional secondary patterns for focused
+  adaptation without forcing the user's data into a gallery template.
+- Separated the ordinary plotting workflow from the maintainer workflow for
+  blocker validation, corpus audit, packaging, and release verification.
+- Added bounded installed-Skill trigger evaluation and executable plotting
+  artifact evaluation to the release gate.
+- Preserved the v1.0.1 gallery, safety, packaging, upgrade history, private
+  corpus boundary, and the planned and unimplemented MCP boundary.
+
 ## 1.0.1 - 2026-07-25
 
 - Added an install-shaped `.agents/skills/figureforge` archive, packaged demo,
