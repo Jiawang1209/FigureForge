@@ -19,6 +19,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "runtime_resolution.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "distribution_validation.R"
 ))
 source(file.path(
@@ -42,7 +49,7 @@ parse_cli <- function(args) {
     public_cases = NULL,
     output_dir = NULL,
     report = NULL,
-    rscript = "/usr/local/bin/Rscript"
+    rscript = NULL
   )
   index <- 1L
   allowed <- c(
@@ -74,11 +81,12 @@ parse_cli <- function(args) {
 tryCatch(
   {
     options <- parse_cli(commandArgs(trailingOnly = TRUE))
+    runtime <- resolve_rscript(cli_path = options$rscript)
     results <- run_stress_suite(
       options$fixtures,
       options$public_cases,
       options$output_dir,
-      rscript = options$rscript
+      rscript = runtime$path
     )
     dir.create(
       dirname(options$report),

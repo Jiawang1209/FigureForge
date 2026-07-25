@@ -14,6 +14,13 @@ repo_root <- normalizePath(
   file.path(dirname(script_path), "..", "..", ".."),
   mustWork = TRUE
 )
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "runtime_resolution.R"
+))
 source(file.path(repo_root, "skills", "figureforge", "lib", "case_audit.R"))
 source(file.path(
   repo_root,
@@ -51,7 +58,7 @@ parse_cli <- function(args) {
     case_dir = args[[1L]],
     render = FALSE,
     output = NULL,
-    rscript = "/usr/local/bin/Rscript"
+    rscript = NULL
   )
   index <- 2L
   while (index <= length(args)) {
@@ -107,13 +114,14 @@ tryCatch(
     )
 
     if (options$render) {
+      runtime <- resolve_rscript(cli_path = options$rscript)
       output_path <- canonical_output_path(options$output)
       if (path_is_same_or_within(output_path, case_dir)) {
         stop("Render output must be outside the source case directory")
       }
       log_path <- tempfile("figureforge-public-render-", fileext = ".log")
       render_status <- system2(
-        options$rscript,
+        runtime$path,
         shQuote(c(
           file.path(case_dir, "plot.R"),
           file.path(case_dir, "data.csv"),

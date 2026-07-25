@@ -14,6 +14,13 @@ repo_root <- normalizePath(
   file.path(dirname(script_path), "..", "..", ".."),
   mustWork = TRUE
 )
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "runtime_resolution.R"
+))
 source(file.path(repo_root, "skills", "figureforge", "lib", "case_audit.R"))
 
 usage <- function() {
@@ -34,7 +41,7 @@ parse_cli <- function(args) {
     case_dir = args[[1]],
     input = NULL,
     output = NULL,
-    rscript = "/usr/local/bin/Rscript",
+    rscript = NULL,
     overwrite = FALSE
   )
   index <- 2L
@@ -68,6 +75,7 @@ parse_cli <- function(args) {
 tryCatch(
   {
     options <- parse_cli(commandArgs(trailingOnly = TRUE))
+    runtime <- resolve_rscript(cli_path = options$rscript)
     case_dir <- normalizePath(options$case_dir, mustWork = TRUE)
     input_path <- if (is.null(options$input)) {
       file.path(case_dir, "data.csv")
@@ -94,7 +102,7 @@ tryCatch(
     result <- render_case_for_audit(
       case_dir,
       output_path,
-      rscript = options$rscript,
+      rscript = runtime$path,
       input_path = input_path
     )
     if (!isTRUE(result$ok)) {

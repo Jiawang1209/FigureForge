@@ -14,6 +14,13 @@ repo_root <- normalizePath(
   file.path(dirname(script_path), "..", "..", ".."),
   mustWork = TRUE
 )
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "runtime_resolution.R"
+))
 source(file.path(repo_root, "skills", "figureforge", "lib", "case_audit.R"))
 source(file.path(
   repo_root,
@@ -46,7 +53,7 @@ parse_cli <- function(args) {
     adaptation_dir = args[[1]],
     render = FALSE,
     output = NULL,
-    rscript = "/usr/local/bin/Rscript"
+    rscript = NULL
   )
   index <- 2L
   while (index <= length(args)) {
@@ -90,13 +97,18 @@ print_checks <- function(result) {
 tryCatch(
   {
     options <- parse_cli(commandArgs(trailingOnly = TRUE))
+    runtime <- if (options$render) {
+      resolve_rscript(cli_path = options$rscript)
+    } else {
+      NULL
+    }
     if (!dir.exists(options$adaptation_dir)) {
       stop("Adaptation directory not found: ", options$adaptation_dir)
     }
     result <- validate_adaptation(
       options$adaptation_dir,
       render_output = if (options$render) options$output else NULL,
-      rscript = options$rscript
+      rscript = if (is.null(runtime)) NULL else runtime$path
     )
     print_checks(result)
     if (!result$ok) {

@@ -16,6 +16,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "runtime_resolution.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "distribution_validation.R"
 ))
 source(file.path(
@@ -34,7 +41,12 @@ source(file.path(
 ))
 
 parse_cli <- function(args) {
-  result <- list(case = NULL, format = "text", strict = FALSE)
+  result <- list(
+    case = NULL,
+    format = "text",
+    strict = FALSE,
+    rscript = NULL
+  )
   index <- 1L
   while (index <= length(args)) {
     argument <- args[[index]]
@@ -43,7 +55,8 @@ parse_cli <- function(args) {
       index <- index + 1L
       next
     }
-    if (argument %in% c("--case", "--format") && index < length(args)) {
+    if (argument %in% c("--case", "--format", "--rscript") &&
+        index < length(args)) {
       key <- sub("^--", "", argument)
       result[[key]] <- args[[index + 1L]]
       index <- index + 2L
@@ -75,7 +88,10 @@ tryCatch(
       }
       if (!dir.exists(case_dir)) stop("Unknown public case: ", options$case)
     }
-    report <- run_doctor(case_dir = case_dir)
+    report <- run_doctor(
+      case_dir = case_dir,
+      rscript = options$rscript
+    )
     if (options$format == "json") {
       write_doctor_json(report, stdout())
     } else {

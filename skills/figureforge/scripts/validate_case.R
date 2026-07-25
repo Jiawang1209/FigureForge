@@ -19,6 +19,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "runtime_resolution.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "case_audit.R"
 ))
 source(file.path(
@@ -47,7 +54,7 @@ parse_cli <- function(args) {
     complete = FALSE,
     render = FALSE,
     output = NULL,
-    rscript = "/usr/local/bin/Rscript"
+    rscript = NULL
   )
   index <- 2L
   while (index <= length(args)) {
@@ -102,10 +109,15 @@ tryCatch(
     }
 
     if (options$complete) {
+      runtime <- if (options$render) {
+        resolve_rscript(cli_path = options$rscript)
+      } else {
+        NULL
+      }
       result <- validate_case_completion(
         options$case_dir,
         render_output = if (options$render) options$output else NULL,
-        rscript = options$rscript
+        rscript = if (is.null(runtime)) NULL else runtime$path
       )
       print_checks(result)
       if (!result$ok) {

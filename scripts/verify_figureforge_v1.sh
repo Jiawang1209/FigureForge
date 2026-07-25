@@ -1,7 +1,14 @@
 #!/bin/sh
 set -eu
 
-RSCRIPT=/usr/local/bin/Rscript
+RSCRIPT=${FIGUREFORGE_RSCRIPT:-}
+if [ -z "$RSCRIPT" ]; then
+  RSCRIPT=$(command -v Rscript || true)
+fi
+if [ -z "$RSCRIPT" ]; then
+  echo "Rscript not found; set FIGUREFORGE_RSCRIPT or add Rscript to PATH" >&2
+  exit 1
+fi
 PYTHON=/usr/bin/python3
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)

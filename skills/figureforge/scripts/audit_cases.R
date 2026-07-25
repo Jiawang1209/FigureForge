@@ -19,6 +19,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "runtime_resolution.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "case_audit.R"
 ))
 source(file.path(
@@ -50,7 +57,7 @@ parse_cli <- function(args) {
   result <- list(
     cases_dir = NULL,
     output_dir = NULL,
-    rscript = "/usr/local/bin/Rscript",
+    rscript = NULL,
     render = FALSE
   )
   index <- 1L
@@ -84,6 +91,11 @@ parse_cli <- function(args) {
 tryCatch(
   {
     options <- parse_cli(commandArgs(trailingOnly = TRUE))
+    runtime <- if (options$render) {
+      resolve_rscript(cli_path = options$rscript)
+    } else {
+      NULL
+    }
     render_dir <- if (options$render) {
       file.path(options$output_dir, "rendered")
     } else {
@@ -92,7 +104,7 @@ tryCatch(
     results <- audit_cases(
       options$cases_dir,
       render_dir = render_dir,
-      rscript = options$rscript
+      rscript = if (is.null(runtime)) NULL else runtime$path
     )
     write_audit_reports(results, options$output_dir)
     message(

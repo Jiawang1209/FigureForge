@@ -33,6 +33,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "runtime_resolution.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "dependency_doctor.R"
 ))
 
@@ -44,15 +51,20 @@ fixture_case <- file.path(
   "metadata",
   "valid"
 )
-fake_runtime <- function() {
-  list(found = TRUE, version = "4.5.0", path = "/fake/Rscript")
+fake_runtime <- function(cli_path = NULL) {
+  list(
+    path = if (is.null(cli_path)) "/fake/Rscript" else cli_path,
+    source = if (is.null(cli_path)) "path" else "cli",
+    version = "4.5.0",
+    version_output = "R scripting front-end version 4.5.0"
+  )
 }
 fake_command <- function(name) name %in% c("sh", "git")
 fake_package <- function(name) name %in% c("base", "ggplot2")
 
 report <- run_doctor(
   case_dir = fixture_case,
-  runtime_detector = fake_runtime,
+  runtime_resolver = fake_runtime,
   command_detector = fake_command,
   package_detector = fake_package
 )
@@ -64,6 +76,8 @@ stopifnot(all(c(
   "check_id",
   "requirement",
   "detected_version",
+  "detected_path",
+  "resolution_source",
   "status",
   "remediation",
   "capability"
@@ -77,7 +91,7 @@ stopifnot(doctor_exit_status(report, strict = TRUE) == 0L)
 
 missing_required <- run_doctor(
   case_dir = fixture_case,
-  runtime_detector = fake_runtime,
+  runtime_resolver = fake_runtime,
   command_detector = fake_command,
   package_detector = function(name) identical(name, "base")
 )
@@ -132,7 +146,8 @@ json_status <- system2(
   shQuote(c(
     doctor_cli,
     "--case", "public-scatter-fit",
-    "--format", "json"
+    "--format", "json",
+    "--rscript", "/usr/local/bin/Rscript"
   )),
   stdout = json_log,
   stderr = FALSE
@@ -146,7 +161,9 @@ python_cli_status <- system2(
       "import json,sys;",
       "x=json.load(open(sys.argv[1], encoding='utf-8'));",
       "assert x['schema_version']==1;",
-      "assert all('check_id' in row for row in x['checks'])"
+      "runtime=[r for r in x['checks'] if r['check_id']=='runtime-rscript'][0];",
+      "assert runtime['resolution_source']=='cli';",
+      "assert runtime['detected_path'].startswith('/');"
     )),
     shQuote(json_log)
   )

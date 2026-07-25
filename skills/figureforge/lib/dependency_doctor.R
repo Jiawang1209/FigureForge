@@ -5,30 +5,21 @@ doctor_check <- function(
   detected_version,
   status,
   remediation,
-  capability
+  capability,
+  detected_path = "",
+  resolution_source = ""
 ) {
   data.frame(
     check_id = check_id,
     layer = layer,
     requirement = requirement,
     detected_version = detected_version,
+    detected_path = detected_path,
+    resolution_source = resolution_source,
     status = status,
     remediation = remediation,
     capability = capability,
     stringsAsFactors = FALSE
-  )
-}
-
-default_runtime_detector <- function() {
-  rscript <- if (file.exists("/usr/local/bin/Rscript")) {
-    "/usr/local/bin/Rscript"
-  } else {
-    Sys.which("Rscript")
-  }
-  list(
-    found = nzchar(rscript) && file.exists(rscript),
-    version = paste(R.version$major, R.version$minor, sep = "."),
-    path = unname(rscript)
   )
 }
 
@@ -48,12 +39,21 @@ detected_package_version <- function(name, installed) {
 
 run_doctor <- function(
   case_dir = NULL,
-  runtime_detector = default_runtime_detector,
+  rscript = NULL,
+  runtime_resolver = resolve_rscript,
   command_detector = default_command_detector,
   package_detector = default_package_detector
 ) {
-  runtime <- runtime_detector()
-  version_ok <- isTRUE(runtime$found) &&
+  runtime <- tryCatch(
+    runtime_resolver(cli_path = rscript),
+    error = function(error) list(
+      path = "",
+      source = if (is.null(rscript)) "" else "cli",
+      version = "",
+      error = conditionMessage(error)
+    )
+  )
+  version_ok <- !nzchar(runtime$error %||% "") &&
     tryCatch(
       utils::compareVersion(runtime$version, "4.1.0") >= 0L,
       error = function(error) FALSE
@@ -62,10 +62,21 @@ run_doctor <- function(
     "runtime-rscript",
     "runtime",
     "required",
-    if (runtime$found) runtime$version else "",
+    runtime$version,
     if (version_ok) "pass" else "error",
-    if (version_ok) "" else "Install R 4.1 or newer and expose Rscript.",
-    "R plotting and validation"
+    if (version_ok) {
+      ""
+    } else if (nzchar(runtime$error %||% "")) {
+      runtime$error
+    } else {
+      paste(
+        "Install R 4.1 or newer, pass --rscript PATH, or set",
+        "FIGUREFORGE_RSCRIPT."
+      )
+    },
+    "R plotting and validation",
+    detected_path = runtime$path,
+    resolution_source = runtime$source
   ))
 
   commands <- data.frame(
@@ -185,7 +196,7 @@ write_doctor_text <- function(report, path = stdout()) {
   display <- report[
     ,
     c("layer", "check_id", "requirement", "status", "detected_version",
-      "capability", "remediation"),
+      "detected_path", "resolution_source", "capability", "remediation"),
     drop = FALSE
   ]
   write.table(
