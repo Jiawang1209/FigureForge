@@ -45,6 +45,79 @@ package <- package_figureforge_skill(
   archive_path,
   manifest_path
 )
+verifier <- file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "scripts",
+  "verify_release.R"
+)
+stopifnot(file.exists(verifier))
+verified_extract <- file.path(output_root, "verified-extract")
+verify_log <- system2(
+  "/usr/local/bin/Rscript",
+  shQuote(c(
+    verifier,
+    "--archive", archive_path,
+    "--manifest", manifest_path,
+    "--extract-dir", verified_extract
+  )),
+  stdout = TRUE,
+  stderr = TRUE
+)
+verify_status <- attr(verify_log, "status")
+stopifnot(is.null(verify_status) || identical(as.integer(verify_status), 0L))
+stopifnot(dir.exists(file.path(verified_extract, "figureforge")))
+
+tampered_root <- file.path(output_root, "tampered-root")
+dir.create(tampered_root)
+tampered_extract <- system2(
+  "tar",
+  c("-xzf", shQuote(archive_path), "-C", shQuote(tampered_root))
+)
+stopifnot(identical(as.integer(tampered_extract), 0L))
+write(
+  "tampered",
+  file.path(tampered_root, "figureforge", "SKILL.md"),
+  append = TRUE
+)
+file_list <- file.path(output_root, "tampered-files.txt")
+writeLines(package$manifest$package_path, file_list, useBytes = TRUE)
+tampered_archive <- file.path(output_root, "tampered.tar.gz")
+tampered_status <- system2(
+  "tar",
+  c(
+    "-czf", shQuote(tampered_archive),
+    "-C", shQuote(tampered_root),
+    "-T", shQuote(file_list)
+  )
+)
+stopifnot(identical(as.integer(tampered_status), 0L))
+writeLines(
+  paste(
+    figureforge_sha256(tampered_archive),
+    basename(tampered_archive),
+    sep = "  "
+  ),
+  paste0(tampered_archive, ".sha256"),
+  useBytes = TRUE
+)
+tampered_log <- suppressWarnings(system2(
+  "/usr/local/bin/Rscript",
+  shQuote(c(
+    verifier,
+    "--archive", tampered_archive,
+    "--manifest", manifest_path
+  )),
+  stdout = TRUE,
+  stderr = TRUE
+))
+stopifnot(!is.null(attr(tampered_log, "status")))
+stopifnot(grepl(
+  "checksum mismatch",
+  paste(tampered_log, collapse = "\n"),
+  ignore.case = TRUE
+))
 
 skill_root <- file.path(output_root, ".agents", "skills")
 dir.create(skill_root, recursive = TRUE)

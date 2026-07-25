@@ -59,3 +59,4 @@ result <- package_figureforge_skill(
 )
 message("Release archive files: ", nrow(result$manifest))
 message("Wrote release archive: ", result$archive_path)
+message("Wrote release checksum: ", result$checksum_path)

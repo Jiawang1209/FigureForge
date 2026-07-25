@@ -112,6 +112,75 @@ stopifnot(!any(grepl(
   perl = TRUE
 )))
 
+expect_release_error <- function(expression, pattern) {
+  error <- tryCatch(
+    {
+      force(expression)
+      NULL
+    },
+    error = identity
+  )
+  stopifnot(inherits(error, "error"))
+  stopifnot(grepl(
+    pattern,
+    conditionMessage(error),
+    ignore.case = TRUE
+  ))
+}
+
+member_fixture <- c(
+  "figureforge/SKILL.md",
+  "figureforge/VERSION"
+)
+expect_release_error(
+  validate_release_archive_members(
+    member_fixture[[1L]],
+    member_fixture,
+    "-"
+  ),
+  "missing"
+)
+expect_release_error(
+  validate_release_archive_members(
+    c(member_fixture, "figureforge/extra.txt"),
+    member_fixture,
+    rep("-", 3L)
+  ),
+  "extra"
+)
+expect_release_error(
+  validate_release_archive_members(
+    c(member_fixture, member_fixture[[1L]]),
+    member_fixture,
+    rep("-", 3L)
+  ),
+  "duplicate"
+)
+expect_release_error(
+  validate_release_archive_members(
+    c("/absolute/SKILL.md", member_fixture[[2L]]),
+    member_fixture,
+    rep("-", 2L)
+  ),
+  "absolute"
+)
+expect_release_error(
+  validate_release_archive_members(
+    c("figureforge/../outside", member_fixture[[2L]]),
+    member_fixture,
+    rep("-", 2L)
+  ),
+  "parent-traversal"
+)
+expect_release_error(
+  validate_release_archive_members(
+    member_fixture,
+    member_fixture,
+    c("l", "-")
+  ),
+  "symlink"
+)
+
 archive_path <- file.path(output_dir, "figureforge-skill-1.0.0.tar.gz")
 package <- package_figureforge_skill(
   repo_root,
@@ -120,6 +189,18 @@ package <- package_figureforge_skill(
 )
 stopifnot(file.exists(archive_path))
 stopifnot(file.info(archive_path)$size > 0L)
+sidecar_path <- paste0(archive_path, ".sha256")
+stopifnot(file.exists(sidecar_path))
+sidecar <- readLines(sidecar_path, warn = FALSE, encoding = "UTF-8")
+stopifnot(length(sidecar) == 1L)
+stopifnot(grepl(
+  paste0("^[0-9a-f]{64}  ", basename(archive_path), "$"),
+  sidecar
+))
+stopifnot(identical(
+  sub("  .*$", "", sidecar),
+  figureforge_sha256(archive_path)
+))
 archive_files <- system2(
   "tar",
   c("-tzf", shQuote(archive_path)),
@@ -129,5 +210,26 @@ archive_files <- system2(
 stopifnot(is.null(attr(archive_files, "status")))
 archive_files <- sort(sub("^\\./", "", archive_files))
 stopifnot(identical(archive_files, sort(package$manifest$package_path)))
+
+extracted_root <- file.path(output_dir, "extracted")
+dir.create(extracted_root)
+extract_status <- system2(
+  "tar",
+  c("-xzf", shQuote(archive_path), "-C", shQuote(extracted_root))
+)
+stopifnot(identical(as.integer(extract_status), 0L))
+extracted_paths <- file.path(
+  extracted_root,
+  package$manifest$package_path
+)
+stopifnot(all(file.exists(extracted_paths)))
+stopifnot(identical(
+  unname(vapply(extracted_paths, figureforge_sha256, character(1))),
+  package$manifest$sha256
+))
+stopifnot(identical(
+  as.numeric(file.info(extracted_paths)$size),
+  package$manifest$bytes
+))
 
 message("release packaging tests: PASS")
