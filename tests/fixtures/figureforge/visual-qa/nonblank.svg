@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="120" viewBox="0 0 200 120">
+  <circle cx="70" cy="60" r="28" fill="#3A6EA5"/>
+  <line x1="100" y1="60" x2="170" y2="60" stroke="#C45B45" stroke-width="4"/>
+  <text x="20" y="108" font-size="14">synthetic fixture</text>
+</svg>
