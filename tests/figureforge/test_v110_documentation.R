@@ -46,6 +46,9 @@ chinese <- read_document("README.zh.md")
 changelog <- read_document("CHANGELOG.md")
 status <- read_document("docs/figureforge-skill-mvp-status.md")
 release <- read_document("docs/figureforge-skill-v1.1.0-release.md")
+evidence_readme <- read_document(
+  "docs/figureforge-skill-v1.1.0-evidence/README.md"
+)
 skill <- read_document("skills/figureforge/SKILL.md")
 plotting <- read_document(
   "skills/figureforge/references/plotting-workflow.md"
@@ -491,6 +494,20 @@ stopifnot(contains_all(
   c(
     "[portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)",
     "12752a5688f4939a6d5deb72a60cbc2587077d6ad0672d9ea8218d021ecf0398"
+  )
+))
+stopifnot(contains_all(
+  release,
+  c(
+    "raw or unsanitized evaluation logs",
+    "tracked sanitized certification logs"
+  )
+))
+stopifnot(contains_all(
+  evidence_readme,
+  c(
+    "Raw or unsanitized logs",
+    "Tracked sanitized certification logs"
   )
 ))
 stopifnot(grepl(

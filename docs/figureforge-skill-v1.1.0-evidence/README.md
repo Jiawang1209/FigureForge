@@ -73,6 +73,8 @@ than guessing a model name.
 
 Raw JSONL transcripts and final replies remain outside Git because they can
 contain prompts, local paths, and agent working context. The private 165-case
-corpus, third-party source assets, reproductions, logs, rendered outputs, and
-credentials are also excluded. This bundle contains only sanitized aggregate
-results and cryptographic identities needed to audit the certification.
+corpus, third-party source assets, reproductions, rendered outputs, and
+credentials are also excluded. Raw or unsanitized logs are excluded as well.
+Tracked sanitized certification logs are limited to the `.log` summaries in this
+directory; they contain aggregate gate results and cryptographic identities,
+not raw prompts, transcripts, user data, or private-corpus content.

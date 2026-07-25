@@ -196,10 +196,13 @@ adaptation validation, and rerender checks without a source-tree fallback.
 ## Private and MCP Boundaries
 
 The 165-case private corpus, third-party source figures, reproductions,
-generated outputs, logs, and raw live transcripts remain outside Git and the
-release archive. The preserved private-corpus status is 152 completed cases,
-13 evidence-backed blockers, and 0 pending cases. Only reviewed public assets
-are packaged.
+generated outputs, raw or unsanitized evaluation logs, and raw live transcripts
+remain outside Git and the release archive. The portable evidence bundle
+contains tracked sanitized certification logs with only aggregate gate results
+and source/artifact identities; they contain no raw prompt, transcript, user
+data, or private-corpus content. The preserved private-corpus status is 152
+completed cases, 13 evidence-backed blockers, and 0 pending cases. Only
+reviewed public assets are packaged.
 
 MCP is planned and unimplemented. FigureForge Skill 1.1.0 contains no MCP
 server, endpoint, transport, or client configuration.
