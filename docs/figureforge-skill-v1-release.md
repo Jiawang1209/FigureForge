@@ -112,11 +112,25 @@ cannot mix.
 
 ## Validation
 
-Stage-level verification runs every `tests/figureforge/*.R` test, parses every
-public R file, runs the official `quick_validate.py`, and checks
-`git diff --check`. The final clean-clone verifier is added in the release
-acceptance stage; this document will record its exact count and PASS line after
-that stage executes.
+Acceptance was executed on 2026-07-25 with:
+
+```bash
+sh scripts/verify_figureforge_v1.sh
+/usr/local/bin/Rscript tests/figureforge/test_v1_acceptance.R
+```
+
+The verifier ran 18 non-recursive FigureForge R test files, validated and
+externally rendered all 12 public cases, executed all 24 stress scenarios,
+parsed every public R file, ran the official `quick_validate.py`, compared the
+128-file release manifest with the archive, and checked `git diff --check`.
+The acceptance wrapper then repeated the verifier from a local clean clone
+without the private corpus.
+
+The final verifier line was:
+
+```text
+FigureForge Skill v1.0 acceptance: PASS
+```
 
 No archive, render, private case, private index, or audit output is committed.
 

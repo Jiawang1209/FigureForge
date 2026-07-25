@@ -63,6 +63,8 @@ demo_status <- system2(
 if (!identical(as.integer(demo_status), 0L)) {
   stop(paste(readLines(demo_log, warn = FALSE), collapse = "\n"))
 }
+demo_log_text <- paste(readLines(demo_log, warn = FALSE), collapse = "\n")
+stopifnot(!grepl("conversion failure", demo_log_text, fixed = TRUE))
 
 required <- c(
   "input.csv",

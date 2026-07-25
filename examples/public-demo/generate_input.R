@@ -6,8 +6,8 @@ if (length(args) == 1L) {
   output_path <- args[[1L]]
   set.seed(3101)
   time <- rep(0:7, times = 2L)
-  group <- rep(c("对照组", "处理组"), each = 8L)
-  baseline <- ifelse(group == "处理组", 0.8, 0)
+  group <- rep(c("control", "treatment"), each = 8L)
+  baseline <- ifelse(group == "treatment", 0.8, 0)
   estimate <- 2.5 + baseline + 0.35 * time +
     stats::rnorm(length(time), sd = 0.08)
   spread <- 0.22 + 0.02 * time
