@@ -54,10 +54,13 @@ Verification artifacts: /tmp/figureforge-v110.4Ywsys
 FigureForge Skill v1.1.0 acceptance: PASS
 ```
 
-After the release evidence and status documentation were added, the complete
-no-live verifier was run again and retained the post-documentation artifacts
-at `/tmp/figureforge-v110.lRin35`; it ended with the same exact acceptance
-line.
+The final post-documentation certification verifier observed before the
+certification evidence commit retained its artifacts at
+`/tmp/figureforge-v110.RMisRW` and ended with the exact line:
+
+```text
+FigureForge Skill v1.1.0 acceptance: PASS
+```
 
 ## Real Live Trigger Evidence
 

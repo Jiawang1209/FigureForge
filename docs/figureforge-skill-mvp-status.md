@@ -43,7 +43,7 @@ current deterministic verifier plus the local corpus acceptance work.
 | Forward evaluation | 30 deterministic English/Chinese rows; Top-1, Top-3, mapping, render, and safe rejection all passed |
 | Live trigger gate | Explicit 1/1; implicit 10/10, exceeding the 100% and 90% thresholds |
 | Live plotting gate | 1/1 passed; installed Skill read, nonempty script/PNG/PDF, delivered-script rerun, and independent PNG/PDF rerender all passed |
-| Evidence roots | `/tmp/figureforge-v110.4Ywsys` for the first deterministic verification, `/tmp/figureforge-v110.lRin35` for the post-documentation verifier, and `/tmp/figureforge-v110-live.740e78` for real live gates |
+| Evidence roots | `/tmp/figureforge-v110.4Ywsys` for the first deterministic verification, `/tmp/figureforge-v110.RMisRW` for the final post-documentation certification verifier observed before the certification evidence commit, and `/tmp/figureforge-v110-live.740e78` for real live gates |
 | Public workflow | doctor, bilingual search, schema match, protected workspace, render, visual QA, and independent validation |
 | Public packaging | install-shaped archive, manifest, SHA-256 sidecar, structural verifier, and per-member checksum validation |
 | Upgrade | v1.0.0 is atomically replaced by the current 1.1.0 package without stale files; preserved external adaptation hashes and independent rerender pass |

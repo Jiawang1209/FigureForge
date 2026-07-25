@@ -123,7 +123,7 @@ stopifnot(contains_all(
     "Implicit live trigger | 10/10",
     "/tmp/figureforge-v110-live.740e78",
     "/tmp/figureforge-v110.4Ywsys",
-    "/tmp/figureforge-v110.lRin35"
+    "/tmp/figureforge-v110.RMisRW"
   )
 ))
 stopifnot(contains_all(
@@ -145,9 +145,17 @@ stopifnot(contains_all(
   c(
     "locally certified",
     "Explicit 1/1; implicit 10/10",
-    "/tmp/figureforge-v110-live.740e78"
+    "/tmp/figureforge-v110-live.740e78",
+    "/tmp/figureforge-v110.RMisRW"
   )
 ))
+for (document in list(release, status)) {
+  stopifnot(!grepl(
+    "/tmp/figureforge-v110.lRin35",
+    document,
+    fixed = TRUE
+  ))
+}
 for (document in list(english, chinese, status)) {
   stopifnot(!grepl(
     "v1.1.0 live-model and release certification is pending",
