@@ -248,26 +248,37 @@ read_repo_text <- function(relative_path) {
   )
 }
 skill_text <- read_repo_text("skills/figureforge/SKILL.md")
-readme_en <- read_repo_text("README.md")
-readme_zh <- read_repo_text("README.zh.md")
 gallery_reference <- read_repo_text(
   "skills/figureforge/references/gallery-index.md"
 )
 blocker_reference <- read_repo_text(
   "skills/figureforge/references/blocker-contract.md"
 )
+maintainer_path <- file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "references",
+  "maintainer-workflow.md"
+)
+stopifnot(file.exists(maintainer_path))
+maintainer_reference <- read_repo_text(
+  "skills/figureforge/references/maintainer-workflow.md"
+)
 
-for (document in list(skill_text, readme_en, readme_zh)) {
-  stopifnot(grepl("validate_blocker.R", document, fixed = TRUE))
-  stopifnot(grepl("plan_case_batches.R", document, fixed = TRUE))
+stopifnot(grepl("validate_blocker.R", maintainer_reference, fixed = TRUE))
+stopifnot(grepl("plan_case_batches.R", maintainer_reference, fixed = TRUE))
+stopifnot(!grepl("validate_blocker.R", skill_text, fixed = TRUE))
+stopifnot(!grepl("plan_case_batches.R", skill_text, fixed = TRUE))
+for (document in list(
+  gallery_reference,
+  blocker_reference,
+  maintainer_reference
+)) {
   stopifnot(grepl("terminal_outcome", document, fixed = TRUE))
   stopifnot(grepl("blocked_source_missing", document, fixed = TRUE))
 }
-for (document in list(gallery_reference, blocker_reference)) {
-  stopifnot(grepl("terminal_outcome", document, fixed = TRUE))
-  stopifnot(grepl("blocked_source_missing", document, fixed = TRUE))
-}
-for (document in list(skill_text, blocker_reference)) {
+for (document in list(blocker_reference, maintainer_reference)) {
   stopifnot(grepl(
     "verified QA and a valid blocker cannot coexist",
     document,

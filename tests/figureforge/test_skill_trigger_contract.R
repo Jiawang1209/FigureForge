@@ -31,6 +31,7 @@ live_eval_path <- file.path(
 skill_lines <- readLines(skill_path, warn = FALSE, encoding = "UTF-8")
 skill_text <- paste(skill_lines, collapse = "\n")
 skill_lower <- tolower(skill_text)
+skill_plain <- gsub("`", "", gsub("\\s+", " ", skill_text))
 frontmatter_end <- which(skill_lines[-1L] == "---")[[1L]] + 1L
 frontmatter <- skill_lines[2L:(frontmatter_end - 1L)]
 description <- sub(
@@ -41,31 +42,34 @@ description <- sub(
 
 stopifnot(length(description) == 1L)
 stopifnot(startsWith(description, "Use when"))
+stopifnot(grepl("R", description, fixed = TRUE))
+stopifnot(grepl("scientific", description, ignore.case = TRUE))
+stopifnot(grepl("plot", description, ignore.case = TRUE))
 stopifnot(grepl("data-only", description, fixed = TRUE))
-stopifnot(grepl("Chinese or English chart requests", description, fixed = TRUE))
+stopifnot(grepl("Chinese or English", description, fixed = TRUE))
 stopifnot(length(strsplit(description, "\\s+")[[1L]]) <= 45L)
 stopifnot(!grepl("then", description, ignore.case = TRUE))
 
-stopifnot(!grepl(
-  "Every shipped dataset declares `synthetic_test_fixture: true`",
-  skill_text,
-  fixed = TRUE
-))
-stopifnot(!grepl(
-  "Public data are synthetic fixtures",
-  skill_text,
-  fixed = TRUE
-))
-stopifnot(grepl("authentic open data", skill_lower, fixed = TRUE))
-stopifnot(grepl("synthetic demonstrations", skill_lower, fixed = TRUE))
-stopifnot(grepl("case metadata controls", skill_lower, fixed = TRUE))
+stopifnot(grepl("case-enhanced", skill_lower, fixed = TRUE))
 stopifnot(grepl(
-  "--rscript`, `figureforge_rscript`, compatibility path, then `path`",
+  "rscript plot.r <input-file> <output-directory>",
   skill_lower,
   fixed = TRUE
 ))
-stopifnot(!grepl("/usr/local/bin/Rscript", skill_text, fixed = TRUE))
-stopifnot(grepl("MCP is planned and unimplemented", skill_text, fixed = TRUE))
+stopifnot(grepl("scientific meaning", skill_lower, fixed = TRUE))
+stopifnot(grepl(
+  "MCP is planned and unimplemented.",
+  skill_text,
+  fixed = TRUE
+))
+stopifnot(!grepl(
+  paste(
+    "Read case.md, case.yml, data.csv, plot.R, qa.md, and",
+    "distribution.yml before adapting a public case."
+  ),
+  skill_plain,
+  fixed = TRUE
+))
 
 agent_text <- paste(
   readLines(agent_path, warn = FALSE, encoding = "UTF-8"),
@@ -73,9 +77,12 @@ agent_text <- paste(
 )
 agent_lower <- tolower(agent_text)
 stopifnot(grepl("\\$figureforge", agent_text))
-stopifnot(grepl("inspect", agent_lower, fixed = TRUE))
-stopifnot(grepl("external adaptation", agent_lower, fixed = TRUE))
-stopifnot(!grepl("all public data", agent_lower, fixed = TRUE))
+stopifnot(grepl("inspect the real data", agent_lower, fixed = TRUE))
+stopifnot(grepl("primary case", agent_lower, fixed = TRUE))
+stopifnot(grepl("plot.r", agent_lower, fixed = TRUE))
+stopifnot(grepl("plot.png", agent_lower, fixed = TRUE))
+stopifnot(grepl("plot.pdf", agent_lower, fixed = TRUE))
+stopifnot(!grepl("external adaptation", agent_lower, fixed = TRUE))
 stopifnot(!grepl("/usr/local/bin/Rscript", agent_text, fixed = TRUE))
 
 stopifnot(file.exists(live_eval_path))
