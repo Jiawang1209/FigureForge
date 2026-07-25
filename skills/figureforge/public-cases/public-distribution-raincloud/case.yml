@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-distribution-raincloud
+title_en: Layered distribution comparison
+title_zh: 分层分布比较图
+chart_family: distribution
+chart_subfamily: box_violin_raincloud
+aliases_en: raincloud|violin plot|boxplot
+aliases_zh: 雨云图|小提琴图|箱线图
+scientific_intents: distribution comparison|group variability
+required_roles: group:character:categorical|value:numeric:continuous|sample_id:character:identifier
+optional_roles:
+annotations: median|individual observations
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

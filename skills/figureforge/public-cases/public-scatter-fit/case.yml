@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-scatter-fit
+title_en: Scatter plot with fitted trend
+title_zh: 带拟合趋势的散点图
+chart_family: scatter
+chart_subfamily: fitted_scatter
+aliases_en: scatter|regression|trend
+aliases_zh: 散点图|拟合图|回归趋势
+scientific_intents: association|trend
+required_roles: predictor:numeric:continuous|response:numeric:continuous
+optional_roles: group:character:categorical|label:character:categorical
+annotations: fitted_line|confidence_band
+layouts: single_panel|faceted
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

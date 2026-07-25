@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-bar-grouped
+title_en: Grouped response bar chart
+title_zh: 分组响应柱状图
+chart_family: bar
+chart_subfamily: grouped_stacked
+aliases_en: grouped bar|bar chart|condition comparison
+aliases_zh: 分组柱状图|柱形图|条件比较
+scientific_intents: group comparison|condition effect
+required_roles: treatment:character:categorical|response:numeric:continuous|condition:character:categorical
+optional_roles:
+annotations: value_axis
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

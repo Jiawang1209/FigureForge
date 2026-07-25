@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-correlation-heatmap
+title_en: Signed correlation heatmap
+title_zh: 有符号相关性热图
+chart_family: heatmap
+chart_subfamily: correlation
+aliases_en: correlation heatmap|matrix|tile plot
+aliases_zh: 相关性热图|相关矩阵|热图
+scientific_intents: pairwise association|matrix overview
+required_roles: variable_x:character:categorical|variable_y:character:categorical|correlation:numeric:continuous
+optional_roles:
+annotations: cell_value
+layouts: matrix
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

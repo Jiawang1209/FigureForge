@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-timeseries-band
+title_en: Time series with uncertainty band
+title_zh: 带不确定性带的时序图
+chart_family: time_series
+chart_subfamily: uncertainty_band
+aliases_en: time series|line chart|confidence band
+aliases_zh: 时序图|折线图|置信带
+scientific_intents: longitudinal trend|uncertainty comparison
+required_roles: time:numeric:temporal|estimate:numeric:continuous|lower:numeric:continuous|upper:numeric:continuous|group:character:categorical
+optional_roles:
+annotations: uncertainty_band
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true

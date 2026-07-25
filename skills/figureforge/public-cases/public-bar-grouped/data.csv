@@ -1,0 +1,7 @@
+treatment,response,condition
+Control,5.2,Baseline
+Low,6.4,Baseline
+High,7.1,Baseline
+Control,5.8,Stimulated
+Low,7.5,Stimulated
+High,9.2,Stimulated

@@ -1,0 +1,11 @@
+group,value,sample_id
+Control,4.1,C01
+Control,4.5,C02
+Control,4.8,C03
+Control,5.0,C04
+Control,5.4,C05
+Treatment,5.2,T01
+Treatment,5.7,T02
+Treatment,6.0,T03
+Treatment,6.3,T04
+Treatment,6.8,T05

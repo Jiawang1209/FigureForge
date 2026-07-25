@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: public-enrichment-bubble
+title_en: Enrichment bubble summary
+title_zh: 富集分析气泡汇总图
+chart_family: enrichment
+chart_subfamily: bubble
+aliases_en: enrichment bubble|GO bubble|dot plot
+aliases_zh: 富集气泡图|GO气泡图|点图
+scientific_intents: pathway enrichment|term prioritization
+required_roles: term:character:categorical|gene_ratio:numeric:continuous|adjusted_p:numeric:continuous|count:integer:continuous|category:character:categorical
+optional_roles:
+annotations: significance_color|count_size
+layouts: faceted
+required_packages: ggplot2
+optional_packages:
+qa_status: review_required
+distribution_status: public_ready
+synthetic_test_fixture: true
