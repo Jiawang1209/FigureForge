@@ -5,17 +5,13 @@ parse_simple_metadata <- function(path) {
   lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
   lines <- trimws(lines)
   lines <- lines[nzchar(lines) & !startsWith(lines, "#")]
-  pairs <- strsplit(lines, ":", fixed = TRUE)
-  invalid <- lengths(pairs) < 2L
+  separators <- regexpr(":", lines, fixed = TRUE)
+  invalid <- separators < 1L
   if (any(invalid)) {
     stop("Invalid metadata line: ", lines[which(invalid)[[1L]]])
   }
-  keys <- trimws(vapply(pairs, `[[`, character(1), 1L))
-  values <- trimws(vapply(
-    pairs,
-    function(parts) paste(parts[-1L], collapse = ":"),
-    character(1)
-  ))
+  keys <- trimws(substr(lines, 1L, separators - 1L))
+  values <- trimws(substr(lines, separators + 1L, nchar(lines)))
   if (any(!nzchar(keys))) {
     stop("Metadata keys must not be empty")
   }

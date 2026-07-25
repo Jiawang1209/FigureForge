@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: invalid-public-fixture
+title_en: Invalid fixture
+title_zh: 无效测试
+chart_family: imaginary
+chart_subfamily: unknown
+aliases_en: invalid
+aliases_zh: 无效
+scientific_intents: none
+required_roles: x:numeric:continuous
+optional_roles:
+annotations: none
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: verified
+distribution_status: public_ready
+synthetic_test_fixture: true

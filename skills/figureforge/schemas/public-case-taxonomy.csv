@@ -1,0 +1,13 @@
+family,subfamily,title_en,title_zh
+bar,grouped_stacked,Grouped or stacked bar,分组或堆积柱状图
+distribution,box_violin_raincloud,Distribution comparison,箱线小提琴或雨云图
+scatter,fitted_scatter,Fitted scatter,散点拟合图
+time_series,uncertainty_band,Time series with uncertainty,带不确定性的时序图
+heatmap,correlation,Correlation heatmap,相关性热图
+enrichment,bubble,Enrichment bubble,富集气泡图
+omics,volcano,Volcano plot,火山图
+network,node_edge,Node edge network,节点边网络图
+survival,kaplan_meier,Kaplan Meier curve,生存曲线
+tree,phylogeny_annotation,Annotated phylogeny,带注释进化树
+gene_structure,feature_track,Gene feature track,基因结构图
+composition,multi_panel,Multi panel composition,多面板组合图
