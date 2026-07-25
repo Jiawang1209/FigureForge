@@ -1,0 +1,18 @@
+schema_version: 1
+case_id: authentic-distribution-fixture
+title_en: Authentic distribution fixture
+title_zh: 真实分发测试夹具
+chart_family: scatter
+chart_subfamily: fitted_scatter
+aliases_en: authentic fixture
+aliases_zh: 真实夹具
+scientific_intents: validation
+required_roles: x:numeric:continuous|y:numeric:continuous
+optional_roles:
+annotations:
+layouts: single_panel
+required_packages: ggplot2
+optional_packages:
+qa_status: verified
+distribution_status: public_ready
+synthetic_test_fixture: false

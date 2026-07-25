@@ -179,7 +179,7 @@ validate_case_metadata <- function(metadata) {
     ),
     "supported metadata schema" = identical(metadata$schema_version, "1"),
     "stable public case ID" = grepl(
-      "^public-[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "^(?:public|authentic)-[a-z0-9]+(?:-[a-z0-9]+)*$",
       metadata$case_id,
       perl = TRUE
     ),
@@ -197,11 +197,19 @@ validate_case_metadata <- function(metadata) {
     "declared required packages" =
       length(metadata$required_packages) > 0L,
     "QA remains review required" =
-      identical(metadata$qa_status, "review_required"),
+      (
+        isTRUE(metadata$synthetic_test_fixture) &&
+          identical(metadata$qa_status, "review_required")
+      ) || (
+        !isTRUE(metadata$synthetic_test_fixture) &&
+          identical(metadata$qa_status, "verified")
+      ),
     "public distribution status" =
       identical(metadata$distribution_status, "public_ready"),
     "synthetic fixture disclosure" =
-      isTRUE(metadata$synthetic_test_fixture)
+      is.logical(metadata$synthetic_test_fixture) &&
+      length(metadata$synthetic_test_fixture) == 1L &&
+      !is.na(metadata$synthetic_test_fixture)
   )
   list(
     ok = all(checks),

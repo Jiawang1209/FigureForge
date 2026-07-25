@@ -1,0 +1,17 @@
+schema_version: 1
+source_type: authentic_open_data
+publisher: fixture authors
+dataset_title: Authentic distribution fixture
+canonical_url: https://example.org/fixture
+retrieval_url: https://example.org/fixture.csv
+retrieval_date: 2026-07-25
+upstream_version: static-fixture-v1
+upstream_sha256: 5962ba6c35b56dabeb8121dd6656aba7b1e60afe0d2ddec498feb191057d15fe
+normalized_sha256: 5962ba6c35b56dabeb8121dd6656aba7b1e60afe0d2ddec498feb191057d15fe
+license: CC0-1.0
+license_url: https://creativecommons.org/publicdomain/zero/1.0/
+attribution: Fixture authors, Authentic distribution fixture
+selected_fields: x|y
+normalization: selected x and y|preserved row order
+synthetic_test_fixture: false
+scientific_claims: descriptive_only
