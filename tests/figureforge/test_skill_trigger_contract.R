@@ -98,4 +98,51 @@ stopifnot(grepl(
   fixed = TRUE
 ))
 
+fake_root <- tempfile("figureforge-live-relative-")
+dir.create(fake_root, recursive = TRUE)
+fake_codex <- file.path(fake_root, "fake-codex")
+writeLines(
+  c(
+    "#!/bin/sh",
+    "set -eu",
+    "final_message=",
+    "while [ \"$#\" -gt 0 ]; do",
+    "  if [ \"$1\" = \"-o\" ]; then",
+    "    final_message=$2",
+    "    shift 2",
+    "  else",
+    "    shift",
+    "  fi",
+    "done",
+    "test -n \"$final_message\"",
+    "printf '%s\\n' figureforge >\"$final_message\"",
+    "printf '%s\\n' 'Rscript \".agents/skills/figureforge/scripts/doctor.R\"' >>\"$final_message\"",
+    "printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"sed -n 1,240p .agents/skills/figureforge/SKILL.md\"}}'"
+  ),
+  fake_codex,
+  useBytes = TRUE
+)
+Sys.chmod(fake_codex, mode = "0755")
+fake_output <- file.path(fake_root, "output")
+fake_status <- system2(
+  "bash",
+  c(
+    shQuote(live_eval_path),
+    "--output-dir",
+    shQuote(fake_output),
+    "--codex",
+    shQuote(fake_codex)
+  ),
+  stdout = TRUE,
+  stderr = TRUE
+)
+stopifnot(identical(attr(fake_status, "status"), NULL))
+fake_summary <- read.csv(
+  file.path(fake_output, "summary.csv"),
+  stringsAsFactors = FALSE
+)
+stopifnot(nrow(fake_summary) == 11L)
+stopifnot(all(fake_summary$skill_loaded == "true"))
+stopifnot(all(fake_summary$passed == "true"))
+
 message("skill trigger contract tests: PASS")

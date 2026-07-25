@@ -127,7 +127,7 @@ while IFS=$'\t' read -r kind probe_id prompt; do
   skill_loaded=false
   capability_selected=false
   installed_path=false
-  if grep -q '/.agents/skills/figureforge/SKILL.md' "$transcript"; then
+  if grep -Fq '.agents/skills/figureforge/SKILL.md' "$transcript"; then
     skill_loaded=true
   fi
   if [ -s "$final_message" ] &&
