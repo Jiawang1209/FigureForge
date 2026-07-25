@@ -1,4 +1,4 @@
 interface:
   display_name: "FigureForge"
   short_description: "Adapt data with public scientific figure patterns"
-  default_prompt: "Use $figureforge to inspect my data, search the public gallery, create an external adaptation, render it, and keep QA at review_required until human review."
+  default_prompt: "Use $figureforge to inspect my data, search authentic or synthetic public cases from the installed Skill path, create an external adaptation, render it, and preserve case-specific QA such as review_required until authorized human review."

@@ -1,20 +1,24 @@
 ---
 name: figureforge
-description: Use when selecting, reproducing, adapting, or QA-checking publication-ready scientific figures from FigureForge R/ggplot2 cases, including Chinese or English chart requests and new-data column mapping.
+description: Use when a user needs to select, reproduce, adapt, render, or QA-check a publication-ready scientific visualization from R/ggplot2 data, including Chinese or English chart requests, ambiguous chart names, data-only prompts, and new-data column mapping.
 ---
 
 # FigureForge
 
 FigureForge turns public scientific-figure patterns into auditable new-data
 adaptations. Select the closest public case, inspect its metadata, code, and
-synthetic data, map the user's fields explicitly, migrate the case-specific
+example data, map the user's fields explicitly, migrate the case-specific
 script, render, and record QA.
 
 The installed public gallery is the default and is independently usable.
-Every shipped dataset declares `synthetic_test_fixture: true`; it demonstrates
-software behavior and carries no scientific claim. `Status: review_required`
-is the safe initial QA state, and automated visual QA never grants verified
-status. Private cases are optional local extensions.
+Public cases may use authentic open data or synthetic demonstrations.
+Case metadata controls provenance claims, QA status, and distribution
+boundaries; never infer those claims from filenames or chart appearance.
+Synthetic fixtures declare `synthetic_test_fixture: true`, demonstrate
+software behavior, and carry no scientific claim.
+`Status: review_required` is the safe initial QA state for synthetic cases,
+and automated visual QA never grants verified status. Private cases are
+optional local extensions.
 MCP is planned and unimplemented.
 
 ## Non-Negotiable Rules
@@ -28,7 +32,8 @@ MCP is planned and unimplemented.
 - Treat every local extension as `private_only` unless `distribution.yml`
   explicitly allows redistribution of named assets.
 - A verified QA and a valid blocker cannot coexist.
-- Use `/usr/local/bin/Rscript` for all R workflows in this repository.
+- Resolve Rscript through `--rscript`, `FIGUREFORGE_RSCRIPT`, compatibility path, then `PATH`;
+  an explicit invalid configuration must fail clearly.
 - If no case matches the scientific intent and schema closely enough, state
   the mismatch and either select the nearest case with caveats or author a new
   real case.
@@ -51,12 +56,15 @@ Chinese columns merely to fit a case.
 
 ### 1. Find candidate cases
 
-Start by checking the runtime and public gallery:
+Resolve `FIGUREFORGE_SKILL_ROOT` to the directory containing this `SKILL.md`.
+For a project installation it is commonly
+`.agents/skills/figureforge`; in the source checkout it is
+`skills/figureforge`. Start by checking the runtime and public gallery:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/doctor.R"
 
-/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
   --public \
   --query "<chart, science, or schema terms>" \
   --explain-scores \
@@ -73,7 +81,7 @@ Private cases are optional local extensions. Use an explicit root only when
 the user has authorized access:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/search_cases.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
   --cases-dir "<private_cases_dir>" \
   --query "<chart, science, or schema terms>" \
   --completed-only \
@@ -95,13 +103,15 @@ Rank candidates by:
 ### 2. Inspect the selected case
 
 Read the selected `case.md`, `case.yml`, `data.csv`, `plot.R`, `qa.md`, and
-`distribution.yml`. Public data are synthetic fixtures; inspect them as schema
-examples, not scientific evidence.
+`distribution.yml`. Read `case.yml`, `distribution.yml`, and `source.yml` when
+present before deciding whether the data are authentic open data or a
+synthetic demonstration. Treat synthetic data only as schema examples, never
+as scientific evidence.
 
 Check dependencies before migration:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/doctor.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/doctor.R" \
   --case "<public-case-id>" \
   --strict
 ```
@@ -114,7 +124,7 @@ implementation is used, document the visible differences and verify them.
 First generate a schema-match report:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/match_schema.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/match_schema.R" \
   --case "<public-case-id>" \
   --input "<user_input.csv>" \
   --output "<external_workspace_parent>/schema-match.csv"
@@ -123,7 +133,7 @@ First generate a schema-match report:
 Then create a protected adaptation workspace outside the Skill:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/create_adaptation.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/create_adaptation.R" \
   --case "<public-case-id>" \
   --input "<user_input.csv>" \
   --workspace "<external_adaptation_dir>"
@@ -172,7 +182,7 @@ stochastic.
 Render with explicit paths:
 
 ```bash
-/usr/local/bin/Rscript "<adaptation_dir>/plot.R" \
+Rscript "<adaptation_dir>/plot.R" \
   "<adaptation_dir>/input.csv" \
   "<adaptation_dir>/output.pdf"
 ```
@@ -182,7 +192,7 @@ Render with explicit paths:
 Create a non-authoritative machine report outside source case directories:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/visual_qa.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/visual_qa.R" \
   --render "<adaptation_dir>/output.pdf" \
   --report "<external_report_dir>/visual-qa.json"
 ```
@@ -209,11 +219,10 @@ Only a human or explicitly authorized visual review may replace
 After the human QA record is complete, validate with a separate output:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/validate_adaptation.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/validate_adaptation.R" \
   "<adaptation_dir>" \
   --render \
-  --output "<separate_validation_output>" \
-  --rscript /usr/local/bin/Rscript
+  --output "<separate_validation_output>"
 ```
 
 This fresh render is reproducibility evidence; it does not perform or replace
@@ -239,18 +248,17 @@ data provenance, normalized `data.csv`, a case-specific standard-argument
 Validate structure during authoring:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/validate_case.R "<case_dir>"
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/validate_case.R" "<case_dir>"
 ```
 
 Validate completion and render outside the source case:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/validate_case.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/validate_case.R" \
   "<case_dir>" \
   --complete \
   --render \
-  --output "<external_output>" \
-  --rscript /usr/local/bin/Rscript
+  --output "<external_output>"
 ```
 
 The compact form is
@@ -259,7 +267,7 @@ The compact form is
 Rebuild the ignored local index after metadata changes:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/index_cases.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/index_cases.R" \
   skills/figureforge/cases \
   skills/figureforge/references/case-index.csv
 ```
@@ -267,17 +275,16 @@ Rebuild the ignored local index after metadata changes:
 Audit the full local corpus when readiness evidence changes:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/audit_cases.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/audit_cases.R" \
   --cases-dir skills/figureforge/cases \
   --output-dir outputs/figureforge-audit \
-  --rscript /usr/local/bin/Rscript \
   --render
 ```
 
 Plan the remaining cases in deterministic evidence-first waves:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/plan_case_batches.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/plan_case_batches.R" \
   --readiness outputs/figureforge-audit/case-readiness.csv \
   --output outputs/figureforge-audit/batch-manifest.csv \
   --batch-size 20
@@ -287,7 +294,7 @@ If authentic completion remains unsafe after concrete recovery attempts, use
 the exact `references/blocker-contract.md` structure and validate it:
 
 ```bash
-/usr/local/bin/Rscript skills/figureforge/scripts/validate_blocker.R \
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/validate_blocker.R" \
   "<case_dir>"
 ```
 
