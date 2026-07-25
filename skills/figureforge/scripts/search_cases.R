@@ -29,6 +29,9 @@ source(file.path(
   "lib",
   "case_catalog.R"
 ))
+source(file.path(repo_root, "skills", "figureforge", "lib", "distribution_validation.R"))
+source(file.path(repo_root, "skills", "figureforge", "lib", "metadata.R"))
+source(file.path(repo_root, "skills", "figureforge", "lib", "schema_matching.R"))
 
 usage <- function() {
   paste(
@@ -36,6 +39,9 @@ usage <- function() {
     "[--cases-dir PATH]",
     "[--limit N]",
     "[--completed-only]",
+    "[--public]",
+    "[--schema INPUT.csv]",
+    "[--explain-scores]",
     "[--output PATH]"
   )
 }
@@ -46,6 +52,9 @@ parse_cli <- function(args) {
     cases_dir = file.path(repo_root, "skills", "figureforge", "cases"),
     limit = 10L,
     completed_only = FALSE,
+    public = FALSE,
+    schema = NULL,
+    explain_scores = FALSE,
     output = NULL
   )
   index <- 1L
@@ -56,7 +65,23 @@ parse_cli <- function(args) {
       index <- index + 1L
       next
     }
-    if (argument %in% c("--query", "--cases-dir", "--limit", "--output")) {
+    if (argument == "--public") {
+      result$public <- TRUE
+      index <- index + 1L
+      next
+    }
+    if (argument == "--explain-scores") {
+      result$explain_scores <- TRUE
+      index <- index + 1L
+      next
+    }
+    if (argument %in% c(
+      "--query",
+      "--cases-dir",
+      "--limit",
+      "--schema",
+      "--output"
+    )) {
       if (index == length(args)) {
         stop("Missing value for ", argument, "\n", usage())
       }
@@ -64,6 +89,7 @@ parse_cli <- function(args) {
       if (argument == "--query") result$query <- value
       if (argument == "--cases-dir") result$cases_dir <- value
       if (argument == "--limit") result$limit <- as.integer(value)
+      if (argument == "--schema") result$schema <- value
       if (argument == "--output") result$output <- value
       index <- index + 2L
       next
@@ -82,24 +108,76 @@ parse_cli <- function(args) {
 tryCatch(
   {
     options <- parse_cli(commandArgs(trailingOnly = TRUE))
-    catalog <- build_case_catalog(options$cases_dir)
-    results <- search_case_catalog(
-      catalog,
-      options$query,
-      limit = options$limit,
-      completed_only = options$completed_only
-    )
-    display_columns <- c(
-      "score",
-      "case_id",
-      "title",
-      "chart_type",
-      "chart_type_zh",
-      "required_columns",
-      "completion_status",
-      "distribution_status",
-      "case_path"
-    )
+    if (options$public) {
+      default_private <- file.path(
+        repo_root,
+        "skills",
+        "figureforge",
+        "cases"
+      )
+      public_cases <- if (identical(options$cases_dir, default_private)) {
+        file.path(repo_root, "skills", "figureforge", "public-cases")
+      } else {
+        options$cases_dir
+      }
+      catalog <- build_public_catalog(public_cases)
+      profile <- if (is.null(options$schema)) {
+        NULL
+      } else {
+        profile_data_frame(read.csv(
+          options$schema,
+          stringsAsFactors = FALSE,
+          check.names = FALSE
+        ))
+      }
+      results <- rank_public_cases(
+        catalog,
+        options$query,
+        profile = profile,
+        limit = options$limit
+      )
+      score_columns <- c(
+        "score_id",
+        "score_alias",
+        "score_family",
+        "score_schema",
+        "score_intent",
+        "score_layout",
+        "score_readiness",
+        "score_total"
+      )
+      display_columns <- c(
+        "case_id",
+        "title_en",
+        "title_zh",
+        "chart_family",
+        "chart_subfamily",
+        "required_roles",
+        "qa_status",
+        "distribution_status",
+        "case_path",
+        if (options$explain_scores) score_columns else "score_total"
+      )
+    } else {
+      catalog <- build_case_catalog(options$cases_dir)
+      results <- search_case_catalog(
+        catalog,
+        options$query,
+        limit = options$limit,
+        completed_only = options$completed_only
+      )
+      display_columns <- c(
+        "score",
+        "case_id",
+        "title",
+        "chart_type",
+        "chart_type_zh",
+        "required_columns",
+        "completion_status",
+        "distribution_status",
+        "case_path"
+      )
+    }
     display <- results[, display_columns, drop = FALSE]
     if (!is.null(options$output)) {
       dir.create(
