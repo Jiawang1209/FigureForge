@@ -67,31 +67,31 @@ printf '%s\n' "$INSTALL_ROOT" >"$OUTPUT_DIR/install-root.txt"
 PROMPTS="$OUTPUT_DIR/prompts.tsv"
 {
   printf 'explicit\t001\t%s\n' \
-    'Use $figureforge to inspect this dataset and choose a safe public case. Return only the selected Skill name and the first command you would run, using the installed Skill path. Do not execute the command.'
+    'Use $figureforge with a CSV to create a publication-ready R scatter plot. Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t001\t%s\n' \
-    'I have a CSV with time, group, estimate, lower, and upper columns. Help me choose and safely adapt a publication-ready scientific visualization. Return only the capability you selected and the first command from its installed path. Do not execute it.'
+    'I have a CSV with time, group, estimate, lower, and upper columns for a publication-ready time series. Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t002\t%s\n' \
-    '我的 CSV 有处理组、条件和响应值三列，想做适合论文的分组柱状图。请只返回你选择的能力和安装目录中的第一条安全检查命令，不要执行。'
+    '我的 CSV 有处理组、条件和响应值三列，想做适合论文的分组柱状图。Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t003\t%s\n' \
-    'I have feature, log2 fold change, adjusted p-value, and class columns for a volcano plot. Return only the capability selected and its first installed-path safety command; do not run it.'
+    'I have feature, log2 fold change, adjusted p-value, and class columns for a volcano plot. Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t004\t%s\n' \
-    '我只有 variable_x、variable_y 和 correlation 三列数据，想做相关性热图。只返回所选能力和基于安装路径的第一条命令，不执行。'
+    '我只有 variable_x、variable_y 和 correlation 三列数据，想做相关性热图。Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t005\t%s\n' \
-    'My table contains group, time, survival, lower, and upper. Choose a safe scientific-figure adaptation capability and return only its name and first command from the installed path.'
+    'My table contains group, time, survival, lower, and upper for a publication-ready survival curve. Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t006\t%s\n' \
-    '我想把 group、value、sample_id 三列做成雨云图，但不希望修改原始数据。只返回应使用的能力和安装态第一条命令。'
+    '我想把 group、value、sample_id 三列做成雨云图，但不希望修改原始数据。Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t007\t%s\n' \
-    'I have deterministic node and edge records with coordinates. Select the publication-figure capability and return only its name and first installed-path command.'
+    'I have deterministic node and edge records with coordinates for a publication-ready network plot. Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t008\t%s\n' \
-    'I need a species-colored fitted scatter plot from bill measurements. Return only the appropriate capability and the first safety command using its installed location.'
+    'I need a species-colored fitted scatter plot from bill measurements. Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t009\t%s\n' \
-    '我有国家、年份和人口三列，要制作可复现的人口时序图。只返回能力名称和使用其安装目录的第一条命令。'
+    '我有国家、年份和人口三列，要制作可复现的人口时序图。Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
   printf 'implicit\t010\t%s\n' \
-    'I was told to make a bubble plot, but the term is ambiguous and I only have data columns. Return only the capability that should inspect and map the data plus its first installed-path command.'
+    'I was told to make a bubble plot, but the term is ambiguous and I only have data columns. Return only the selected capability and the three artifact names it would create. Do not execute the plotting task.'
 } >"$PROMPTS"
 
 SUMMARY="$OUTPUT_DIR/summary.csv"
-printf 'kind,probe_id,exit_status,skill_loaded,capability_selected,installed_path,passed\n' \
+printf 'kind,probe_id,exit_status,skill_loaded,capability_selected,artifact_contract,passed\n' \
   >"$SUMMARY"
 
 explicit_total=0
@@ -126,7 +126,7 @@ while IFS=$'\t' read -r kind probe_id prompt; do
 
   skill_loaded=false
   capability_selected=false
-  installed_path=false
+  artifact_contract=false
   if grep -Fq '.agents/skills/figureforge/SKILL.md' "$transcript"; then
     skill_loaded=true
   fi
@@ -135,20 +135,21 @@ while IFS=$'\t' read -r kind probe_id prompt; do
     capability_selected=true
   fi
   if [ -s "$final_message" ] &&
-      grep -Eq '\.agents/skills/figureforge|FIGUREFORGE_SKILL_ROOT' \
-        "$final_message"; then
-    installed_path=true
+      grep -Fq 'plot.R' "$final_message" &&
+      grep -Fq 'plot.png' "$final_message" &&
+      grep -Fq 'plot.pdf' "$final_message"; then
+    artifact_contract=true
   fi
   passed=false
   if [ "$exit_status" -eq 0 ] &&
       [ "$skill_loaded" = true ] &&
       [ "$capability_selected" = true ] &&
-      [ "$installed_path" = true ]; then
+      [ "$artifact_contract" = true ]; then
     passed=true
   fi
   printf '%s,%s,%s,%s,%s,%s,%s\n' \
     "$kind" "$probe_id" "$exit_status" "$skill_loaded" \
-    "$capability_selected" "$installed_path" "$passed" >>"$SUMMARY"
+    "$capability_selected" "$artifact_contract" "$passed" >>"$SUMMARY"
 
   if [ "$kind" = explicit ]; then
     explicit_total=$((explicit_total + 1))

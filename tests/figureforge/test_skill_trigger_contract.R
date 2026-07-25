@@ -162,6 +162,31 @@ stopifnot(grepl("implicit_total", live_eval_text, fixed = TRUE))
 stopifnot(grepl("implicit >= 0.90", live_eval_text, fixed = TRUE))
 stopifnot(grepl(".agents/skills/figureforge", live_eval_text, fixed = TRUE))
 stopifnot(grepl("</dev/null", live_eval_text, fixed = TRUE))
+stopifnot(grepl("artifact_contract", live_eval_text, fixed = TRUE))
+stopifnot(!grepl("installed_path", live_eval_text, fixed = TRUE))
+stopifnot(!grepl("FIGUREFORGE_SKILL_ROOT", live_eval_text, fixed = TRUE))
+stopifnot(!grepl("first command", live_eval_text, fixed = TRUE))
+for (artifact_name in c("plot.R", "plot.png", "plot.pdf")) {
+  stopifnot(grepl(artifact_name, live_eval_text, fixed = TRUE))
+}
+stopifnot(grepl(
+  paste(
+    "Use $figureforge with a CSV to create a publication-ready R",
+    "scatter plot."
+  ),
+  live_eval_text,
+  fixed = TRUE
+))
+response_contract <- paste(
+  "Return only the selected capability and the three artifact names",
+  "it would create. Do not execute the plotting task."
+)
+response_contract_matches <- gregexpr(
+  response_contract,
+  live_eval_text,
+  fixed = TRUE
+)[[1L]]
+stopifnot(sum(response_contract_matches >= 0L) == 11L)
 stopifnot(grepl(
   "selected capability's installed SKILL.md",
   live_eval_text,
@@ -186,7 +211,7 @@ writeLines(
     "done",
     "test -n \"$final_message\"",
     "printf '%s\\n' figureforge >\"$final_message\"",
-    "printf '%s\\n' 'Rscript \".agents/skills/figureforge/scripts/doctor.R\"' >>\"$final_message\"",
+    "printf '%s\\n' plot.R plot.png plot.pdf >>\"$final_message\"",
     "printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"sed -n 1,240p .agents/skills/figureforge/SKILL.md\"}}'"
   ),
   fake_codex,
@@ -211,8 +236,67 @@ fake_summary <- read.csv(
   file.path(fake_output, "summary.csv"),
   stringsAsFactors = FALSE
 )
+stopifnot(identical(
+  names(fake_summary),
+  c(
+    "kind",
+    "probe_id",
+    "exit_status",
+    "skill_loaded",
+    "capability_selected",
+    "artifact_contract",
+    "passed"
+  )
+))
 stopifnot(nrow(fake_summary) == 11L)
+stopifnot(sum(fake_summary$kind == "explicit") == 1L)
+stopifnot(sum(fake_summary$kind == "implicit") == 10L)
 stopifnot(all(fake_summary$skill_loaded == "true"))
+stopifnot(all(fake_summary$artifact_contract == "true"))
 stopifnot(all(fake_summary$passed == "true"))
+
+missing_artifact_codex <- file.path(fake_root, "missing-artifact-codex")
+writeLines(
+  c(
+    "#!/bin/sh",
+    "set -eu",
+    "final_message=",
+    "while [ \"$#\" -gt 0 ]; do",
+    "  if [ \"$1\" = \"-o\" ]; then",
+    "    final_message=$2",
+    "    shift 2",
+    "  else",
+    "    shift",
+    "  fi",
+    "done",
+    "test -n \"$final_message\"",
+    "printf '%s\\n' figureforge plot.R plot.png >\"$final_message\"",
+    "printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"sed -n 1,240p .agents/skills/figureforge/SKILL.md\"}}'"
+  ),
+  missing_artifact_codex,
+  useBytes = TRUE
+)
+Sys.chmod(missing_artifact_codex, mode = "0755")
+missing_artifact_output <- file.path(fake_root, "missing-artifact-output")
+missing_artifact_status <- suppressWarnings(system2(
+  "bash",
+  c(
+    shQuote(live_eval_path),
+    "--output-dir",
+    shQuote(missing_artifact_output),
+    "--codex",
+    shQuote(missing_artifact_codex)
+  ),
+  stdout = TRUE,
+  stderr = TRUE
+))
+stopifnot(!identical(attr(missing_artifact_status, "status"), NULL))
+missing_artifact_summary <- read.csv(
+  file.path(missing_artifact_output, "summary.csv"),
+  stringsAsFactors = FALSE
+)
+stopifnot(nrow(missing_artifact_summary) == 11L)
+stopifnot(all(missing_artifact_summary$artifact_contract == "false"))
+stopifnot(all(missing_artifact_summary$passed == "false"))
 
 message("skill trigger contract tests: PASS")
