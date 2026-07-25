@@ -18,9 +18,10 @@ current scope and remains a possible future direction.
 
 ## FigureForge Skill 1.1.0
 
-FigureForge Skill 1.1.0 is the current implementation and release candidate.
-Its live-model and release certification remain pending.
-FigureForge Skill 1.0.1 remains the latest locally certified release.
+FigureForge Skill 1.1.0 is the current locally certified release.
+FigureForge Skill 1.0.1 is the prior certified historical release.
+The v1.1.0 certification evidence is recorded in
+[`docs/figureforge-skill-v1.1.0-release.md`](docs/figureforge-skill-v1.1.0-release.md).
 
 ### User quick start
 
@@ -514,8 +515,9 @@ See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioni
 
 ### Status
 
-**FigureForge Skill 1.0.1 is the locally certified release candidate.** It
-includes 15 public cases (3 authentic open-data and 12 synthetic
+**FigureForge Skill 1.1.0 is the current locally certified release.**
+FigureForge Skill 1.0.1 remains the prior certified historical release. The
+current package includes 15 public cases (3 authentic open-data and 12 synthetic
 demonstrations), 24 stress fixtures, and 30 deterministic bilingual forward
 evaluations. One hundred fifty-two of 165 private cases meet the complete
 local contract; the other 13 have validated case-specific blocker records, and

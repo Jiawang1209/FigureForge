@@ -7,12 +7,15 @@ Date: 2026-07-26
 FigureForge Skill 1.1.0 is a case-enhanced R plotting capability. For an
 ordinary user, real data plus a natural request should produce a standalone
 `plot.R`, `plot.png`, and `plot.pdf` without requiring the user to operate case
-metadata. The current implementation candidate has deterministic contract
-coverage, while final v1.1.0 live-model and release evidence remains pending.
+metadata. The current implementation has deterministic contract coverage and
+is now locally certified by deterministic, real live-trigger, real plotting,
+and independent rerender evidence.
 
-The existing case, distribution, stress, package, and private-corpus evidence
-is maintainer reliability evidence inherited from the v1.0.1 platform, not a
-claim that the v1.1.0 live plotting acceptance gate has already passed.
+The v1.1.0 live gates passed with Explicit 1/1; implicit 10/10, plus one passed
+plotting row that loaded the installed Skill, delivered nonempty `plot.R`,
+`plot.png`, and `plot.pdf`, and passed the independent rerender gate.
+The current live evidence is retained at
+`/tmp/figureforge-v110-live.740e78`.
 **MCP is planned and unimplemented.**
 
 ## User plotting behavior
@@ -26,12 +29,12 @@ claim that the v1.1.0 live plotting acceptance gate has already passed.
 | Re-run | `Rscript plot.R <input-file> <output-directory>` |
 | Default stack | R and ggplot2, with specialist R packages where appropriate |
 | Background work | Case search, schema mapping, task QA, and case metadata remain agent-operated |
-| Evidence state | Deterministic contracts are available; final v1.1.0 live-model and release certification is pending |
+| Evidence state | FigureForge Skill 1.1.0 is locally certified; deterministic and real live-model release gates passed |
 
 ## Maintainer and release reliability
 
-The counts below are preserved factual evidence from the v1.0.1 platform and
-the local corpus acceptance work.
+The platform counts below remain unchanged in v1.1.0 and are backed by the
+current deterministic verifier plus the local corpus acceptance work.
 
 | Acceptance area | Result |
 | --- | --- |
@@ -39,9 +42,11 @@ the local corpus acceptance work.
 | Stress suite | 24 synthetic stress fixtures across all 12 public families |
 | Forward evaluation | 30 deterministic English/Chinese rows; Top-1, Top-3, mapping, render, and safe rejection all passed |
 | Live trigger gate | Explicit 1/1; implicit 10/10, exceeding the 100% and 90% thresholds |
+| Live plotting gate | 1/1 passed; installed Skill read, nonempty script/PNG/PDF, delivered-script rerun, and independent PNG/PDF rerender all passed |
+| Evidence roots | `/tmp/figureforge-v110.4Ywsys` for the first deterministic verification, `/tmp/figureforge-v110.lRin35` for the post-documentation verifier, and `/tmp/figureforge-v110-live.740e78` for real live gates |
 | Public workflow | doctor, bilingual search, schema match, protected workspace, render, visual QA, and independent validation |
 | Public packaging | install-shaped archive, manifest, SHA-256 sidecar, structural verifier, and per-member checksum validation |
-| Upgrade | v1.0.0 is atomically replaced by v1.0.1 without stale files; preserved external adaptation hashes and independent rerender pass |
+| Upgrade | v1.0.0 is atomically replaced by the current 1.1.0 package without stale files; preserved external adaptation hashes and independent rerender pass |
 | Private corpus audit | 165 real case directories classified independently |
 | Completed representative cases | 152 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
 | Current corpus terminal counts | 152 completed, 13 validated blockers, 0 pending after a rendered 165-case audit |
@@ -74,12 +79,12 @@ export FIGUREFORGE_RSCRIPT="${FIGUREFORGE_RSCRIPT:-Rscript}"
   --report "<external_report>/visual-qa.json"
 
 "$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/package_skill.R \
-  --archive /tmp/figureforge-skill-1.0.1.tar.gz \
-  --manifest /tmp/figureforge-skill-1.0.1-manifest.csv
+  --archive /tmp/figureforge-skill-1.1.0.tar.gz \
+  --manifest /tmp/figureforge-skill-1.1.0-manifest.csv
 
 "$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/verify_release.R \
-  --archive /tmp/figureforge-skill-1.0.1.tar.gz \
-  --manifest /tmp/figureforge-skill-1.0.1-manifest.csv
+  --archive /tmp/figureforge-skill-1.1.0.tar.gz \
+  --manifest /tmp/figureforge-skill-1.1.0-manifest.csv
 
 "$FIGUREFORGE_RSCRIPT" skills/figureforge/scripts/evaluate_skill.R \
   --catalog skills/figureforge/references/trigger-evals-v1.csv \
@@ -123,7 +128,8 @@ their structured results. It must:
 - expose planned capability as planned until executable tools and tests exist.
 
 All 165 private cases have now been processed and the Skill/corpus acceptance
-boundary is stable. The public v1.0.1 release adds only reviewed public assets;
-private cases remain local. MCP work has not started; any future implementation
-must begin as a separate task from these verified contracts, not from
-assumptions about the private corpus.
+boundary is stable. The locally certified v1.1.0 package adds only reviewed
+public assets; private cases remain local. FigureForge Skill 1.0.1 remains the
+prior certified historical release. MCP work has not started; any future
+implementation must begin as a separate task from these verified contracts,
+not from assumptions about the private corpus.

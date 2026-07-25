@@ -17,8 +17,9 @@ FigureForge 默认使用 **R / ggplot2**，遇到特定科研图形时按需使�
 
 ## FigureForge Skill 1.1.0
 
-FigureForge Skill 1.1.0 是当前实现与发布候选版本。真实模型与发布认证仍待完成。
-FigureForge Skill 1.0.1 仍是最新完成本地认证的发布版本。
+FigureForge Skill 1.1.0 是当前完成本地认证的发布版本。
+FigureForge Skill 1.0.1 是此前已认证的历史发布版本。v1.1.0 认证证据记录于
+[`docs/figureforge-skill-v1.1.0-release.md`](docs/figureforge-skill-v1.1.0-release.md)。
 
 ### 用户快速开始
 
@@ -466,7 +467,8 @@ PDF、书面 QA 和独立重渲染结果，保存在被忽略的
 
 ### 当前状态
 
-**FigureForge Skill 1.0.1 已完成本地发布候选认证。** 当前包含 15 个公开
+**FigureForge Skill 1.1.0 是当前完成本地认证的发布版本。**
+FigureForge Skill 1.0.1 是此前已认证的历史发布版本。当前包包含 15 个公开
 案例（3 个真实开放数据案例和 12 个合成演示案例）、24 个压力测试夹具和
 30 条确定性双语前向评测。165 个私有案例中有 152 个满足完整契约，其余
 13 个具有通过校验的案例级阻塞记录，待处理数为 0；私有案例库不进入公开

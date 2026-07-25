@@ -50,9 +50,8 @@ english_terms <- c(
   "plot.pdf",
   "Rscript plot.R <input-file> <output-directory>",
   "Maintainer workflow",
-  "current implementation and release candidate",
-  "live-model and release certification remain pending",
-  "FigureForge Skill 1.0.1 remains the latest locally certified release",
+  "FigureForge Skill 1.1.0 is the current locally certified release",
+  "FigureForge Skill 1.0.1 is the prior certified historical release",
   "15 public cases",
   "24 synthetic stress fixtures",
   "doctor.R",
@@ -83,9 +82,8 @@ chinese_terms <- c(
   "plot.pdf",
   "Rscript plot.R <input-file> <output-directory>",
   "维护者工作流",
-  "当前实现与发布候选版本",
-  "真实模型与发布认证仍待完成",
-  "FigureForge Skill 1.0.1 仍是最新完成本地认证的发布版本",
+  "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
+  "FigureForge Skill 1.0.1 是此前已认证的历史发布版本",
   "15 个公开案例",
   "24 个合成压力测试夹具",
   "doctor.R",
@@ -109,7 +107,7 @@ english_positions <- vapply(
   c(
     "**A case-enhanced R scientific plotting capability for AI agents.**",
     "## FigureForge Skill 1.1.0",
-    "current implementation and release candidate",
+    "FigureForge Skill 1.1.0 is the current locally certified release",
     "Use `xxx.csv` with FigureForge to draw a scatter plot and give me the R script.",
     "## Maintainer workflow"
   ),
@@ -123,7 +121,7 @@ chinese_positions <- vapply(
   c(
     "**面向 AI 智能体、由案例增强的 R 科研绘图能力。**",
     "## FigureForge Skill 1.1.0",
-    "当前实现与发布候选版本",
+    "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
     "使用 `xxx.csv` 数据，基于 FigureForge 帮我绘制一个散点图，并给我一份 R 脚本。",
     "## 维护者工作流"
   ),

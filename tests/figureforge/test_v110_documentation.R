@@ -32,6 +32,7 @@ english <- read_document("README.md")
 chinese <- read_document("README.zh.md")
 changelog <- read_document("CHANGELOG.md")
 status <- read_document("docs/figureforge-skill-mvp-status.md")
+release <- read_document("docs/figureforge-skill-v1.1.0-release.md")
 skill <- read_document("skills/figureforge/SKILL.md")
 plotting <- read_document(
   "skills/figureforge/references/plotting-workflow.md"
@@ -105,6 +106,60 @@ stopifnot(grepl(
   status,
   fixed = TRUE
 ))
+stopifnot(contains_all(
+  release,
+  c(
+    "FigureForge Skill 1.1.0",
+    "plot.R",
+    "plot.png",
+    "plot.pdf",
+    "independent rerender",
+    "15 public cases",
+    "24 synthetic stress fixtures",
+    "30 deterministic bilingual forward evaluations",
+    "MCP is planned and unimplemented",
+    "FigureForge Skill v1.1.0 acceptance: PASS",
+    "Explicit live trigger | 1/1",
+    "Implicit live trigger | 10/10",
+    "/tmp/figureforge-v110-live.740e78",
+    "/tmp/figureforge-v110.4Ywsys",
+    "/tmp/figureforge-v110.lRin35"
+  )
+))
+stopifnot(contains_all(
+  english,
+  c(
+    "FigureForge Skill 1.1.0 is the current locally certified release",
+    "FigureForge Skill 1.0.1 is the prior certified historical release"
+  )
+))
+stopifnot(contains_all(
+  chinese,
+  c(
+    "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
+    "FigureForge Skill 1.0.1 是此前已认证的历史发布版本"
+  )
+))
+stopifnot(contains_all(
+  status,
+  c(
+    "locally certified",
+    "Explicit 1/1; implicit 10/10",
+    "/tmp/figureforge-v110-live.740e78"
+  )
+))
+for (document in list(english, chinese, status)) {
+  stopifnot(!grepl(
+    "v1.1.0 live-model and release certification is pending",
+    document,
+    fixed = TRUE
+  ))
+  stopifnot(!grepl(
+    "真实模型与发布认证仍待完成",
+    document,
+    fixed = TRUE
+  ))
+}
 
 verifier_path <- file.path(
   repo_root,
@@ -237,6 +292,7 @@ documents <- list(
   chinese,
   changelog,
   status,
+  release,
   skill,
   plotting,
   maintainer,
