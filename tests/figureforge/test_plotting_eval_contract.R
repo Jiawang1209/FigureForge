@@ -43,7 +43,11 @@ for (phrase in c(
   "plot.png",
   "plot.pdf",
   "independent-rerender",
-  ': >"$FINAL_MESSAGE"'
+  ': >"$FINAL_MESSAGE"',
+  "json.loads",
+  "IHDR",
+  "%PDF-",
+  "%%EOF"
 )) {
   if (!grepl(phrase, harness_text, fixed = TRUE)) {
     stop("plotting harness is missing required text: ", phrase, call. = FALSE)
@@ -63,6 +67,25 @@ if (!nzchar(rscript)) {
   }
 }
 stopifnot(nzchar(rscript), file.exists(rscript))
+
+counter_path <- file.path(fake_root, "plot-r-invocations.txt")
+profile_path <- file.path(fake_root, "plot-counter.Rprofile")
+writeLines(
+  c(
+    'counter <- Sys.getenv("FIGUREFORGE_PLOT_COUNTER", unset = "")',
+    'file_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)',
+    'if (nzchar(counter) && length(file_arg) == 1L &&',
+    '    basename(sub("^--file=", "", file_arg[[1L]])) == "plot.R") {',
+    '  cat("plot.R\\n", file = counter, append = TRUE)',
+    '}'
+  ),
+  profile_path,
+  useBytes = TRUE
+)
+Sys.setenv(
+  R_PROFILE_USER = profile_path,
+  FIGUREFORGE_PLOT_COUNTER = counter_path
+)
 
 expected_plot_body <- c(
   "args <- commandArgs(trailingOnly = TRUE)",
@@ -125,7 +148,8 @@ fake_lines <- c(
   "printf '%s\\n' \"$cwd/figureforge-output/plot.R\" >\"$final_message\"",
   "printf '%s\\n' \"$cwd/figureforge-output/plot.png\" >>\"$final_message\"",
   "printf '%s\\n' \"$cwd/figureforge-output/plot.pdf\" >>\"$final_message\"",
-  "printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"sed -n 1,240p .agents/skills/figureforge/SKILL.md\"}}'"
+  "sed -n '1,240p' \"$cwd/.agents/skills/figureforge/SKILL.md\" >/dev/null",
+  "printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"sed -n 1,240p .agents/skills/figureforge/SKILL.md\",\"exit_code\":0}}'"
 )
 writeLines(fake_lines, fake_codex, useBytes = TRUE)
 Sys.chmod(fake_codex, mode = "0755")
@@ -204,6 +228,163 @@ boolean_columns <- setdiff(names(summary), "exit_status")
 stopifnot(all(vapply(
   summary[boolean_columns],
   function(column) identical(column[[1L]], "true"),
+  logical(1L)
+)))
+
+counter_entries <- readLines(counter_path, warn = FALSE)
+stopifnot(identical(counter_entries, c("plot.R", "plot.R")))
+Sys.unsetenv("FIGUREFORGE_PLOT_COUNTER")
+
+raw_contains <- function(bytes, text) {
+  length(grepRaw(charToRaw(text), bytes, fixed = TRUE)) > 0L
+}
+valid_png <- function(path) {
+  bytes <- readBin(path, what = "raw", n = 24L)
+  if (length(bytes) < 24L ||
+      !identical(
+        bytes[1L:8L],
+        as.raw(c(137L, 80L, 78L, 71L, 13L, 10L, 26L, 10L))
+      ) ||
+      !identical(rawToChar(bytes[13L:16L]), "IHDR")) {
+    return(FALSE)
+  }
+  decode_uint32 <- function(value) {
+    sum(as.integer(value) * 256^(3L:0L))
+  }
+  decode_uint32(bytes[17L:20L]) > 0 &&
+    decode_uint32(bytes[21L:24L]) > 0
+}
+valid_pdf <- function(path) {
+  size <- file.info(path)$size
+  bytes <- readBin(path, what = "raw", n = size)
+  length(bytes) >= 5L &&
+    identical(rawToChar(bytes[1L:5L]), "%PDF-") &&
+    raw_contains(bytes, "trailer") &&
+    raw_contains(bytes, "%%EOF")
+}
+image_paths <- c(delivered[2L:3L], rerendered)
+stopifnot(length(unique(normalizePath(image_paths))) == 4L)
+stopifnot(all(vapply(
+  image_paths[c(1L, 3L)],
+  valid_png,
+  logical(1L)
+)))
+stopifnot(all(vapply(
+  image_paths[c(2L, 4L)],
+  valid_pdf,
+  logical(1L)
+)))
+
+mention_codex <- file.path(fake_root, "mention-only-codex")
+mention_lines <- fake_lines[
+  !grepl("^sed -n .*SKILL\\.md.*>/dev/null$", fake_lines)
+]
+event_index <- grepl(
+  "item.completed.*command_execution",
+  mention_lines,
+  fixed = FALSE
+)
+mention_lines[event_index] <- paste0(
+  "printf '%s\\n' ",
+  "'{\"message\":\"mentioned .agents/skills/figureforge/SKILL.md only\"}'"
+)
+writeLines(mention_lines, mention_codex, useBytes = TRUE)
+Sys.chmod(mention_codex, mode = "0755")
+mention_output <- file.path(fake_root, "mention-output")
+mention_result <- suppressWarnings(system2(
+  "bash",
+  c(
+    shQuote(harness_path),
+    "--output-dir",
+    shQuote(mention_output),
+    "--codex",
+    shQuote(mention_codex)
+  ),
+  stdout = TRUE,
+  stderr = TRUE
+))
+stopifnot(identical(attr(mention_result, "status"), 1L))
+mention_summary <- read.csv(
+  file.path(mention_output, "summary.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(mention_summary$skill_loaded[[1L]], "false"))
+stopifnot(all(vapply(
+  mention_summary[c(
+    "script_exists",
+    "png_exists",
+    "pdf_exists",
+    "rerender_png",
+    "rerender_pdf"
+  )],
+  function(column) identical(column[[1L]], "true"),
+  logical(1L)
+)))
+stopifnot(identical(mention_summary$passed[[1L]], "false"))
+
+invalid_codex <- file.path(fake_root, "invalid-image-codex")
+invalid_lines <- c(
+  "#!/bin/sh",
+  "set -eu",
+  "cwd=",
+  "final_message=",
+  "while [ \"$#\" -gt 0 ]; do",
+  "  case \"$1\" in",
+  "    -C) cwd=$2; shift 2 ;;",
+  "    -o) final_message=$2; shift 2 ;;",
+  "    *) shift ;;",
+  "  esac",
+  "done",
+  "mkdir -p \"$cwd/figureforge-output\"",
+  "cat >\"$cwd/figureforge-output/plot.R\" <<'INVALID_R'",
+  "args <- commandArgs(trailingOnly = TRUE)",
+  "dir.create(args[[2L]], recursive = TRUE, showWarnings = FALSE)",
+  "writeLines(\"not a PNG\", file.path(args[[2L]], \"plot.png\"))",
+  "writeLines(\"not a PDF\", file.path(args[[2L]], \"plot.pdf\"))",
+  "INVALID_R",
+  paste(
+    shQuote(rscript),
+    "\"$cwd/figureforge-output/plot.R\"",
+    "\"$cwd/scatter.csv\"",
+    "\"$cwd/figureforge-output\""
+  ),
+  "sed -n '1,240p' \"$cwd/.agents/skills/figureforge/SKILL.md\" >/dev/null",
+  "printf '%s\\n' '{\"type\":\"item.completed\",\"item\":{\"type\":\"command_execution\",\"command\":\"sed -n 1,240p .agents/skills/figureforge/SKILL.md\",\"exit_code\":0}}'",
+  ": >\"$final_message\""
+)
+writeLines(invalid_lines, invalid_codex, useBytes = TRUE)
+Sys.chmod(invalid_codex, mode = "0755")
+invalid_output <- file.path(fake_root, "invalid-output")
+invalid_result <- suppressWarnings(system2(
+  "bash",
+  c(
+    shQuote(harness_path),
+    "--output-dir",
+    shQuote(invalid_output),
+    "--codex",
+    shQuote(invalid_codex)
+  ),
+  stdout = TRUE,
+  stderr = TRUE
+))
+stopifnot(identical(attr(invalid_result, "status"), 1L))
+invalid_summary <- read.csv(
+  file.path(invalid_output, "summary.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(invalid_summary$skill_loaded[[1L]], "true"))
+stopifnot(identical(invalid_summary$script_exists[[1L]], "true"))
+stopifnot(all(vapply(
+  invalid_summary[c(
+    "png_exists",
+    "pdf_exists",
+    "rerender_png",
+    "rerender_pdf",
+    "passed"
+  )],
+  function(column) identical(column[[1L]], "false"),
   logical(1L)
 )))
 

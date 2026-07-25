@@ -61,6 +61,107 @@ if [ -z "$RSCRIPT" ] || [ ! -x "$RSCRIPT" ]; then
   exit 2
 fi
 
+if [ -x /usr/bin/python3 ]; then
+  PYTHON=/usr/bin/python3
+else
+  PYTHON=$(command -v python3 || true)
+fi
+
+skill_read_succeeded() {
+  if [ -z "$PYTHON" ] || [ ! -x "$PYTHON" ]; then
+    return 1
+  fi
+  "$PYTHON" - "$1" <<'PY'
+import json
+import os
+import shlex
+import sys
+
+transcript_path = sys.argv[1]
+read_commands = {"awk", "cat", "head", "less", "more", "sed", "tail"}
+skill_path = ".agents/skills/figureforge/SKILL.md"
+matched = False
+
+try:
+    with open(transcript_path, encoding="utf-8") as transcript:
+        for line in transcript:
+            if not line.strip():
+                continue
+            event = json.loads(line)
+            item = event.get("item")
+            if (
+                event.get("type") != "item.completed"
+                or not isinstance(item, dict)
+                or item.get("type") != "command_execution"
+            ):
+                continue
+            exit_code = item.get("exit_code")
+            command = item.get("command")
+            if (
+                isinstance(exit_code, bool)
+                or not isinstance(exit_code, (int, float))
+                or exit_code != 0
+                or not isinstance(command, str)
+            ):
+                continue
+            tokens = shlex.split(command)
+            if not tokens or os.path.basename(tokens[0]) not in read_commands:
+                continue
+            targets = [
+                token.replace("\\", "/").rstrip("/")
+                for token in tokens[1:]
+                if not token.startswith("-")
+            ]
+            if any(
+                target == skill_path or target.endswith("/" + skill_path)
+                for target in targets
+            ):
+                matched = True
+except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+    sys.exit(1)
+
+sys.exit(0 if matched else 1)
+PY
+}
+
+valid_image() {
+  path=$1
+  format=$2
+  if [ -z "$PYTHON" ] || [ ! -x "$PYTHON" ]; then
+    return 1
+  fi
+  "$PYTHON" - "$path" "$format" <<'PY'
+import struct
+import sys
+
+path, image_format = sys.argv[1:3]
+try:
+    with open(path, "rb") as image_file:
+        data = image_file.read()
+except OSError:
+    sys.exit(1)
+
+if image_format == "png":
+    valid = (
+        len(data) >= 24
+        and data[:8] == b"\x89PNG\r\n\x1a\n"
+        and data[12:16] == b"IHDR"
+        and struct.unpack(">I", data[16:20])[0] > 0
+        and struct.unpack(">I", data[20:24])[0] > 0
+    )
+elif image_format == "pdf":
+    valid = (
+        data.startswith(b"%PDF-")
+        and b"trailer" in data
+        and data.rstrip().endswith(b"%%EOF")
+    )
+else:
+    valid = False
+
+sys.exit(0 if valid else 1)
+PY
+}
+
 if [ -e "$OUTPUT_DIR" ] &&
     [ -n "$(find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
   echo "Plotting-eval output directory must be empty: $OUTPUT_DIR" >&2
@@ -117,17 +218,16 @@ pdf_exists=false
 SCRIPT_PATH="$WORKSPACE_ROOT/figureforge-output/plot.R"
 PNG_PATH="$WORKSPACE_ROOT/figureforge-output/plot.png"
 PDF_PATH="$WORKSPACE_ROOT/figureforge-output/plot.pdf"
-if [ -s "$TRANSCRIPT" ] &&
-    grep -Fq '.agents/skills/figureforge/SKILL.md' "$TRANSCRIPT"; then
+if skill_read_succeeded "$TRANSCRIPT"; then
   skill_loaded=true
 fi
 if [ -s "$SCRIPT_PATH" ]; then
   script_exists=true
 fi
-if [ -s "$PNG_PATH" ]; then
+if valid_image "$PNG_PATH" png; then
   png_exists=true
 fi
-if [ -s "$PDF_PATH" ]; then
+if valid_image "$PDF_PATH" pdf; then
   pdf_exists=true
 fi
 
@@ -154,10 +254,10 @@ printf '%s\n' "$rerender_status" >"$OUTPUT_DIR/independent-rerender-status.txt"
 
 rerender_png=false
 rerender_pdf=false
-if [ -s "$RERENDER_DIR/plot.png" ]; then
+if valid_image "$RERENDER_DIR/plot.png" png; then
   rerender_png=true
 fi
-if [ -s "$RERENDER_DIR/plot.pdf" ]; then
+if valid_image "$RERENDER_DIR/plot.pdf" pdf; then
   rerender_pdf=true
 fi
 
