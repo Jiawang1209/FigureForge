@@ -1,0 +1,2 @@
+exit_status,skill_loaded,script_exists,png_exists,pdf_exists,rerender_png,rerender_pdf,passed
+0,true,true,true,true,true,true,true

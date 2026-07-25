@@ -1,0 +1,12 @@
+kind,probe_id,exit_status,skill_loaded,capability_selected,artifact_contract,passed
+explicit,001,0,true,true,true,true
+implicit,001,0,true,true,true,true
+implicit,002,0,true,true,true,true
+implicit,003,0,true,true,true,true
+implicit,004,0,true,true,true,true
+implicit,005,0,true,true,true,true
+implicit,006,0,true,true,true,true
+implicit,007,0,true,true,true,true
+implicit,008,0,true,true,true,true
+implicit,009,0,true,true,true,true
+implicit,010,0,true,true,true,true

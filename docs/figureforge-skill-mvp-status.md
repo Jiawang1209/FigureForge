@@ -14,8 +14,11 @@ and independent rerender evidence.
 The v1.1.0 live gates passed with Explicit 1/1; implicit 10/10, plus one passed
 plotting row that loaded the installed Skill, delivered nonempty `plot.R`,
 `plot.png`, and `plot.pdf`, and passed the independent rerender gate.
-The current live evidence is retained at
-`/tmp/figureforge-v110-live.740e78`.
+The durable
+[portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)
+contains parsed summaries, immutable source bindings, environment and command
+records, artifact/package identities, sanitized logs, and SHA-256 checks. The
+original local live root was `/tmp/figureforge-v110-live.740e78`.
 **MCP is planned and unimplemented.**
 
 ## User plotting behavior
@@ -43,7 +46,7 @@ current deterministic verifier plus the local corpus acceptance work.
 | Forward evaluation | 30 deterministic English/Chinese rows; Top-1, Top-3, mapping, render, and safe rejection all passed |
 | Live trigger gate | Explicit 1/1; implicit 10/10, exceeding the 100% and 90% thresholds |
 | Live plotting gate | 1/1 passed; installed Skill read, nonempty script/PNG/PDF, delivered-script rerun, and independent PNG/PDF rerender all passed |
-| Evidence roots | `/tmp/figureforge-v110.4Ywsys` for the first deterministic verification, `/tmp/figureforge-v110.RMisRW` for the final post-documentation certification verifier observed before the certification evidence commit, and `/tmp/figureforge-v110-live.740e78` for real live gates |
+| Evidence | [`docs/figureforge-skill-v1.1.0-evidence/`](figureforge-skill-v1.1.0-evidence/README.md) is the portable, checksummed record; `/tmp/figureforge-v110.4Ywsys`, `/tmp/figureforge-v110.RMisRW`, and `/tmp/figureforge-v110-live.740e78` remain local provenance only |
 | Public workflow | doctor, bilingual search, schema match, protected workspace, render, visual QA, and independent validation |
 | Public packaging | install-shaped archive, manifest, SHA-256 sidecar, structural verifier, and per-member checksum validation |
 | Upgrade | v1.0.0 is atomically replaced by the current 1.1.0 package without stale files; preserved external adaptation hashes and independent rerender pass |

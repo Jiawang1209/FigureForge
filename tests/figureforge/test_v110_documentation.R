@@ -28,6 +28,19 @@ contains_all <- function(document, terms) {
   all(vapply(terms, grepl, logical(1), x = document, fixed = TRUE))
 }
 
+sha256_file <- function(path) {
+  output <- system2(
+    "shasum",
+    c("-a", "256", shQuote(path)),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  stopifnot(is.null(attr(output, "status")))
+  hash <- sub("[[:space:]].*$", "", output[[1L]])
+  stopifnot(grepl("^[0-9a-f]{64}$", hash))
+  hash
+}
+
 english <- read_document("README.md")
 chinese <- read_document("README.zh.md")
 changelog <- read_document("CHANGELOG.md")
@@ -44,6 +57,447 @@ live_harness <- read_document("scripts/run_figureforge_live_evals.sh")
 plotting_harness <- read_document(
   "scripts/run_figureforge_plotting_eval.sh"
 )
+evidence_root <- file.path(
+  repo_root,
+  "docs",
+  "figureforge-skill-v1.1.0-evidence"
+)
+evidence_files <- c(
+  "README.md",
+  "environment.tsv",
+  "source-binding.tsv",
+  "commands.tsv",
+  "deterministic-verification.log",
+  "live-trigger.log",
+  "live-plotting.log",
+  "live-trigger-summary.csv",
+  "live-plotting-summary.csv",
+  "artifact-identities.tsv",
+  "package-identities.tsv",
+  "SHA256SUMS"
+)
+stopifnot(dir.exists(evidence_root))
+stopifnot(all(file.exists(file.path(evidence_root, evidence_files))))
+
+trigger_summary <- read.csv(
+  file.path(evidence_root, "live-trigger-summary.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(
+  names(trigger_summary),
+  c(
+    "kind",
+    "probe_id",
+    "exit_status",
+    "skill_loaded",
+    "capability_selected",
+    "artifact_contract",
+    "passed"
+  )
+))
+stopifnot(nrow(trigger_summary) == 11L)
+stopifnot(sum(trigger_summary$kind == "explicit") == 1L)
+stopifnot(sum(trigger_summary$kind == "implicit") == 10L)
+stopifnot(all(trigger_summary$exit_status == 0L))
+stopifnot(all(trigger_summary$skill_loaded == "true"))
+stopifnot(all(trigger_summary$capability_selected == "true"))
+stopifnot(all(trigger_summary$artifact_contract == "true"))
+stopifnot(all(trigger_summary$passed == "true"))
+
+plotting_summary <- read.csv(
+  file.path(evidence_root, "live-plotting-summary.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(nrow(plotting_summary) == 1L)
+stopifnot(identical(
+  names(plotting_summary),
+  c(
+    "exit_status",
+    "skill_loaded",
+    "script_exists",
+    "png_exists",
+    "pdf_exists",
+    "rerender_png",
+    "rerender_pdf",
+    "passed"
+  )
+))
+stopifnot(plotting_summary$exit_status[[1L]] == 0L)
+stopifnot(all(
+  unlist(plotting_summary[1L, -1L], use.names = FALSE) == "true"
+))
+
+environment <- read.delim(
+  file.path(evidence_root, "environment.tsv"),
+  sep = "\t",
+  quote = "",
+  comment.char = "",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(
+  names(environment),
+  c("key", "value", "observability", "source")
+))
+stopifnot(all(c(
+  "timezone",
+  "codex_path",
+  "codex_version",
+  "codex_model",
+  "rscript_path",
+  "r_version",
+  "os_version",
+  "kernel",
+  "architecture"
+) %in% environment$key))
+stopifnot(identical(
+  environment$value[environment$key == "codex_path"],
+  "/Users/liuyue/.local/bin/codex"
+))
+stopifnot(identical(
+  environment$value[environment$key == "codex_version"],
+  "codex-cli 0.145.0"
+))
+stopifnot(identical(
+  environment$observability[environment$key == "codex_model"],
+  "not_exposed"
+))
+stopifnot(!any(grepl(
+  "(api[_-]?key|token|secret|password)",
+  paste(environment$key, environment$value),
+  ignore.case = TRUE,
+  perl = TRUE
+)))
+
+source_binding <- read.delim(
+  file.path(evidence_root, "source-binding.tsv"),
+  sep = "\t",
+  quote = "",
+  comment.char = "",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(
+  names(source_binding),
+  c(
+    "record_type",
+    "name",
+    "commit",
+    "git_object",
+    "sha256",
+    "worktree_state",
+    "notes"
+  )
+))
+tested_commit <- "2f92d6370563a12862c111d61f3831c83da8b025"
+tested_tree <- "b17435309d9d8e4a967d8211e5b7c4e35e323389"
+repo_binding <- source_binding[
+  source_binding$record_type == "repository",
+  ,
+  drop = FALSE
+]
+stopifnot(nrow(repo_binding) == 1L)
+stopifnot(identical(repo_binding$commit, tested_commit))
+stopifnot(identical(repo_binding$git_object, tested_tree))
+stopifnot(identical(repo_binding$worktree_state, "clean"))
+resolved_tree <- system2(
+  "git",
+  c("-C", shQuote(repo_root), "rev-parse", paste0(tested_commit, "^{tree}")),
+  stdout = TRUE
+)
+stopifnot(is.null(attr(resolved_tree, "status")))
+stopifnot(identical(resolved_tree[[1L]], tested_tree))
+
+component_bindings <- source_binding[
+  source_binding$record_type == "component",
+  ,
+  drop = FALSE
+]
+required_components <- c(
+  "skills/figureforge",
+  "scripts/run_figureforge_live_evals.sh",
+  "scripts/run_figureforge_plotting_eval.sh",
+  "scripts/verify_figureforge_v110.sh",
+  "skills/figureforge/scripts/package_skill.R"
+)
+stopifnot(setequal(component_bindings$name, required_components))
+stopifnot(all(vapply(
+  seq_len(nrow(component_bindings)),
+  function(index) {
+    component_name <- component_bindings$name[[index]]
+    expected_object <- component_bindings$git_object[[index]]
+    tested_object <- system2(
+      "git",
+      c(
+        "-C",
+        shQuote(repo_root),
+        "rev-parse",
+        paste0(tested_commit, ":", component_name)
+      ),
+      stdout = TRUE
+    )
+    current_object <- system2(
+      "git",
+      c(
+        "-C",
+        shQuote(repo_root),
+        "rev-parse",
+        paste0("HEAD:", component_name)
+      ),
+      stdout = TRUE
+    )
+    is.null(attr(tested_object, "status")) &&
+      is.null(attr(current_object, "status")) &&
+      identical(tested_object[[1L]], expected_object) &&
+      identical(current_object[[1L]], expected_object)
+  },
+  logical(1)
+)))
+file_components <- component_bindings[
+  file.info(file.path(repo_root, component_bindings$name))$isdir %in% FALSE,
+  ,
+  drop = FALSE
+]
+stopifnot(all(vapply(
+  seq_len(nrow(file_components)),
+  function(index) {
+    identical(
+      sha256_file(file.path(repo_root, file_components$name[[index]])),
+      file_components$sha256[[index]]
+    )
+  },
+  logical(1)
+)))
+skill_object <- system2(
+  "git",
+  c("-C", shQuote(repo_root), "rev-parse", "HEAD:skills/figureforge"),
+  stdout = TRUE
+)
+stopifnot(is.null(attr(skill_object, "status")))
+stopifnot(identical(
+  skill_object[[1L]],
+  component_bindings$git_object[
+    component_bindings$name == "skills/figureforge"
+  ]
+))
+documentation_bindings <- source_binding[
+  source_binding$record_type == "documentation_only",
+  ,
+  drop = FALSE
+]
+stopifnot(all(c(
+  "2983880a8d8f19cd53d73f4a64236e75c9b247c0",
+  "f475a308709269f35a7253f8ce930f7ba7e49f10"
+) %in% documentation_bindings$commit))
+
+commands <- read.delim(
+  file.path(evidence_root, "commands.tsv"),
+  sep = "\t",
+  quote = "",
+  comment.char = "",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(
+  names(commands),
+  c(
+    "gate",
+    "command",
+    "evidence_time_start",
+    "evidence_time_end",
+    "time_basis",
+    "source_commit",
+    "worktree_state",
+    "result"
+  )
+))
+stopifnot(all(c(
+  "deterministic_baseline",
+  "live_triggers",
+  "live_plotting",
+  "deterministic_pre_certification",
+  "independent_spec_review"
+) %in% commands$gate))
+stopifnot(all(commands$source_commit == tested_commit))
+stopifnot(all(commands$worktree_state %in% c(
+  "clean",
+  "documentation_only_dirty"
+)))
+stopifnot(all(grepl(
+  "^2026-07-26T[0-9]{2}:[0-9]{2}:[0-9]{2}\\+0800$",
+  commands$evidence_time_end
+)))
+stopifnot(all(commands$result == "PASS"))
+expected_command_times <- c(
+  deterministic_baseline = "2026-07-26T00:58:51+0800|2026-07-26T00:59:21+0800",
+  live_triggers = "2026-07-26T00:59:33+0800|2026-07-26T01:01:59+0800",
+  live_plotting = "2026-07-26T01:02:04+0800|2026-07-26T01:05:56+0800",
+  deterministic_pre_certification = "2026-07-26T01:18:13+0800|2026-07-26T01:18:43+0800",
+  independent_spec_review = "2026-07-26T01:23:41+0800|2026-07-26T01:24:11+0800"
+)
+actual_command_times <- paste(
+  commands$evidence_time_start,
+  commands$evidence_time_end,
+  sep = "|"
+)
+names(actual_command_times) <- commands$gate
+stopifnot(identical(
+  actual_command_times[names(expected_command_times)],
+  expected_command_times
+))
+
+artifact_identities <- read.delim(
+  file.path(evidence_root, "artifact-identities.tsv"),
+  sep = "\t",
+  quote = "",
+  comment.char = "",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(nrow(artifact_identities) == 5L)
+stopifnot(all(artifact_identities$bytes > 0L))
+stopifnot(all(grepl(
+  "^[0-9a-f]{64}$",
+  artifact_identities$sha256
+)))
+stopifnot(setequal(
+  artifact_identities$artifact,
+  c(
+    "delivered_plot.R",
+    "delivered_plot.png",
+    "delivered_plot.pdf",
+    "independent_rerender_plot.png",
+    "independent_rerender_plot.pdf"
+  )
+))
+expected_artifact_hashes <- c(
+  delivered_plot.R = "9462e1de9e6815043e4f057fcfea6bfc643b51b64438b711fc83b84de3b549e2",
+  delivered_plot.png = "dedd99342143c323a0b72023649538a427101e3fff4d28870d784bc74bca9c24",
+  delivered_plot.pdf = "65a3fae8e7851b5f7477a868bdc8e7d81bad4527d2b828a3fcea7657fed00fbc",
+  independent_rerender_plot.png = "dedd99342143c323a0b72023649538a427101e3fff4d28870d784bc74bca9c24",
+  independent_rerender_plot.pdf = "a45bbb6da086694141192c0fa9b283f294e8cb4f8d9df50d61e13105f93751ac"
+)
+actual_artifact_hashes <- artifact_identities$sha256
+names(actual_artifact_hashes) <- artifact_identities$artifact
+stopifnot(identical(
+  actual_artifact_hashes[names(expected_artifact_hashes)],
+  expected_artifact_hashes
+))
+expected_artifact_bytes <- c(
+  delivered_plot.R = 5861L,
+  delivered_plot.png = 194565L,
+  delivered_plot.pdf = 424126L,
+  independent_rerender_plot.png = 194565L,
+  independent_rerender_plot.pdf = 424126L
+)
+actual_artifact_bytes <- as.integer(artifact_identities$bytes)
+names(actual_artifact_bytes) <- artifact_identities$artifact
+stopifnot(identical(
+  actual_artifact_bytes[names(expected_artifact_bytes)],
+  expected_artifact_bytes
+))
+
+package_identities <- read.delim(
+  file.path(evidence_root, "package-identities.tsv"),
+  sep = "\t",
+  quote = "",
+  comment.char = "",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(nrow(package_identities) == 3L)
+stopifnot(length(unique(package_identities$manifest_sha256)) == 1L)
+stopifnot(identical(
+  unique(package_identities$manifest_sha256),
+  "12752a5688f4939a6d5deb72a60cbc2587077d6ad0672d9ea8218d021ecf0398"
+))
+stopifnot(all(package_identities$manifest_rows == 156L))
+stopifnot(length(unique(package_identities$archive_sha256)) == 3L)
+stopifnot(all(package_identities$archive_bytes > 0L))
+expected_archive_hashes <- c(
+  deterministic_baseline = "cfe744653676ce11659b8251daf0c2fd21f33d0a92adfb803902c5b5a214f335",
+  deterministic_pre_certification = "9a603bacde147df9526b861b94f92031be838cf4b5e5432b644fbce77079bacb",
+  independent_spec_review = "906326178cbc99b20dd22d78a32cc4cc3a77913f158b11de6e9c37efc3450460"
+)
+actual_archive_hashes <- package_identities$archive_sha256
+names(actual_archive_hashes) <- package_identities$run
+stopifnot(identical(
+  actual_archive_hashes[names(expected_archive_hashes)],
+  expected_archive_hashes
+))
+
+checksum_lines <- readLines(
+  file.path(evidence_root, "SHA256SUMS"),
+  warn = FALSE,
+  encoding = "UTF-8"
+)
+checksum_match <- regexec(
+  "^([0-9a-f]{64})  ([A-Za-z0-9._-]+)$",
+  checksum_lines
+)
+checksum_parts <- regmatches(checksum_lines, checksum_match)
+stopifnot(all(lengths(checksum_parts) == 3L))
+checksum_hashes <- vapply(checksum_parts, `[[`, character(1), 2L)
+checksum_files <- vapply(checksum_parts, `[[`, character(1), 3L)
+checksummed_files <- setdiff(evidence_files, "SHA256SUMS")
+stopifnot(setequal(checksum_files, checksummed_files))
+stopifnot(all(vapply(
+  seq_along(checksum_files),
+  function(index) {
+    identical(
+      sha256_file(file.path(evidence_root, checksum_files[[index]])),
+      checksum_hashes[[index]]
+    )
+  },
+  logical(1)
+)))
+stopifnot(!any(grepl(
+  "\\.(jsonl|png|pdf|rds|rdata)$",
+  evidence_files,
+  ignore.case = TRUE
+)))
+evidence_text <- paste(vapply(
+  setdiff(evidence_files, "SHA256SUMS"),
+  function(filename) {
+    paste(
+      readLines(
+        file.path(evidence_root, filename),
+        warn = FALSE,
+        encoding = "UTF-8"
+      ),
+      collapse = "\n"
+    )
+  },
+  character(1)
+), collapse = "\n")
+for (sensitive_pattern in c(
+  "OPENAI_API_KEY",
+  "DEEPSEEK_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "BEGIN PRIVATE KEY",
+  "BEGIN OPENSSH PRIVATE KEY",
+  "sk-[A-Za-z0-9]{20,}"
+)) {
+  stopifnot(!grepl(
+    sensitive_pattern,
+    evidence_text,
+    perl = TRUE
+  ))
+}
+stopifnot(contains_all(
+  release,
+  c(
+    "[portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)",
+    "12752a5688f4939a6d5deb72a60cbc2587077d6ad0672d9ea8218d021ecf0398"
+  )
+))
+stopifnot(grepl(
+  "[portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)",
+  status,
+  fixed = TRUE
+))
 
 stopifnot(contains_all(
   english,

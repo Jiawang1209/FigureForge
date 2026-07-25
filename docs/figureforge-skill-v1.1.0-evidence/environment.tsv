@@ -1,0 +1,11 @@
+key	value	observability	source
+timezone	Asia/Shanghai (+0800)	observed	retained artifact timestamps and session environment
+codex_path	/Users/liuyue/.local/bin/codex	observed	command -v codex before live gates
+codex_version	codex-cli 0.145.0	observed	codex --version before live gates
+codex_model	default configured model; no --model argument; resolved name absent from JSONL	not_exposed	live command line and thread.started event
+rscript_path	/usr/local/bin/Rscript	observed	command and runtime checks
+r_version	Rscript (R) version 4.6.1 (2026-06-24)	observed	/usr/local/bin/Rscript --version
+os_version	macOS 26.3.1 (a), build 25D771280a	observed	sw_vers
+kernel	Darwin 25.3.0, RELEASE_ARM64_T6000	observed	uname -a
+architecture	arm64	observed	uname -a
+sensitive_data_capture	none	sanitized	bundle excludes environment variables, credentials, prompts, and raw transcripts

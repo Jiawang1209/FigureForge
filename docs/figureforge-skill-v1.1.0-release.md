@@ -9,6 +9,32 @@ Version: `1.1.0`
 Release policy: local commit and local artifacts only. This certification does
 not push a branch, create or push a tag, open a PR, or publish a remote release.
 
+The durable [portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)
+contains machine-readable summaries, exact commands and evidence timestamps,
+the observed environment, immutable source bindings, artifact/package
+identities, sanitized logs, and SHA-256 checks. Temporary directories below are
+retained only as local provenance; they are not the sole release evidence.
+
+## Immutable Tested Source
+
+The real live gates ran from a clean worktree at commit
+`2f92d6370563a12862c111d61f3831c83da8b025`, complete tree
+`b17435309d9d8e4a967d8211e5b7c4e35e323389`. The exact Skill subtree and
+harness blob identities are recorded in
+[`source-binding.tsv`](figureforge-skill-v1.1.0-evidence/source-binding.tsv).
+
+The live gates predate the certification-document commits. They are not claimed
+to have run on the later documentation HEAD. Commits `2983880` and `f475a30`
+changed README, evidence documentation, and documentation tests only; the
+tested Skill, both live harnesses, verifier, and package builder stayed
+byte-identical to the bound clean source. Runtime and model observability are
+recorded in
+[`environment.tsv`](figureforge-skill-v1.1.0-evidence/environment.tsv):
+`/Users/liuyue/.local/bin/codex`, Codex CLI 0.145.0,
+`/usr/local/bin/Rscript`, R 4.6.1, and macOS 26.3.1 on arm64. The live command
+used the configured default model without `--model`; the resolved model name
+was not exposed by the retained CLI JSONL, so no model name is guessed.
+
 ## Product Definition and Artifact Contract
 
 FigureForge Skill 1.1.0 is the current locally certified release of the
@@ -77,6 +103,9 @@ The summary contains exactly 11 rows: one explicit probe and ten implicit
 probes. Every passing row has exit status zero, a real installed
 `.agents/skills/figureforge/SKILL.md` read event, FigureForge capability
 selection, and all three artifact names: `plot.R`, `plot.png`, and `plot.pdf`.
+The repository-tracked
+[`live-trigger-summary.csv`](figureforge-skill-v1.1.0-evidence/live-trigger-summary.csv)
+is the portable copy validated by the documentation test.
 
 | Gate | Actual result | Required threshold |
 | --- | ---: | ---: |
@@ -101,6 +130,12 @@ Its summary contains exactly one row with `passed=true`. The transcript records
 a real installed Skill read event. The agent inspected the supplied real CSV,
 wrote and ran a nonempty 5,861-byte `plot.R`, and delivered a valid 4320 by 3120
 PNG plus a valid one-page PDF. The delivered `plot.R` reruns successfully.
+The repository-tracked
+[`live-plotting-summary.csv`](figureforge-skill-v1.1.0-evidence/live-plotting-summary.csv)
+and
+[`artifact-identities.tsv`](figureforge-skill-v1.1.0-evidence/artifact-identities.tsv)
+preserve the portable result and artifact identities without committing input
+data or generated binaries.
 
 The harness independently reran the delivered script into
 `/tmp/figureforge-v110-live.740e78/plotting/independent-rerender`. Both
@@ -109,6 +144,8 @@ independent `plot.png` and `plot.pdf` are nonempty and valid, and
 
 Evidence locations:
 
+- portable evidence:
+  [`docs/figureforge-skill-v1.1.0-evidence/`](figureforge-skill-v1.1.0-evidence/README.md);
 - live root: `/tmp/figureforge-v110-live.740e78`;
 - plotting transcript and summary:
   `/tmp/figureforge-v110-live.740e78/plotting`;
@@ -141,6 +178,15 @@ sidecar:
   `cfe744653676ce11659b8251daf0c2fd21f33d0a92adfb803902c5b5a214f335`;
 - verified installed Skill:
   `/tmp/figureforge-v110.4Ywsys/installed-project/.agents/skills/figureforge`.
+
+The canonical release identity is the manifest SHA-256:
+`12752a5688f4939a6d5deb72a60cbc2587077d6ad0672d9ea8218d021ecf0398`.
+The baseline, pre-certification, and independent-review manifests are
+byte-identical. Their compressed archive hashes differ because this packaging
+pipeline does not promise deterministic gzip/tar metadata. The stable manifest
+fixes every member path, byte count, and member SHA-256; the three run-specific
+archive hashes and the nondeterminism explanation are recorded in
+[`package-identities.tsv`](figureforge-skill-v1.1.0-evidence/package-identities.tsv).
 
 The strict verifier rejects missing, extra, duplicate, empty, absolute,
 parent-traversal, symlink, byte-mismatched, and checksum-mismatched members.
