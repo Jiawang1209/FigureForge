@@ -1,0 +1,8 @@
+"role","input_column","required"
+"node","node",TRUE
+"parent","parent",TRUE
+"x","x",TRUE
+"y","y",TRUE
+"label","label",TRUE
+"clade","clade",TRUE
+"is_tip","is_tip",TRUE

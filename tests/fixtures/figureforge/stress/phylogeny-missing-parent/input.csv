@@ -1,0 +1,8 @@
+"node","parent","x","y","label","clade","is_tip"
+"Root","",0,2.5,"","Root",FALSE
+"A","UNKNOWN",1,1.5,"","Clade_1",FALSE
+"B","Root",1,3.5,"","Clade_2",FALSE
+"T1","A",2,1,"Species_A","Clade_1",TRUE
+"T2","A",2,2,"Species_B","Clade_1",TRUE
+"T3","B",2,3,"Species_C","Clade_2",TRUE
+"T4","B",2,4,"Species_D","Clade_2",TRUE

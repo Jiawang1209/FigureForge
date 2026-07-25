@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: phylogeny-missing-parent
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-phylogeny-annotation
+chart_family: tree
+outcome: failure
+failure_category: referential_integrity
+seed: 2115

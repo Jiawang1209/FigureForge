@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: survival-invalid-probability
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-survival
+chart_family: survival
+outcome: failure
+failure_category: invalid_value
+seed: 2120

@@ -1,0 +1,9 @@
+"role","input_column","required"
+"record_type","record_type",TRUE
+"node_id","node_id",TRUE
+"node_label","node_label",TRUE
+"x","x",TRUE
+"y","y",TRUE
+"group","group",TRUE
+"source","source",TRUE
+"target","target",TRUE

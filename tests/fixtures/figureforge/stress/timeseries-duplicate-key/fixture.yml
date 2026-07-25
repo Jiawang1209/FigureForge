@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: timeseries-duplicate-key
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-timeseries-band
+chart_family: time_series
+outcome: failure
+failure_category: duplicate_key
+seed: 2121

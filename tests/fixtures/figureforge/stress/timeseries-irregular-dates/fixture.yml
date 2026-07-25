@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: timeseries-irregular-dates
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-timeseries-band
+chart_family: time_series
+outcome: success
+failure_category: none
+seed: 2122

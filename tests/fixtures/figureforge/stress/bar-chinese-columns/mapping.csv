@@ -1,0 +1,4 @@
+"role","input_column","required"
+"treatment","处理",TRUE
+"response","响应值",TRUE
+"condition","条件",TRUE

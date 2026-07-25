@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: network-unknown-node
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-network
+chart_family: network
+outcome: failure
+failure_category: referential_integrity
+seed: 2114

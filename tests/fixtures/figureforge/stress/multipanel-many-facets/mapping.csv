@@ -1,0 +1,7 @@
+"role","input_column","required"
+"panel","panel",TRUE
+"x","x",TRUE
+"y","y",TRUE
+"group","group",TRUE
+"lower","lower",TRUE
+"upper","upper",TRUE

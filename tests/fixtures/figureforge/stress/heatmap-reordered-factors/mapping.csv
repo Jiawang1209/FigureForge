@@ -1,0 +1,4 @@
+"role","input_column","required"
+"variable_x","variable_x",TRUE
+"variable_y","variable_y",TRUE
+"correlation","correlation",TRUE

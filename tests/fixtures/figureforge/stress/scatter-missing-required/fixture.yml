@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: scatter-missing-required
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-scatter-fit
+chart_family: scatter
+outcome: failure
+failure_category: missing_required_role
+seed: 2118

@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: volcano-large-input
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-volcano
+chart_family: omics
+outcome: success
+failure_category: none
+seed: 2123

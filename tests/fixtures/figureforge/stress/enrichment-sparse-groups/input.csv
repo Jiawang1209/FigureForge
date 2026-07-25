@@ -1,0 +1,8 @@
+"term","gene_ratio","adjusted_p","count","category"
+"Signal_transduction",0.42,8e-04,21,"Category_1"
+"Cell_cycle",0.35,0.0032,17,"Category_2"
+"Stress_response",0.29,0.011,14,"Category_3"
+"Membrane_complex",0.38,0.0015,19,"Category_4"
+"Nuclear_body",0.24,0.018,11,"Category_5"
+"Catalytic_activity",0.33,0.0045,16,"Category_6"
+"DNA_binding",0.27,0.009,13,"Category_7"

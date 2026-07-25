@@ -1,0 +1,10 @@
+"variable_x","variable_y","correlation"
+"Trait_C","Trait_C",1
+"Trait_C","Trait_B",-0.18
+"Trait_C","Trait_A",-0.34
+"Trait_B","Trait_C",-0.18
+"Trait_B","Trait_B",1
+"Trait_B","Trait_A",0.62
+"Trait_A","Trait_C",-0.34
+"Trait_A","Trait_B",0.62
+"Trait_A","Trait_A",1

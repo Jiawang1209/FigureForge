@@ -1,0 +1,6 @@
+"role","input_column","required"
+"term","term",TRUE
+"gene_ratio","gene_ratio",TRUE
+"adjusted_p","adjusted_p",TRUE
+"count","count",TRUE
+"category","category",TRUE

@@ -1,0 +1,6 @@
+"role","input_column","required"
+"time","time",TRUE
+"estimate","estimate",TRUE
+"lower","lower",TRUE
+"upper","upper",TRUE
+"group","group",TRUE

@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: network-chinese-labels
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-network
+chart_family: network
+outcome: success
+failure_category: none
+seed: 2113

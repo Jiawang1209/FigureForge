@@ -1,0 +1,7 @@
+"role","input_column","required"
+"gene","gene",TRUE
+"feature","feature",TRUE
+"start","start",TRUE
+"end","end",TRUE
+"strand","strand",TRUE
+"track","track",TRUE

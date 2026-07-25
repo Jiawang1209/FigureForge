@@ -1,0 +1,4 @@
+"role","input_column","required"
+"group","group",TRUE
+"value","value",TRUE
+"sample_id","sample_id",TRUE

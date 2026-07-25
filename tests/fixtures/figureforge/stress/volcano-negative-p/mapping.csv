@@ -1,0 +1,5 @@
+"role","input_column","required"
+"feature","feature",TRUE
+"log2_fold_change","log2_fold_change",TRUE
+"adjusted_p","adjusted_p",TRUE
+"class","class",TRUE

@@ -1,0 +1,5 @@
+"role","input_column","required"
+"predictor","predictor",TRUE
+"response","response",TRUE
+"group","group",TRUE
+"label","label",TRUE

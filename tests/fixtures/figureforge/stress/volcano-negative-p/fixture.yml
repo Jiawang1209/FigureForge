@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: volcano-negative-p
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-volcano
+chart_family: omics
+outcome: failure
+failure_category: invalid_value
+seed: 2124

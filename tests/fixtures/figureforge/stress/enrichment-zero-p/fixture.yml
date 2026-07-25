@@ -1,0 +1,9 @@
+schema_version: 1
+fixture_id: enrichment-zero-p
+synthetic_test_fixture: true
+scientific_claims: none
+public_case_id: public-enrichment-bubble
+chart_family: enrichment
+outcome: failure
+failure_category: invalid_value
+seed: 2106

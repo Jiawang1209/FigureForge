@@ -1,0 +1,6 @@
+"role","input_column","required"
+"group","group",TRUE
+"time","time",TRUE
+"survival","survival",TRUE
+"lower","lower",TRUE
+"upper","upper",TRUE
