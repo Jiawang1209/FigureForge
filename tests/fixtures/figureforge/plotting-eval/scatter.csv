@@ -1,0 +1,13 @@
+样本,喙长_mm,喙深_mm,物种
+S01,39.1,18.7,Adelie
+S02,39.5,17.4,Adelie
+S03,40.3,18.0,Adelie
+S04,36.7,19.3,Adelie
+S05,46.5,17.9,Chinstrap
+S06,50.0,19.5,Chinstrap
+S07,51.3,19.2,Chinstrap
+S08,45.4,14.6,Gentoo
+S09,46.1,13.2,Gentoo
+S10,48.7,14.1,Gentoo
+S11,49.6,16.0,Gentoo
+S12,50.5,15.9,Gentoo
