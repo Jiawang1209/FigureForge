@@ -1,18 +1,69 @@
 # FigureForge
 
-**面向 AI、可复现、基于案例的科研出版级数据可视化技能库。**
+**面向 AI 智能体、由案例增强的 R 科研绘图能力。**
 
-> 从复现到迁移(From reproduction to adaptation)。
+> 输入真实数据，输出可复用 R 代码与出版级图形。
 
 [English](README.md) · 简体中文
 
-FigureForge 把真实的论文配图复现,沉淀为可复用、可由 AI 驱动的绘图工作流。每个案例都把参考图、可复现数据、绘图代码、迁移说明和质量检查规则连接在一起——这样 AI 智能体(或人)就能挑出最接近的范例、迁移到全新的科研数据上,而不是凭空提示模型"画一张图"。
+FigureForge 是一个绘图能力增强器：把自然语言需求和真实数据交给 AI
+智能体，它会利用已经验证的绘图案例生成独立 R 工作流，而不是从空白开始
+猜测图形实现。
 
-首个版本以 **R / ggplot2 优先**,源自长期更新的配图复现系列(*在模仿中精进数据可视化*)。待 R 工作流稳定后,将规划支持 Python。
+FigureForge 默认使用 **R / ggplot2**，遇到特定科研图形时按需使用专业 R
+包。Python 绘图不在当前范围内，仅保留为未来可能方向。
 
 ---
 
-## FigureForge Skill 1.0.1
+## FigureForge Skill 1.1.0
+
+### 用户快速开始
+
+向 AI 智能体提出：
+
+> 使用 `xxx.csv` 数据，基于 FigureForge 帮我绘制一个散点图，并给我一份 R 脚本。
+
+FigureForge 会：
+
+1. 检查真实数据的列名、类型、缺失值和科研表达目标；
+2. 选择一个主案例作为实现基线，仅在布局、标注或样式确有需要时参考可选
+   辅助案例；
+3. 将验证过的 R 方法迁移为独立脚本，由脚本读取输入文件并写入明确的输出
+   目录；
+4. 运行脚本、检查渲染结果并返回：
+   - `plot.R` —— 可复用源代码；
+   - `plot.png` —— 便于查看的预览图；
+   - `plot.pdf` —— 出版级矢量图。
+
+使用下面的稳定契约重新运行交付结果：
+
+```bash
+Rscript plot.R <input-file> <output-directory>
+```
+
+案例检索、schema 映射、案例元数据和任务级 QA 都在后台完成。普通用户无需
+操作案例库，也无需编辑案例元数据。
+
+### 案例增强带来的能力
+
+- **有证据的起点** —— 一个主案例提供已经能运行的视觉语法与真实 R 实现。
+- **聚焦组合** —— 可选辅助案例只补充当前需求确实需要的专业技术。
+- **真实数据迁移** —— 智能体根据实际输入 schema 映射字段，不假设通用列名。
+- **可复用交付** —— 结果是独立的 `plot.R`，不隐藏在仓库专属运行时之后。
+- **可视化质检** —— 按需求和科研表达目标检查渲染后的 PNG 与 PDF。
+- **双语检索** —— 中英文图名与别名都可用于选择案例。
+
+### 产品方向
+
+当前交付的是 FigureForge Skill。未来可通过 local-first MCP 层向其他
+Agent 暴露案例检索、校验、渲染和 schema 映射能力。**MCP 状态为 planned 且尚未实现**，当前不分发 MCP server 或 endpoint。
+
+## 维护者工作流
+
+以下内容记录案例校验、打包、发布、私有案例库和旧版本兼容流程。它们是
+普通用户绘图体验背后的可靠性机制，不是普通用户必须执行的步骤。
+
+### v1.0.1 历史兼容与发布证据
 
 FigureForge Skill 1.0.1 不依赖私有案例库即可独立使用。发布清单包含
 15 个公开案例，其中 3 个真实开放数据案例记录了来源、许可、哈希、署名和
@@ -132,7 +183,7 @@ bash scripts/run_figureforge_live_evals.sh \
 发布边界、来源哈希、测试证据和仅本地发布政策见
 [`docs/figureforge-skill-v1.0.1-release.md`](docs/figureforge-skill-v1.0.1-release.md)。
 
-## 为什么是 FigureForge
+### 案例系统原理
 
 通用的"画一张 Nature 风格的图"提示,给你的只是一次猜测。FigureForge 给你的是**证据**:
 
@@ -144,7 +195,7 @@ bash scripts/run_figureforge_live_evals.sh \
 
 核心资产不是某一个指令文件,而是不断积累的案例库——范例、数据、脚本与元数据的总和。
 
-## 工作原理
+### 维护中的案例工作流
 
 ```
 你的目标 + 数据  ─▶  检索图库  ─▶  选最接近的案例  ─▶  映射列名
@@ -156,14 +207,13 @@ bash scripts/run_figureforge_live_evals.sh \
 
 1. 检查科研问题与真实输入数据结构。
 2. 使用中英文检索案例元数据，并优先选择已经完成的案例。
-3. **动手改写前**，打开案例的 `case.md`、`data.csv`、`plot.R` 和
-   `qa.md`。
+3. **动手改写前**，查阅所选案例的元数据、数据、脚本和 QA 证据。
 4. 检查依赖并建立明确的字段映射记录。
 5. 在私有案例库之外迁移真实案例脚本。
 6. 渲染、人工视觉检查，再用迁移验证器独立重渲染。
 7. 报告所选案例、映射、命令、输出、QA、分发边界和残留限制。
 
-## Skill + MCP 产品方向
+### Skill + MCP 产品方向
 
 FigureForge 将发展为 **Skill + MCP 双层产品**:
 
@@ -183,7 +233,7 @@ FigureForge 将发展为 **Skill + MCP 双层产品**:
 
 MCP 服务应保持 **local-first**:它可以读取本地私有案例库,但公开发布时只应包含可再分发的案例与素材。完整设计与开发计划见 [`docs/superpowers/specs/2026-07-07-figureforge-skill-mcp-dual-layer-design.md`](docs/superpowers/specs/2026-07-07-figureforge-skill-mcp-dual-layer-design.md) 和 [`docs/superpowers/plans/2026-07-07-figureforge-skill-mcp-dual-layer.md`](docs/superpowers/plans/2026-07-07-figureforge-skill-mcp-dual-layer.md)。
 
-## 仓库结构
+### 仓库结构
 
 ```text
 FigureForge/
@@ -204,13 +254,13 @@ FigureForge/
     └── scripts/                 # R 辅助脚本(校验 / 渲染 / 索引)
 ```
 
-### 关于案例语料
+#### 关于案例语料
 
 本仓库提供的是**技能框架**——工作流、参考文档、辅助脚本和一份案例模板。完整的精选案例语料(165+ 配图复现)位于本地的 `skills/figureforge/cases/`,但**默认被 gitignore、保持私有**,因为很多案例包含无法再分发的第三方参考图与源数据。
 
 克隆本仓库,你将获得运行工作流、撰写自己案例所需的一切;原始配图与受限数据不在其中。
 
-## 案例格式
+### 案例格式
 
 每个真实案例都是一个自包含的文件夹:
 
@@ -240,7 +290,7 @@ skills/figureforge/cases/<case-id>/
 
 模板见 `skills/figureforge/cases/_template/case.md`。`_template` 文件夹只是格式指南,**不是**真实的配图复现案例。
 
-## 辅助脚本
+### 辅助脚本
 
 从仓库根目录使用 `/usr/local/bin/Rscript` 运行 R 工作流:
 
@@ -282,7 +332,7 @@ skills/figureforge/cases/<case-id>/
 这些脚本负责检索和核验；绘图逻辑仍保持案例专属、独立可读，而不是藏进
 通用绘图框架。
 
-## 案例完成度审计
+### 案例完成度审计
 
 拥有 `case.md`、`data.csv` 和 `plot.R` 只能证明案例结构存在，不能证明它
 使用了真实源数据、忠实复现了原图，或者可以公开分发。
@@ -333,7 +383,7 @@ scaffolded（脚手架化）案例不等于已完成案例。成功运行只能�
 `--render` 再增加一次全新执行证据。公开分发许可仍然是独立审核，缺失时
 默认为 `private_only`。
 
-## 撰写新案例
+### 撰写新案例
 
 1. 添加或选择真实源数据、源代码和复现证据。
 2. 在 `case.md` 填写来源、schema、可视化编码、依赖、迁移说明、易错点和
@@ -344,7 +394,7 @@ scaffolded（脚手架化）案例不等于已完成案例。成功运行只能�
 6. 保存完整 `qa.md`，分开发审查另行处理。
 7. 执行 `validate_case.R --complete --render`，再更新本地索引。
 
-## 已验证的 Skill MVP
+### 已验证的 Skill MVP
 
 本地私有案例库共有 165 个已审计案例。完整语料八批全部完成后，已有 152
 个案例通过完整案例契约：包括原有 15 个 MVP 案例和新增恢复的 137 个案例。
@@ -384,7 +434,7 @@ qRT-PCR、恢复原始资料后的 Nature Microbiology 进化树、配对树和�
 PDF、书面 QA 和独立重渲染结果，保存在被忽略的
 `outputs/figureforge-adaptations/`。
 
-## 路线图
+### 路线图
 
 - [x] 完成 15 个私有 R/ggplot2 MVP 案例的真实来源核对、全新渲染和
       书面视觉 QA。
@@ -411,7 +461,7 @@ PDF、书面 QA 和独立重渲染结果，保存在被忽略的
 
 完整愿景与定位见 [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md)。
 
-## 当前状态
+### 当前状态
 
 **FigureForge Skill 1.0.1 已完成本地发布候选认证。** 当前包含 15 个公开
 案例（3 个真实开放数据案例和 12 个合成演示案例）、24 个压力测试夹具和
@@ -419,7 +469,7 @@ PDF、书面 QA 和独立重渲染结果，保存在被忽略的
 13 个具有通过校验的案例级阻塞记录，待处理数为 0；私有案例库不进入公开
 包。MCP 状态为 planned 且尚未实现，当前不分发 MCP endpoint 或 server。
 
-## 许可
+### 许可
 
 公开框架采用仓库 MIT [`LICENSE`](LICENSE)。每个公开案例另有明确的
 `distribution.yml`。私有案例和第三方源素材不属于公开发布范围。

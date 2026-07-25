@@ -1,14 +1,37 @@
-# FigureForge Skill MVP Status
+# FigureForge Skill 1.1.0 Status
 
-Date: 2026-07-25
+Date: 2026-07-26
 
 ## Outcome
 
-FigureForge Skill 1.0.1 is a locally certified, independently usable release
-candidate. The complete private corpus remains a local optional extension.
-MCP remains planned and unimplemented.
+FigureForge Skill 1.1.0 is a case-enhanced R plotting capability. For an
+ordinary user, real data plus a natural request should produce a standalone
+`plot.R`, `plot.png`, and `plot.pdf` without requiring the user to operate case
+metadata. The current implementation candidate has deterministic contract
+coverage, while final v1.1.0 live-model and release evidence remains pending.
 
-## Evidence
+The existing case, distribution, stress, package, and private-corpus evidence
+is maintainer reliability evidence inherited from the v1.0.1 platform, not a
+claim that the v1.1.0 live plotting acceptance gate has already passed.
+**MCP is planned and unimplemented.**
+
+## User plotting behavior
+
+| Behavior | Current contract |
+| --- | --- |
+| Input | Natural-language plotting request plus real data |
+| Case use | One primary case, with optional secondary cases only for focused techniques |
+| Implementation | Inspect the observed schema and adapt a proven R approach |
+| Delivery | Standalone `plot.R`, `plot.png`, and `plot.pdf` |
+| Re-run | `Rscript plot.R <input-file> <output-directory>` |
+| Default stack | R and ggplot2, with specialist R packages where appropriate |
+| Background work | Case search, schema mapping, task QA, and case metadata remain agent-operated |
+| Evidence state | Deterministic contracts are available; final v1.1.0 live-model and release certification is pending |
+
+## Maintainer and release reliability
+
+The counts below are preserved factual evidence from the v1.0.1 platform and
+the local corpus acceptance work.
 
 | Acceptance area | Result |
 | --- | --- |

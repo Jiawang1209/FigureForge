@@ -1,18 +1,83 @@
 # FigureForge
 
-**An AI-ready, reproducible, case-based skillbase for publication-ready scientific visualization.**
+**A case-enhanced R scientific plotting capability for AI agents.**
 
-> From reproduction to adaptation.
+> Real data in; reusable R code and publication-ready figures out.
 
 English · [简体中文](README.zh.md)
 
-FigureForge turns real publication-figure reproductions into reusable, AI-driven plotting workflows. Each case connects a reference image, reproducible data, plotting code, adaptation notes, and QA rules — so an AI agent (or a human) can pick the closest example and adapt it to a brand-new scientific dataset instead of prompting a model to invent a figure from scratch.
+FigureForge is a plotting capability enhancer: give an AI agent a natural
+request and real data, and it uses proven plotting cases to produce a
+standalone R workflow rather than inventing a figure from scratch.
 
-The first release is **R / ggplot2 first**, built from a long-running figure-reproduction series (*在模仿中精进数据可视化*). Python support is planned once the R workflow stabilizes.
+FigureForge defaults to **R / ggplot2** and uses specialist R packages when
+the requested scientific chart needs them. Python plotting is outside the
+current scope and remains a possible future direction.
 
 ---
 
-## FigureForge Skill 1.0.1
+## FigureForge Skill 1.1.0
+
+### User quick start
+
+Ask your AI agent:
+
+> Use `xxx.csv` with FigureForge to draw a scatter plot and give me the R script.
+
+FigureForge will:
+
+1. inspect the real data, including column names, types, missing values, and
+   the scientific plotting goal;
+2. select one primary case as the implementation baseline and, only when
+   useful, consult optional secondary cases for a specific layout, annotation,
+   or styling technique;
+3. adapt the proven R approach into a standalone script that reads your input
+   file and writes into an explicit output directory;
+4. run the script, inspect the rendered result, and return:
+   - `plot.R` — reusable source code;
+   - `plot.png` — a convenient preview;
+   - `plot.pdf` — a publication-ready vector output.
+
+Re-run the delivered result with:
+
+```bash
+Rscript plot.R <input-file> <output-directory>
+```
+
+Case search, schema matching, case metadata, and task-specific QA run in the
+background. Ordinary users do not need to operate the case library or edit its
+metadata.
+
+### What the case enhancement adds
+
+- **Evidence-based starting point** — one primary case supplies a working
+  visual grammar and real R implementation.
+- **Focused composition** — optional secondary cases contribute only the
+  specialist techniques the request actually needs.
+- **Real-data adaptation** — the agent maps the observed input schema instead
+  of assuming generic column names.
+- **Reusable delivery** — the result is a standalone `plot.R`, not code hidden
+  behind a repository-specific runtime.
+- **Visual QA** — the rendered PNG and PDF are checked against the request and
+  scientific communication goal.
+- **Bilingual discovery** — English and Chinese chart names and aliases can
+  guide case selection.
+
+### Product direction
+
+The shipped capability is the FigureForge Skill. A local-first MCP layer may
+eventually expose case discovery, validation, rendering, and schema mapping to
+other agents. **MCP is planned and unimplemented**; no MCP server or endpoint
+ships today.
+
+## Maintainer workflow
+
+The sections below document validation, packaging, release, private-corpus,
+and legacy compatibility work. They are maintainer reliability machinery
+behind the user plotting experience, not steps an ordinary plotting user must
+perform.
+
+### Historical v1.0.1 compatibility and release evidence
 
 FigureForge Skill 1.0.1 is independently usable without the private corpus.
 It ships 15 public cases: 3 authentic open-data cases with recorded provenance,
@@ -143,7 +208,7 @@ See
 for the release boundary, source hashes, test evidence, and local-only release
 policy.
 
-## Why FigureForge
+### Case-system rationale
 
 Generic "make a Nature-style figure" prompts give you a guess. FigureForge gives you **evidence**:
 
@@ -155,7 +220,7 @@ Generic "make a Nature-style figure" prompts give you a guess. FigureForge gives
 
 The asset is not a single instruction file — it's the accumulated gallery of examples, data, scripts, and metadata.
 
-## How it works
+### Maintained case workflow
 
 ```
 Your goal + data  ─▶  search gallery  ─▶  pick closest case  ─▶  map columns
@@ -167,7 +232,7 @@ An AI agent driving the `figureforge` skill will:
 
 1. Inspect the scientific goal and the actual input schema.
 2. Search case metadata in English or Chinese and prioritize completed cases.
-3. Open the case's `case.md`, `data.csv`, `plot.R`, and `qa.md`
+3. Consult the selected case's metadata, data, script, and QA evidence
    **before editing**.
 4. Check dependencies and build an explicit field-mapping record.
 5. Adapt the real case-specific script in a workspace outside the private
@@ -177,7 +242,7 @@ An AI agent driving the `figureforge` skill will:
 7. Report the selected case, mapping, commands, outputs, QA, distribution
    boundary, and remaining limits.
 
-## Skill + MCP product direction
+### Skill + MCP product direction
 
 FigureForge is designed to grow into a **Skill + MCP dual-layer product**:
 
@@ -197,7 +262,7 @@ Planned MCP tools include:
 
 The MCP server should be **local-first**: it can use a private local case corpus, while public releases should include only redistributable cases and assets. See [`docs/superpowers/specs/2026-07-07-figureforge-skill-mcp-dual-layer-design.md`](docs/superpowers/specs/2026-07-07-figureforge-skill-mcp-dual-layer-design.md) and [`docs/superpowers/plans/2026-07-07-figureforge-skill-mcp-dual-layer.md`](docs/superpowers/plans/2026-07-07-figureforge-skill-mcp-dual-layer.md) for the full design and implementation plan.
 
-## Repository layout
+### Repository layout
 
 ```text
 FigureForge/
@@ -217,13 +282,13 @@ FigureForge/
     └── scripts/                 # R helpers (validate / render / index)
 ```
 
-### A note on the case corpus
+#### A note on the case corpus
 
 This repository ships the **skill framework** — the workflow, references, helper scripts, and a case template. The full curated case corpus (165+ figure reproductions) lives in `skills/figureforge/cases/` locally but is **gitignored and private by default**, since many cases include third-party reference figures and source data that can't be redistributed.
 
 If you clone this repo, you get everything needed to run the workflow and author your own cases; the original figures and proprietary data are not included.
 
-## Case format
+### Case format
 
 Each real case is a self-contained folder:
 
@@ -253,7 +318,7 @@ skills/figureforge/cases/<case-id>/
 
 See `skills/figureforge/cases/_template/case.md` for the canonical template. The `_template` folder is a format guide, **not** a curated figure reproduction.
 
-## Helper scripts
+### Helper scripts
 
 Run the R workflow from the repository root with
 `/usr/local/bin/Rscript`:
@@ -297,7 +362,7 @@ The helpers orchestrate discovery and verification; plotting logic remains
 case-specific and independently readable rather than being hidden behind a
 generic plotting framework.
 
-## Case Readiness Audit
+### Case Readiness Audit
 
 Having `case.md`, `data.csv`, and `plot.R` proves only that a case has the
 expected structure. It does not prove that the files use authentic source data,
@@ -353,7 +418,7 @@ the standard plotting argument contract, reproduction evidence, and verified
 QA. `--render` adds fresh execution evidence. Distribution permission remains
 a separate review and defaults to `private_only`.
 
-## Authoring a new case
+### Authoring a new case
 
 1. Add or select authentic source data, code, and reproduction evidence.
 2. Fill in `case.md`: provenance, schema, visual encodings, dependencies,
@@ -365,7 +430,7 @@ a separate review and defaults to `private_only`.
 6. Save a complete `qa.md`; review distribution separately.
 7. Run `validate_case.R --complete --render`, then rebuild the local index.
 
-## Verified Skill MVP
+### Verified Skill MVP
 
 The local private corpus contains 165 audited cases. After eight
 complete-corpus waves, 152 cases pass the complete case contract: the original
@@ -415,7 +480,7 @@ Each migration has a different input, field mapping, migrated `plot.R`, exact
 command, rendered PDF, written QA, and successful independent re-render under
 ignored `outputs/figureforge-adaptations/`.
 
-## Roadmap
+### Roadmap
 
 - [x] Complete a 15-case private R/ggplot2 MVP with authentic provenance,
       fresh renders, and recorded visual QA.
@@ -443,7 +508,7 @@ ignored `outputs/figureforge-adaptations/`.
 
 See [`PROJECT_HANDOFF.md`](PROJECT_HANDOFF.md) for the full vision and positioning.
 
-## Status
+### Status
 
 **FigureForge Skill 1.0.1 is the locally certified release candidate.** It
 includes 15 public cases (3 authentic open-data and 12 synthetic
@@ -453,7 +518,7 @@ local contract; the other 13 have validated case-specific blocker records, and
 none remain pending. The private corpus is not part of the public package.
 MCP is planned and unimplemented; no MCP endpoint or server is shipped.
 
-## License
+### License
 
 The public framework is available under the repository MIT
 [`LICENSE`](LICENSE). Each public case has its own explicit

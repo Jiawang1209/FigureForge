@@ -34,7 +34,16 @@ stopifnot(file.exists(release_path))
 release <- read_repo_document("docs/figureforge-skill-v1-release.md")
 
 english_terms <- c(
-  "1.0.1",
+  "1.1.0",
+  "plotting capability enhancer",
+  "real data",
+  "primary case",
+  "secondary cases",
+  "plot.R",
+  "plot.png",
+  "plot.pdf",
+  "Rscript plot.R <input-file> <output-directory>",
+  "Maintainer workflow",
   "15 public cases",
   "24 synthetic stress fixtures",
   "doctor.R",
@@ -44,8 +53,7 @@ english_terms <- c(
   "package_skill.R",
   "review_required",
   "private corpus",
-  "MCP",
-  "planned"
+  "MCP is planned and unimplemented"
 )
 stopifnot(all(vapply(
   english_terms,
@@ -56,7 +64,16 @@ stopifnot(all(vapply(
 )))
 
 chinese_terms <- c(
-  "1.0.1",
+  "1.1.0",
+  "绘图能力增强器",
+  "真实数据",
+  "主案例",
+  "辅助案例",
+  "plot.R",
+  "plot.png",
+  "plot.pdf",
+  "Rscript plot.R <input-file> <output-directory>",
+  "维护者工作流",
   "15 个公开案例",
   "24 个合成压力测试夹具",
   "doctor.R",
@@ -66,14 +83,44 @@ chinese_terms <- c(
   "package_skill.R",
   "review_required",
   "私有案例库",
-  "MCP",
-  "planned"
+  "MCP 状态为 planned 且尚未实现"
 )
 stopifnot(all(vapply(
   chinese_terms,
   grepl,
   logical(1),
   x = chinese,
+  fixed = TRUE
+)))
+
+stopifnot(!grepl(
+  "Open the case's `case.md`, `data.csv`, `plot.R`, and `qa.md`",
+  english,
+  fixed = TRUE
+))
+stopifnot(!grepl(
+  "打开案例的 `case.md`、`data.csv`、`plot.R` 和",
+  chinese,
+  fixed = TRUE
+))
+
+status_terms <- c(
+  "FigureForge Skill 1.1.0",
+  "case-enhanced R plotting capability",
+  "real data",
+  "natural request",
+  "plot.R",
+  "plot.png",
+  "plot.pdf",
+  "User plotting behavior",
+  "Maintainer and release reliability",
+  "MCP is planned and unimplemented"
+)
+stopifnot(all(vapply(
+  status_terms,
+  grepl,
+  logical(1),
+  x = status,
   fixed = TRUE
 )))
 
