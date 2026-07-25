@@ -12,9 +12,9 @@ implementation remains paused.
 | Acceptance area | Result |
 | --- | --- |
 | Private corpus audit | 165 real case directories classified independently |
-| Completed representative cases | 94 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
-| Current corpus terminal counts | 94 completed, 1 validated `blocked_source_missing`, 70 pending after a rendered 165-case audit |
-| Visual coverage | grouped scatter, bubble, expression-aware volcano, PCA/PCoA/NMDS, fitted trend, ANOVA, box/violin/raincloud, donut/sunburst, heatmap, time series, bidirectional and circular bars, dual axes, paired trajectories, phylogeny, multi-ring tree annotation, GO circles, radar, Sankey, STRING PPI and custom networks, chromosome ideograms, promoter matrices, genomic synteny, world sampling maps, alluvial composition, seamless multi-panel, and complex genomic annotations |
+| Completed representative cases | 110 private cases pass provenance, standard arguments, reproduction, QA, and fresh-render gates |
+| Current corpus terminal counts | 110 completed, 5 validated blockers, 50 pending after a rendered 165-case audit |
+| Visual coverage | grouped scatter, bubble, expression-aware volcano, Manhattan, PCA/PCoA/NMDS, fitted trend, ANOVA, box/violin/raincloud, donut/sunburst, heatmap, time series, bidirectional and circular bars, dual axes, paired trajectories, phylogeny and taxonomy trees, multi-ring tree annotation, GO circles and reordered labels, enrichment composites, radar, Sankey, STRING PPI and custom networks, WGCNA module dendrograms, chromosome ideograms, promoter matrices, genomic synteny, world sampling maps, alluvial composition, seamless multi-panel, and complex genomic annotations |
 | New-data migration | 3 different public R datasets migrated to 3 chart families |
 | Skill package | standard metadata, end-to-end workflow, references, template, and official package validation |
 | Public tooling | discovery, index, dependency check, render, case validation, adaptation validation, and corpus audit |
@@ -47,11 +47,13 @@ implementation remains paused.
   --batch-size 20
 ```
 
-Complete-corpus Waves 1 through 4 added 79 fully verified cases and classified
-one source-missing case with a validated blocker. The current rendered audit
-records 94 completed, 1 blocked, and 70 pending cases. The audit records
-`terminal_outcome`; `blocked_source_missing` and the other supported blocker
-categories require concrete evidence and never coexist with verified QA.
+Complete-corpus Waves 1 through 5 added 95 fully verified cases and classified
+5 cases with validated blockers. The current rendered audit records 110
+completed, 5 blocked, and 50 pending cases. Blockers currently comprise 3
+`blocked_source_missing`, 1 `blocked_visual_reference`, and 1
+`blocked_ambiguous_mapping`. The audit records `terminal_outcome`; every
+supported blocker category requires concrete evidence and never coexists with
+verified QA.
 
 ## New-Data Proofs
 
