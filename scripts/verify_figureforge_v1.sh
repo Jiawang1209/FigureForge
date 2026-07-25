@@ -98,7 +98,7 @@ stage "release manifest and archive"
   --archive "$VERIFY_ROOT/figureforge-skill-1.0.0.tar.gz" \
   --manifest "$VERIFY_ROOT/archive-manifest.csv"
 "$RSCRIPT" -e \
-  "a <- read.csv('$VERIFY_ROOT/release-manifest.csv', check.names=FALSE); b <- read.csv('$VERIFY_ROOT/archive-manifest.csv', check.names=FALSE); stopifnot(identical(a,b)); z <- system2('tar', c('-tzf', '$VERIFY_ROOT/figureforge-skill-1.0.0.tar.gz'), stdout=TRUE); z <- ifelse(startsWith(z, './'), substring(z, 3L), z); stopifnot(identical(sort(z), sort(a\$path)))"
+  "a <- read.csv('$VERIFY_ROOT/release-manifest.csv', check.names=FALSE); b <- read.csv('$VERIFY_ROOT/archive-manifest.csv', check.names=FALSE); stopifnot(identical(a,b)); z <- system2('tar', c('-tzf', '$VERIFY_ROOT/figureforge-skill-1.0.0.tar.gz'), stdout=TRUE); z <- ifelse(startsWith(z, './'), substring(z, 3L), z); stopifnot(identical(sort(z), sort(a\$package_path)))"
 
 stage "R parse, official Skill validation, and diff check"
 find "$REPO_ROOT/skills/figureforge" \

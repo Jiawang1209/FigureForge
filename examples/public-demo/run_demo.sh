@@ -8,7 +8,12 @@ fi
 
 RSCRIPT=/usr/local/bin/Rscript
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
+LAYOUT_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
+if [ -f "$LAYOUT_ROOT/SKILL.md" ]; then
+  SKILL_ROOT=$LAYOUT_ROOT
+else
+  SKILL_ROOT="$LAYOUT_ROOT/skills/figureforge"
+fi
 OUTPUT_DIR=$1
 PREP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/figureforge-demo.XXXXXX")
 trap 'rm -rf "$PREP_DIR"' EXIT HUP INT TERM
@@ -26,13 +31,13 @@ printf '%s\n' \
   'upper,上限' \
   'group,处理组' >"$MAPPING"
 
-"$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/match_schema.R" \
+"$RSCRIPT" "$SKILL_ROOT/scripts/match_schema.R" \
   --case public-timeseries-band \
   --input "$CHINESE_INPUT" \
   --mapping "$MAPPING" \
   --output "$MATCH_REPORT"
 
-"$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/create_adaptation.R" \
+"$RSCRIPT" "$SKILL_ROOT/scripts/create_adaptation.R" \
   --case public-timeseries-band \
   --input "$CHINESE_INPUT" \
   --mapping "$MAPPING" \
@@ -47,11 +52,11 @@ cp "$MATCH_REPORT" "$OUTPUT_DIR/schema-match.csv"
   "$OUTPUT_DIR/input.csv" \
   "$OUTPUT_DIR/output.pdf"
 
-"$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/visual_qa.R" \
+"$RSCRIPT" "$SKILL_ROOT/scripts/visual_qa.R" \
   --render "$OUTPUT_DIR/output.pdf" \
   --report "$OUTPUT_DIR/visual-qa.json"
 
-"$RSCRIPT" "$REPO_ROOT/skills/figureforge/scripts/validate_adaptation.R" \
+"$RSCRIPT" "$SKILL_ROOT/scripts/validate_adaptation.R" \
   "$OUTPUT_DIR" \
   --render \
   --output "$OUTPUT_DIR/validation-output.pdf" \

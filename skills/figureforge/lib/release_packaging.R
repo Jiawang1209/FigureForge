@@ -16,21 +16,22 @@ release_list_files <- function(root) {
 }
 
 release_sha256 <- function(path) {
-  output <- system2(
-    "shasum",
-    c("-a", "256", shQuote(path)),
-    stdout = TRUE,
-    stderr = TRUE
-  )
-  status <- attr(output, "status")
-  if (!is.null(status) && status != 0L) {
-    stop("Unable to calculate SHA-256 for: ", path)
+  figureforge_sha256(path)
+}
+
+release_package_path <- function(source_path) {
+  source_path <- release_normalize_relative(source_path)
+  if (startsWith(source_path, "skills/figureforge/")) {
+    return(sub("^skills/figureforge/", "figureforge/", source_path))
   }
-  hash <- strsplit(output[[1L]], "\\s+", perl = TRUE)[[1L]][[1L]]
-  if (!grepl("^[0-9a-f]{64}$", hash, perl = TRUE)) {
-    stop("Invalid SHA-256 output for: ", path)
+  if (startsWith(source_path, "examples/public-demo/")) {
+    return(sub(
+      "^examples/public-demo/",
+      "figureforge/examples/public-demo/",
+      source_path
+    ))
   }
-  hash
+  stop("No install mapping for release source: ", source_path)
 }
 
 release_public_case_files <- function(repo_root) {
@@ -64,10 +65,6 @@ release_candidate_files <- function(repo_root) {
   fixed <- file.path(
     repo_root,
     c(
-      "README.md",
-      "README.zh.md",
-      "CHANGELOG.md",
-      "LICENSE",
       "skills/figureforge/VERSION",
       "skills/figureforge/SKILL.md"
     )
@@ -86,11 +83,17 @@ release_candidate_files <- function(repo_root) {
     "_template",
     c("case.md", "data.csv", "plot.R")
   )
+  public_demo <- release_list_files(file.path(
+    repo_root,
+    "examples",
+    "public-demo"
+  ))
   candidates <- c(
     fixed,
     unlist(lapply(recursive_roots, release_list_files), use.names = FALSE),
     release_public_case_files(repo_root),
-    template
+    template,
+    public_demo
   )
   candidates <- unique(candidates[file.exists(candidates)])
   candidates <- candidates[!dir.exists(candidates)]
@@ -124,11 +127,20 @@ build_release_manifest <- function(repo_root, output_path = NULL) {
     stop("Release files must not be symlinks: ", paths[which(symlinks)[[1L]]])
   }
   manifest <- data.frame(
-    path = paths,
+    source_path = paths,
+    package_path = vapply(paths, release_package_path, character(1)),
     sha256 = vapply(absolute, release_sha256, character(1)),
     bytes = as.numeric(file.info(absolute)$size),
     stringsAsFactors = FALSE
   )
+  manifest <- manifest[
+    order(manifest$package_path, manifest$source_path),
+    ,
+    drop = FALSE
+  ]
+  if (anyDuplicated(manifest$package_path)) {
+    stop("Release package paths must be unique")
+  }
   if (any(!is.finite(manifest$bytes) | manifest$bytes <= 0)) {
     stop("Release files must be non-empty")
   }
@@ -158,16 +170,37 @@ package_figureforge_skill <- function(
     basename(archive_path)
   )
   if (file.exists(archive_path)) unlink(archive_path)
+  staging_root <- tempfile("figureforge-release-stage-")
+  dir.create(staging_root, recursive = TRUE)
+  on.exit(unlink(staging_root, recursive = TRUE), add = TRUE)
+  for (row_index in seq_len(nrow(manifest))) {
+    source <- file.path(repo_root, manifest$source_path[[row_index]])
+    destination <- file.path(
+      staging_root,
+      manifest$package_path[[row_index]]
+    )
+    dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
+    copied <- file.copy(
+      source,
+      destination,
+      overwrite = FALSE,
+      copy.mode = TRUE,
+      copy.date = TRUE
+    )
+    if (!isTRUE(copied)) {
+      stop("Unable to stage release file: ", manifest$source_path[[row_index]])
+    }
+  }
   file_list <- tempfile("figureforge-release-files-", fileext = ".txt")
   on.exit(unlink(file_list), add = TRUE)
-  writeLines(manifest$path, file_list, useBytes = TRUE)
+  writeLines(manifest$package_path, file_list, useBytes = TRUE)
   output <- system2(
     "tar",
     c(
       "-czf",
       shQuote(archive_path),
       "-C",
-      shQuote(repo_root),
+      shQuote(staging_root),
       "-T",
       shQuote(file_list)
     ),

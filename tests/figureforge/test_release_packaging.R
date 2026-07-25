@@ -26,6 +26,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "checksums.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "release_packaging.R"
 ))
 
@@ -46,37 +53,48 @@ manifest_path <- file.path(output_dir, "manifest.csv")
 manifest <- build_release_manifest(repo_root, manifest_path)
 
 stopifnot(file.exists(manifest_path))
-stopifnot(all(c("path", "sha256", "bytes") %in% names(manifest)))
+stopifnot(all(c(
+  "source_path",
+  "package_path",
+  "sha256",
+  "bytes"
+) %in% names(manifest)))
 stopifnot(nrow(manifest) > 0L)
-stopifnot(identical(manifest$path, sort(manifest$path)))
-stopifnot(!anyDuplicated(manifest$path))
+stopifnot(identical(manifest$package_path, sort(manifest$package_path)))
+stopifnot(!anyDuplicated(manifest$source_path))
+stopifnot(!anyDuplicated(manifest$package_path))
 stopifnot(all(grepl("^[0-9a-f]{64}$", manifest$sha256, perl = TRUE)))
 stopifnot(all(manifest$bytes > 0))
+stopifnot(all(startsWith(manifest$package_path, "figureforge/")))
+stopifnot(!any(startsWith(manifest$package_path, "skills/")))
 stopifnot(!any(grepl(
   "^skills/figureforge/cases/(?!_template/)",
-  manifest$path,
+  manifest$source_path,
   perl = TRUE
 )))
 stopifnot(any(
-  manifest$path == "skills/figureforge/cases/_template/case.md"
+  manifest$package_path == "figureforge/cases/_template/case.md"
 ))
 stopifnot(!any(grepl(
   "reproduction\\.|original\\.",
-  manifest$path,
+  manifest$source_path,
   perl = TRUE
 )))
 stopifnot(!any(grepl(
   "^outputs/|\\.log$|(^|/)case-index\\.csv$",
-  manifest$path,
+  manifest$source_path,
   perl = TRUE
 )))
 stopifnot(any(
-  manifest$path == "skills/figureforge/references/public-case-index.csv"
+  manifest$package_path == "figureforge/references/public-case-index.csv"
 ))
-stopifnot(any(manifest$path == "skills/figureforge/SKILL.md"))
+stopifnot(any(manifest$package_path == "figureforge/SKILL.md"))
+stopifnot(any(
+  manifest$package_path == "figureforge/examples/public-demo/run_demo.sh"
+))
 stopifnot(sum(grepl(
-  "^skills/figureforge/public-cases/[^/]+/distribution.yml$",
-  manifest$path,
+  "^figureforge/public-cases/[^/]+/distribution.yml$",
+  manifest$package_path,
   perl = TRUE
 )) == 12L)
 
@@ -110,6 +128,6 @@ archive_files <- system2(
 )
 stopifnot(is.null(attr(archive_files, "status")))
 archive_files <- sort(sub("^\\./", "", archive_files))
-stopifnot(identical(archive_files, sort(package$manifest$path)))
+stopifnot(identical(archive_files, sort(package$manifest$package_path)))
 
 message("release packaging tests: PASS")
