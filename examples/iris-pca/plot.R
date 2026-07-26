@@ -620,10 +620,17 @@ backup_directory <- tempfile(
 if (!dir.create(backup_directory, showWarnings = FALSE)) {
   abort("Could not create a same-filesystem backup area; no outputs were published.")
 }
+backup_recovery_path <- normalizePath(
+  backup_directory,
+  winslash = "/",
+  mustWork = TRUE
+)
 
 backed_up <- character()
 published <- character()
-transaction_active <- TRUE
+publication_succeeded <- FALSE
+rollback_attempted <- FALSE
+rollback_complete <- FALSE
 
 rollback_publication <- function() {
   rollback_errors <- character()
@@ -644,50 +651,52 @@ rollback_publication <- function() {
   for (filename in backed_up) {
     backup_file <- file.path(backup_directory, filename)
     destination <- destination_paths[[filename]]
-    if (
-      file.exists(backup_file) || is_symbolic_link(backup_file)
-    ) {
-      if (
+    backup_available <- file.exists(backup_file) ||
+      is_symbolic_link(backup_file)
+    restore_failed <- TRUE
+    if (backup_available) {
+      restore_failed <-
         file.exists(destination) ||
           is_symbolic_link(destination) ||
           !isTRUE(suppressWarnings(file.rename(backup_file, destination)))
-      ) {
-        rollback_errors <- c(
-          rollback_errors,
-          paste0("could not restore original ", filename)
-        )
-      }
+    }
+    restore_confirmed <- (
+      file.exists(destination) || is_symbolic_link(destination)
+    ) && !(
+      file.exists(backup_file) || is_symbolic_link(backup_file)
+    )
+    if (restore_failed || !restore_confirmed) {
+      rollback_errors <- c(
+        rollback_errors,
+        paste0("could not confirm restoration of original ", filename)
+      )
     }
   }
   rollback_errors
 }
 
 on.exit({
-  if (transaction_active) {
-    rollback_publication()
+  if (!publication_succeeded && !rollback_attempted) {
+    exit_rollback_errors <- rollback_publication()
+    rollback_attempted <- TRUE
+    rollback_complete <- length(exit_rollback_errors) == 0L
   }
-  if (dir.exists(backup_directory)) {
+  backup_safe_to_delete <- publication_succeeded || rollback_complete
+  if (backup_safe_to_delete && dir.exists(backup_directory)) {
     unlink(backup_directory, recursive = TRUE, force = TRUE)
-  }
-}, add = TRUE)
-
-test_fail_value <- Sys.getenv(
-  "FIGUREFORGE_INTERNAL_TEST_FAIL_AFTER_PUBLISH",
-  unset = ""
-)
-test_fail_after <- NA_integer_
-if (nzchar(test_fail_value)) {
-  test_fail_after <- suppressWarnings(as.integer(test_fail_value))
-  if (
-    is.na(test_fail_after) ||
-      test_fail_after < 1L ||
-      test_fail_after > length(output_filenames)
-  ) {
-    abort(
-      "FIGUREFORGE_INTERNAL_TEST_FAIL_AFTER_PUBLISH must be an integer within the output count."
+  } else if (dir.exists(backup_directory)) {
+    warning(
+      paste0(
+        "Rollback was incomplete. Backup preserved at ",
+        backup_recovery_path,
+        ". Move the remaining backup files into ",
+        output_path,
+        " before rerunning plot.R."
+      ),
+      call. = FALSE
     )
   }
-}
+}, add = TRUE)
 
 publication_error <- tryCatch(
   {
@@ -715,19 +724,6 @@ publication_error <- tryCatch(
         )
       }
       published <- c(published, filename)
-      if (
-        !is.na(test_fail_after) &&
-          length(published) == test_fail_after
-      ) {
-        stop(
-          paste0(
-            "Injected internal test failure after publishing ",
-            test_fail_after,
-            " outputs."
-          ),
-          call. = FALSE
-        )
-      }
     }
     NULL
   },
@@ -736,8 +732,9 @@ publication_error <- tryCatch(
 
 if (inherits(publication_error, "error")) {
   rollback_errors <- rollback_publication()
+  rollback_attempted <- TRUE
+  rollback_complete <- length(rollback_errors) == 0L
   if (length(rollback_errors) == 0L) {
-    transaction_active <- FALSE
     abort(paste0(
       "Output publication failed; every original output was restored. ",
       conditionMessage(publication_error)
@@ -747,11 +744,16 @@ if (inherits(publication_error, "error")) {
     "Output publication failed and rollback was incomplete: ",
     paste(rollback_errors, collapse = "; "),
     ". Original error: ",
-    conditionMessage(publication_error)
+    conditionMessage(publication_error),
+    ". Backup preserved at ",
+    backup_recovery_path,
+    ". Recovery: move the remaining backup files into ",
+    output_path,
+    " before rerunning plot.R."
   ))
 }
 
-transaction_active <- FALSE
+publication_succeeded <- TRUE
 backup_cleanup_status <- unlink(
   backup_directory,
   recursive = TRUE,

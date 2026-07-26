@@ -1383,6 +1383,42 @@ assert_no_transaction_residue <- function(root, label) {
   )
 }
 
+instrument_plot_script <- function(path, fail_restore = FALSE) {
+  lines <- readLines(plot_script_path, warn = FALSE, encoding = "UTF-8")
+  publish_line <- "      published <- c(published, filename)"
+  publish_index <- which(lines == publish_line)
+  assert_true(
+    length(publish_index) == 1L,
+    "Test instrumentation requires exactly one publication marker"
+  )
+  injection <- c(
+    "      if (length(published) == 3L) {",
+    "        stop(\"Injected test-only mid-publication failure.\", call. = FALSE)",
+    "      }"
+  )
+  lines <- append(lines, injection, after = publish_index)
+
+  if (fail_restore) {
+    restore_line <- paste0(
+      "          !isTRUE(suppressWarnings(",
+      "file.rename(backup_file, destination)))"
+    )
+    restore_index <- which(lines == restore_line)
+    assert_true(
+      length(restore_index) == 1L,
+      "Test instrumentation requires exactly one restoration marker"
+    )
+    lines[[restore_index]] <- paste0(
+      "          !isTRUE(suppressWarnings(",
+      "if (identical(filename, \"plot.png\")) FALSE else ",
+      "file.rename(backup_file, destination)))"
+    )
+  }
+
+  writeLines(lines, path, useBytes = TRUE)
+  invisible(path)
+}
+
 preflight_root <- tempfile("figureforge-iris-pca-preflight-")
 dir.create(preflight_root, recursive = TRUE)
 preflight_input <- file.path(preflight_root, "source.csv")
@@ -1441,14 +1477,18 @@ rollback_log <- tempfile(
   "figureforge-iris-pca-rollback-",
   fileext = ".log"
 )
+rollback_script <- tempfile(
+  "figureforge-iris-pca-instrumented-",
+  fileext = ".R"
+)
+instrument_plot_script(rollback_script)
 rollback_status <- system2(
   file.path(R.home("bin"), "Rscript"),
   c(
-    shQuote(plot_script_path),
+    shQuote(rollback_script),
     shQuote(rollback_input),
     shQuote(rollback_root)
   ),
-  env = "FIGUREFORGE_INTERNAL_TEST_FAIL_AFTER_PUBLISH=3",
   stdout = rollback_log,
   stderr = rollback_log
 )
@@ -1473,6 +1513,107 @@ assert_true(
   "Mid-publication rollback must restore every OLD output byte-identical"
 )
 assert_no_transaction_residue(rollback_root, "Mid-publication rollback")
+
+incomplete_root <- tempfile("figureforge-iris-pca-incomplete-rollback-")
+dir.create(incomplete_root, recursive = TRUE)
+incomplete_input <- file.path(incomplete_root, "source.csv")
+assert_true(
+  file.copy(file.path(demo_root, "iris.csv"), incomplete_input),
+  "Incomplete-rollback fixture input must be created"
+)
+write_old_outputs(incomplete_root, generated_outputs)
+incomplete_hashes_before <- output_hashes(
+  incomplete_root,
+  generated_outputs
+)
+incomplete_script <- tempfile(
+  "figureforge-iris-pca-incomplete-instrumented-",
+  fileext = ".R"
+)
+instrument_plot_script(incomplete_script, fail_restore = TRUE)
+incomplete_log <- tempfile(
+  "figureforge-iris-pca-incomplete-rollback-",
+  fileext = ".log"
+)
+incomplete_status <- system2(
+  file.path(R.home("bin"), "Rscript"),
+  c(
+    shQuote(incomplete_script),
+    shQuote(incomplete_input),
+    shQuote(incomplete_root)
+  ),
+  stdout = incomplete_log,
+  stderr = incomplete_log
+)
+assert_true(
+  !identical(as.integer(incomplete_status), 0L),
+  "Simulated restoration failure must make plot.R fail"
+)
+backup_directories <- list.dirs(
+  incomplete_root,
+  full.names = TRUE,
+  recursive = FALSE
+)
+backup_directories <- backup_directories[grepl(
+  "^\\.figureforge-iris-pca-backup-",
+  basename(backup_directories)
+)]
+assert_true(
+  length(backup_directories) == 1L,
+  "Incomplete rollback must preserve exactly one backup directory"
+)
+preserved_backup <- backup_directories[[1L]]
+assert_true(
+  file.exists(file.path(preserved_backup, "plot.png")) &&
+    identical(
+      sha256_file(file.path(preserved_backup, "plot.png")),
+      incomplete_hashes_before[["plot.png"]]
+    ),
+  "Preserved backup must retain the unrestored OLD plot.png bytes"
+)
+restored_filenames <- setdiff(generated_outputs, "plot.png")
+assert_true(
+  identical(
+    output_hashes(incomplete_root, restored_filenames),
+    incomplete_hashes_before[restored_filenames]
+  ),
+  "Every restorable original must be restored before preserving the backup"
+)
+assert_true(
+  !file.exists(file.path(incomplete_root, "plot.png")),
+  "Failed plot.png restoration must not leave a newly published replacement"
+)
+assert_true(
+  !any(grepl(
+    "^\\.figureforge-iris-pca-stage-",
+    list.files(incomplete_root, all.files = TRUE)
+  )),
+  "Incomplete rollback must still clean its staging directory"
+)
+incomplete_output <- paste(
+  readLines(incomplete_log, warn = FALSE),
+  collapse = "\n"
+)
+assert_true(
+  grepl(normalizePath(preserved_backup), incomplete_output, fixed = TRUE) &&
+    grepl(
+      "recover|restore|move.*backup",
+      incomplete_output,
+      ignore.case = TRUE,
+      perl = TRUE
+    ),
+  "Incomplete rollback error must identify the preserved backup and recovery action"
+)
+assert_true(
+  !grepl(
+    "FIGUREFORGE_INTERNAL_TEST_FAIL_AFTER_PUBLISH|Injected internal test failure",
+    plot_script,
+    fixed = FALSE,
+    perl = TRUE
+  ),
+  "Delivered plot.R must not contain a production fault-injection hook"
+)
+unlink(incomplete_root, recursive = TRUE, force = TRUE)
 
 renamed_root <- tempfile("figureforge-iris-pca-renamed-input-")
 dir.create(renamed_root, recursive = TRUE)
