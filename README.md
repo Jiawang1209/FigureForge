@@ -87,6 +87,10 @@ Ask your AI agent:
 The Skill inspects the real data, adapts a proven plotting approach, renders
 the result, and returns a standalone script with its figures.
 
+Case-based generation may claim FigureForge case knowledge only when it uses actual case evidence and passes strict trace validation.
+General fallback can still complete the plot with `claim: general_method`, but it is not case-grounded.
+The default visible outputs remain `plot.R`, `plot.png`, and `plot.pdf`; the hidden case trace is audit state.
+
 ## Iris PCA demo
 
 Try a complete public example with this prompt:

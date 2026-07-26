@@ -141,6 +141,55 @@ stage "strict archive verification and extraction"
 
 stage "installed official validation, doctor, search, demo, and rerender"
 "$PYTHON" "$SKILL_VALIDATOR" "$INSTALLED"
+
+# Packaging/CLI smoke only: use a shipped public case and an external workspace.
+# Copying its script proves installed evidence and executable anchors resolve;
+# behavioral forward evaluation remains the responsibility of the eval stages.
+INSTALLED_CASE_DIR="$INSTALLED/public-cases/public-correlation-heatmap"
+INSTALLED_CASE_WORKSPACE="$VERIFY_ROOT/installed-case-trace-workspace"
+INSTALLED_CASE_TRACE="$INSTALLED_CASE_WORKSPACE/.figureforge/case-trace.yml"
+INSTALLED_CASE_SCRIPT="$INSTALLED_CASE_WORKSPACE/plot.R"
+INSTALLED_CASE_TRACE_LOG="$VERIFY_ROOT/installed-case-trace.log"
+mkdir -p "$INSTALLED_CASE_WORKSPACE/.figureforge"
+cp "$INSTALLED_CASE_DIR/plot.R" "$INSTALLED_CASE_SCRIPT"
+installed_generated_sha=$(
+  shasum -a 256 "$INSTALLED_CASE_SCRIPT" | awk '{print $1}'
+)
+installed_case_md_sha=$(
+  shasum -a 256 "$INSTALLED_CASE_DIR/case.md" | awk '{print $1}'
+)
+installed_plot_r_sha=$(
+  shasum -a 256 "$INSTALLED_CASE_DIR/plot.R" | awk '{print $1}'
+)
+installed_qa_md_sha=$(
+  shasum -a 256 "$INSTALLED_CASE_DIR/qa.md" | awk '{print $1}'
+)
+{
+  echo "schema_version: 1"
+  echo "generation_mode: case_based"
+  echo "figureforge_version: 1.1.0"
+  echo "generated_script_sha256: $installed_generated_sha"
+  echo "claim: case_grounded"
+  echo "primary_case_id: public-correlation-heatmap"
+  echo "case_md_file: case.md"
+  echo "case_md_sha256: $installed_case_md_sha"
+  echo "plot_r_file: plot.R"
+  echo "plot_r_sha256: $installed_plot_r_sha"
+  echo "schema_mapping: variable_x -> variable_x; variable_y -> variable_y; correlation -> correlation"
+  echo "adopted_patterns: case.md#Diverging fill encodes sign and magnitude => plot.R#ggplot2::scale_fill_gradient2"
+  echo "departures: none; copied public case script for installed CLI packaging smoke"
+  echo "qa_md_file: qa.md"
+  echo "qa_md_sha256: $installed_qa_md_sha"
+  echo "qa_status: review_required"
+} >"$INSTALLED_CASE_TRACE"
+"$RSCRIPT" "$INSTALLED/scripts/validate_case_trace.R" \
+  "$INSTALLED_CASE_TRACE" \
+  --case-dir "$INSTALLED_CASE_DIR" \
+  --script "$INSTALLED_CASE_SCRIPT" \
+  >"$INSTALLED_CASE_TRACE_LOG" 2>&1
+grep -F "Verification level: strict" "$INSTALLED_CASE_TRACE_LOG"
+grep -F "Case trace validation OK:" "$INSTALLED_CASE_TRACE_LOG"
+
 "$RSCRIPT" "$INSTALLED/scripts/doctor.R" \
   --format text >"$VERIFY_ROOT/installed-doctor.txt"
 "$RSCRIPT" "$INSTALLED/scripts/search_cases.R" \

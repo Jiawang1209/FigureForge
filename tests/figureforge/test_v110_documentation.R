@@ -41,6 +41,24 @@ sha256_file <- function(path) {
   hash
 }
 
+sha256_git_file <- function(commit, relative_path) {
+  extracted <- tempfile("figureforge-git-file-")
+  on.exit(unlink(extracted, force = TRUE), add = TRUE)
+  status <- system2(
+    "git",
+    c(
+      "-C",
+      shQuote(repo_root),
+      "show",
+      paste0(commit, ":", relative_path)
+    ),
+    stdout = extracted,
+    stderr = FALSE
+  )
+  stopifnot(identical(as.integer(status), 0L), file.exists(extracted))
+  sha256_file(extracted)
+}
+
 english <- read_document("README.md")
 chinese <- read_document("README.zh.md")
 changelog <- read_document("CHANGELOG.md")
@@ -151,6 +169,22 @@ for (document in list(english, chinese)) {
     )
   ))
 }
+stopifnot(contains_all(
+  english,
+  c(
+    "Case-based generation may claim FigureForge case knowledge only when it uses actual case evidence and passes strict trace validation.",
+    "General fallback can still complete the plot with `claim: general_method`, but it is not case-grounded.",
+    "The default visible outputs remain `plot.R`, `plot.png`, and `plot.pdf`; the hidden case trace is audit state."
+  )
+))
+stopifnot(contains_all(
+  chinese,
+  c(
+    "案例生成只有实际使用案例证据并通过严格的追踪验证，才可以声称使用了 FigureForge 案例知识。",
+    "通用回退仍可完成绘图，但必须使用 `claim: general_method`，且不得声称由案例支撑。",
+    "默认可见输出仍是 `plot.R`、`plot.png` 和 `plot.pdf`；隐藏的案例追踪仅用于审计。"
+  )
+))
 evidence_root <- file.path(
   repo_root,
   "docs",
@@ -343,11 +377,14 @@ stopifnot(all(vapply(
       stdout = TRUE
     )
     # The frozen release evidence binds the tested commit. The Skill directory
-    # may evolve after v1.1.0; unchanged release harnesses remain HEAD-bound.
-    current_matches <- identical(
-      component_name,
-      "skills/figureforge"
-    ) || identical(current_object[[1L]], expected_object)
+    # and deterministic verifier may evolve after v1.1.0; the live harnesses
+    # and package builder remain HEAD-bound.
+    evolving_components <- c(
+      "skills/figureforge",
+      "scripts/verify_figureforge_v110.sh"
+    )
+    current_matches <- component_name %in% evolving_components ||
+      identical(current_object[[1L]], expected_object)
     is.null(attr(tested_object, "status")) &&
       is.null(attr(current_object, "status")) &&
       identical(tested_object[[1L]], expected_object) &&
@@ -363,6 +400,18 @@ file_components <- component_bindings[
 stopifnot(all(vapply(
   seq_len(nrow(file_components)),
   function(index) {
+    if (identical(
+      file_components$name[[index]],
+      "scripts/verify_figureforge_v110.sh"
+    )) {
+      return(identical(
+        sha256_git_file(
+          tested_commit,
+          file_components$name[[index]]
+        ),
+        file_components$sha256[[index]]
+      ))
+    }
     identical(
       sha256_file(file.path(repo_root, file_components$name[[index]])),
       file_components$sha256[[index]]
@@ -816,6 +865,13 @@ verifier_terms <- c(
   ".sha256",
   "verify_release.R",
   "quick_validate.py",
+  "validate_case_trace.R",
+  "installed-case-trace-workspace",
+  "installed-case-trace.log",
+  "--case-dir",
+  "--script",
+  "Verification level: strict",
+  "Case trace validation OK:",
   "validate_adaptation.R",
   "run_figureforge_live_evals.sh",
   "run_figureforge_plotting_eval.sh",
@@ -839,6 +895,33 @@ stopifnot(contains_all(
     "FIGUREFORGE_MANIFEST"
   )
 ))
+installed_stage <- grep(
+  'stage "installed official validation, doctor, search, demo, and rerender"',
+  verifier_lines,
+  fixed = TRUE
+)
+installed_trace_cli <- grep(
+  '"$INSTALLED/scripts/validate_case_trace.R"',
+  verifier_lines,
+  fixed = TRUE
+)
+installed_strict_check <- grep(
+  'grep -F "Verification level: strict"',
+  verifier_lines,
+  fixed = TRUE
+)
+installed_ok_check <- grep(
+  'grep -F "Case trace validation OK:"',
+  verifier_lines,
+  fixed = TRUE
+)
+stopifnot(length(installed_stage) == 1L)
+stopifnot(length(installed_trace_cli) == 1L)
+stopifnot(length(installed_strict_check) == 1L)
+stopifnot(length(installed_ok_check) == 1L)
+stopifnot(installed_stage < installed_trace_cli)
+stopifnot(installed_trace_cli < installed_strict_check)
+stopifnot(installed_strict_check < installed_ok_check)
 for (unsafe_pattern in c(
   "read.csv('$VERIFY_ROOT",
   "open('$VERIFY_ROOT",
