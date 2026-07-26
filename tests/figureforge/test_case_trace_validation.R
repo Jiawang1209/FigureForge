@@ -61,9 +61,10 @@ writeLines(
 )
 plot_r_lines <- c(
   "library(ggplot2)",
-  "ggplot(data, aes(x, y)) + geom_point()",
-  "# facet_wrap treatment groups",
-  "# zero reference line at null value"
+  "case_plot <- ggplot2::ggplot(data, ggplot2::aes(x, y)) +",
+  "  ggplot2::geom_point() +",
+  "  ggplot2::facet_wrap(~ treatment)",
+  "print(case_plot)"
 )
 writeLines(
   plot_r_lines,
@@ -85,13 +86,40 @@ writeLines(
 script_path <- file.path(output_dir, "plot.R")
 generated_script_lines <- c(
   "library(ggplot2)",
-  "point_layer <- ggplot2::geom_point()",
   "smooth_method <- stats::loess",
   "facet_group_layout <- ggplot2::facet_wrap(~ treatment)",
   "confidence_alpha_mapping <- ggplot2::aes(alpha = confidence)",
   "lower_upper_bounds <- range(input$response, na.rm = TRUE)",
-  "ggplot(input, aes(predictor, response)) + point_layer"
+  "final_plot <- ggplot2::ggplot(",
+  "  input,",
+  "  ggplot2::aes(predictor, response)",
+  ") +",
+  "  ggplot2::geom_point(mapping = confidence_alpha_mapping) +",
+  "  ggplot2::geom_smooth(method = smooth_method, se = FALSE) +",
+  "  facet_group_layout +",
+  "  ggplot2::coord_cartesian(ylim = lower_upper_bounds)",
+  "ggplot2::ggsave(filename = \"figure.png\", plot = final_plot)"
 )
+generated_script_text <- paste(generated_script_lines, collapse = "\n")
+for (active_symbol in c(
+  "smooth_method",
+  "facet_group_layout",
+  "confidence_alpha_mapping",
+  "lower_upper_bounds",
+  "final_plot"
+)) {
+  matches <- gregexpr(
+    active_symbol,
+    generated_script_text,
+    fixed = TRUE
+  )[[1L]]
+  stopifnot(matches[[1L]] >= 0L, length(matches) >= 2L)
+}
+stopifnot(grepl(
+  "ggplot2::ggsave(filename = \"figure.png\", plot = final_plot)",
+  generated_script_text,
+  fixed = TRUE
+))
 writeLines(
   generated_script_lines,
   script_path,
@@ -127,7 +155,7 @@ case_based_fields <- function(case_directory = case_dir) {
     schema_mapping = "predictor -> x | response -> y",
     adopted_patterns = paste(
       "case.md#overall composition => plot.R#ggplot2::geom_point",
-      "plot.R#geom_point => plot.R#confidence_alpha_mapping",
+      "plot.R#ggplot2::geom_point => plot.R#confidence_alpha_mapping",
       sep = " | "
     ),
     departures = "renamed source columns"
@@ -386,10 +414,10 @@ empty_patterns$adopted_patterns <- ""
 expect_invalid(empty_patterns, "auditable adopted pattern format")
 
 auditable_pattern_examples <- c(
-  "plot.R#geom_point => plot.R#confidence_alpha_mapping",
+  "plot.R#ggplot2::geom_point => plot.R#confidence_alpha_mapping",
   "case.md#overall composition => plot.R#ggplot2::geom_point",
   "qa.md#confidence ribbon => plot.R#lower_upper_bounds",
-  "plot.R#FACET_WRAP => plot.R#facet_group_layout",
+  "plot.R#ggplot2::facet_wrap => plot.R#facet_group_layout",
   paste(
     "case.md#generalized additive model",
     "plot.R#stats::loess",
@@ -494,6 +522,35 @@ stopifnot(
     nonexistent_source_strict$failed_checks
 )
 
+source_comment_only_lines <- c(
+  plot_r_lines,
+  "# source_comment_only_anchor"
+)
+writeLines(
+  source_comment_only_lines,
+  file.path(case_dir, "plot.R"),
+  useBytes = TRUE
+)
+source_comment_only_fields <- case_based_fields()
+source_comment_only_fields$adopted_patterns <-
+  "plot.R#source_comment_only_anchor => plot.R#ggplot2::geom_point"
+write_trace(source_comment_only_fields)
+source_comment_only_result <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir
+)
+expect_result_shape(source_comment_only_result)
+stopifnot(!isTRUE(source_comment_only_result$ok))
+stopifnot(
+  "source anchors match case evidence" %in%
+    source_comment_only_result$failed_checks
+)
+writeLines(
+  plot_r_lines,
+  file.path(case_dir, "plot.R"),
+  useBytes = TRUE
+)
+
 nonexistent_generated_anchor <- case_based_fields()
 nonexistent_generated_anchor$adopted_patterns <-
   "case.md#overall composition => plot.R#nonexistent_generated_anchor"
@@ -548,6 +605,30 @@ stopifnot(
   "generated anchors match script" %in%
     comment_only_result$failed_checks
 )
+writeLines(generated_script_lines, script_path, useBytes = TRUE)
+
+dead_symbol_lines <- append(
+  generated_script_lines,
+  "dead_provenance_symbol <- 1",
+  after = 1L
+)
+writeLines(dead_symbol_lines, script_path, useBytes = TRUE)
+dead_symbol_fields <- case_based_fields()
+dead_symbol_fields$adopted_patterns <-
+  "case.md#overall composition => plot.R#dead_provenance_symbol"
+write_trace(dead_symbol_fields)
+dead_symbol_result <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(dead_symbol_result)
+stopifnot(isTRUE(
+  dead_symbol_result$checks[["generated anchors match script"]]
+))
+stopifnot(identical(
+  dead_symbol_result$evidence$anchor_validation,
+  "anchor_presence"
+))
 writeLines(generated_script_lines, script_path, useBytes = TRUE)
 
 writeLines(

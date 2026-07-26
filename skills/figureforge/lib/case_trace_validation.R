@@ -240,14 +240,93 @@ case_trace_file_contains_anchor <- function(path, anchor) {
   )
 }
 
+case_trace_r_code_tokens <- function(path) {
+  if (!case_trace_regular_nonempty_file(path)) {
+    return(NULL)
+  }
+  parsed_script <- suppressWarnings(
+    tryCatch(
+      parse(file = path, keep.source = TRUE),
+      error = function(error) NULL
+    )
+  )
+  if (is.null(parsed_script)) {
+    return(NULL)
+  }
+  parse_data <- tryCatch(
+    getParseData(parsed_script),
+    error = function(error) NULL
+  )
+  if (is.null(parse_data) || nrow(parse_data) < 1L) {
+    return(NULL)
+  }
+  parse_data <- parse_data[order(
+    parse_data$line1,
+    parse_data$col1,
+    parse_data$id
+  ), , drop = FALSE]
+  code_tokens <- parse_data[
+    parse_data$terminal %in% TRUE & parse_data$token != "COMMENT",
+    c("token", "text"),
+    drop = FALSE
+  ]
+  tolower(gsub(
+    "\\s+",
+    "",
+    code_tokens$text,
+    perl = TRUE
+  ))
+}
+
+case_trace_r_code_contains_anchor <- function(normalized_tokens, anchor) {
+  if (is.null(normalized_tokens)) {
+    return(FALSE)
+  }
+  normalized_anchor <- tolower(gsub(
+    "\\s+",
+    "",
+    trimws(anchor),
+    perl = TRUE
+  ))
+  token_width <- if (grepl("::", normalized_anchor, fixed = TRUE)) {
+    3L
+  } else if (grepl("\\($", normalized_anchor, perl = TRUE)) {
+    2L
+  } else {
+    1L
+  }
+  if (length(normalized_tokens) < token_width) {
+    return(FALSE)
+  }
+  candidates <- vapply(
+    seq_len(length(normalized_tokens) - token_width + 1L),
+    function(index) paste0(
+      normalized_tokens[index:(index + token_width - 1L)],
+      collapse = ""
+    ),
+    character(1L)
+  )
+  normalized_anchor %in% candidates
+}
+
 case_trace_source_anchors_match <- function(value, case_dir) {
   patterns <- case_trace_adopted_pattern_items(value)
-  length(patterns) > 0L && all(vapply(
-    patterns,
-    function(pattern) {
-      parsed <- parse_adopted_pattern(pattern)
-      if (is.null(parsed)) {
-        return(FALSE)
+  parsed_patterns <- lapply(patterns, parse_adopted_pattern)
+  if (
+    length(parsed_patterns) < 1L ||
+      any(vapply(parsed_patterns, is.null, logical(1L)))
+  ) {
+    return(FALSE)
+  }
+  plot_tokens <- case_trace_r_code_tokens(file.path(case_dir, "plot.R"))
+  all(vapply(
+    parsed_patterns,
+    function(parsed) {
+      if (identical(parsed$source_file, "plot.R")) {
+        return(case_trace_r_code_contains_anchor(
+          plot_tokens,
+          parsed$source_anchor
+        ))
       }
       case_trace_file_contains_anchor(
         file.path(case_dir, parsed$source_file),
@@ -266,79 +345,17 @@ case_trace_generated_anchors_match <- function(value, script_path) {
   ) {
     return(FALSE)
   }
-  parsed_script <- suppressWarnings(
-    tryCatch(
-      parse(file = script_path, keep.source = TRUE),
-      error = function(error) NULL
-    )
-  )
-  if (is.null(parsed_script)) {
-    return(FALSE)
-  }
-  parse_data <- tryCatch(
-    getParseData(parsed_script),
-    error = function(error) NULL
-  )
-  if (is.null(parse_data) || nrow(parse_data) < 1L) {
-    return(FALSE)
-  }
-  parse_data <- parse_data[order(
-    parse_data$line1,
-    parse_data$col1,
-    parse_data$id
-  ), , drop = FALSE]
-  code_tokens <- parse_data[
-    parse_data$terminal %in% TRUE,
-    c("token", "text"),
-    drop = FALSE
-  ]
-  code_tokens <- code_tokens[
-    code_tokens$token != "COMMENT",
-    ,
-    drop = FALSE
-  ]
-  normalized_tokens <- tolower(gsub(
-    "\\s+",
-    "",
-    code_tokens$text,
-    perl = TRUE
-  ))
-
-  anchor_in_code <- function(anchor) {
-    normalized_anchor <- tolower(gsub(
-      "\\s+",
-      "",
-      trimws(anchor),
-      perl = TRUE
-    ))
-    token_width <- if (grepl("::", normalized_anchor, fixed = TRUE)) {
-      3L
-    } else if (grepl("\\($", normalized_anchor, perl = TRUE)) {
-      2L
-    } else {
-      1L
-    }
-    if (length(normalized_tokens) < token_width) {
-      return(FALSE)
-    }
-    candidates <- vapply(
-      seq_len(length(normalized_tokens) - token_width + 1L),
-      function(index) paste0(
-        normalized_tokens[index:(index + token_width - 1L)],
-        collapse = ""
-      ),
-      character(1L)
-    )
-    normalized_anchor %in% candidates
-  }
-
+  normalized_tokens <- case_trace_r_code_tokens(script_path)
   length(patterns) > 0L && all(vapply(
     patterns,
     function(pattern) {
       parsed <- parse_adopted_pattern(pattern)
       !is.null(parsed) &&
         identical(basename(script_path), parsed$generated_file) &&
-        anchor_in_code(parsed$generated_anchor)
+        case_trace_r_code_contains_anchor(
+          normalized_tokens,
+          parsed$generated_anchor
+        )
     },
     logical(1L)
   ))
@@ -628,7 +645,12 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       primary_case_id = primary_case_id,
       generated_script_sha256 = recorded_script_hash,
       qa_status = qa_status,
-      verification_level = verification_level
+      verification_level = verification_level,
+      anchor_validation = if (identical(mode, "case_based")) {
+        "anchor_presence"
+      } else {
+        "not_applicable"
+      }
     )
   )
 }
