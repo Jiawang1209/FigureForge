@@ -91,24 +91,52 @@ parse_adopted_pattern <- function(pattern) {
   }
 
   separator <- separators[[1L]]
-  evidence_reference <- trimws(substr(pattern, 1L, separator - 1L))
-  applied_decision <- trimws(substr(pattern, separator + 2L, nchar(pattern)))
-  hashes <- gregexpr("#", evidence_reference, fixed = TRUE)[[1L]]
-  if (hashes[[1L]] < 0L || length(hashes) != 1L) {
+  source_reference <- trimws(substr(pattern, 1L, separator - 1L))
+  generated_reference <- trimws(substr(
+    pattern,
+    separator + 2L,
+    nchar(pattern)
+  ))
+  source_hashes <- gregexpr("#", source_reference, fixed = TRUE)[[1L]]
+  generated_hashes <- gregexpr("#", generated_reference, fixed = TRUE)[[1L]]
+  if (
+    source_hashes[[1L]] < 0L ||
+      length(source_hashes) != 1L ||
+      generated_hashes[[1L]] < 0L ||
+      length(generated_hashes) != 1L
+  ) {
     return(NULL)
   }
-  hash <- hashes[[1L]]
-  evidence_file <- trimws(substr(evidence_reference, 1L, hash - 1L))
+  source_hash <- source_hashes[[1L]]
+  generated_hash <- generated_hashes[[1L]]
+  source_file <- trimws(substr(source_reference, 1L, source_hash - 1L))
   source_anchor <- trimws(substr(
-    evidence_reference,
-    hash + 1L,
-    nchar(evidence_reference)
+    source_reference,
+    source_hash + 1L,
+    nchar(source_reference)
+  ))
+  generated_file <- trimws(substr(
+    generated_reference,
+    1L,
+    generated_hash - 1L
+  ))
+  generated_anchor <- trimws(substr(
+    generated_reference,
+    generated_hash + 1L,
+    nchar(generated_reference)
   ))
   list(
-    evidence_file = evidence_file,
+    source_file = source_file,
     source_anchor = source_anchor,
-    applied_decision = applied_decision
+    generated_file = generated_file,
+    generated_anchor = generated_anchor
   )
+}
+
+adopted_anchor_is_substantive <- function(anchor) {
+  anchor <- trimws(anchor)
+  minimum_length <- if (grepl("::|_|\\(", anchor, perl = TRUE)) 4L else 12L
+  nzchar(anchor) && nchar(anchor, type = "chars") >= minimum_length
 }
 
 adopted_pattern_is_auditable <- function(pattern, qa_available = TRUE) {
@@ -117,60 +145,17 @@ adopted_pattern_is_auditable <- function(pattern, qa_available = TRUE) {
     return(FALSE)
   }
   if (
-    !parsed$evidence_file %in% c("case.md", "plot.R", "qa.md") ||
-      (!qa_available && identical(parsed$evidence_file, "qa.md")) ||
-      nchar(parsed$source_anchor, type = "bytes") < 4L ||
-      nchar(parsed$applied_decision, type = "bytes") < 8L ||
-      identical(
-        tolower(parsed$source_anchor),
-        tolower(parsed$applied_decision)
-      )
+    !parsed$source_file %in% c("case.md", "plot.R", "qa.md") ||
+      (!qa_available && identical(parsed$source_file, "qa.md")) ||
+      !identical(parsed$generated_file, "plot.R") ||
+      !adopted_anchor_is_substantive(parsed$source_anchor) ||
+      !adopted_anchor_is_substantive(parsed$generated_anchor)
   ) {
     return(FALSE)
   }
 
-  disallowed_generic_language <- c(
-    "used colors",
-    "used nice colors",
-    "scientific plot",
-    "nice aesthetics",
-    "good figure",
-    "pretty plot",
-    "beautiful chart",
-    "generic",
-    "general",
-    "使用漂亮颜色",
-    "用了漂亮颜色",
-    "漂亮颜色",
-    "科学绘图",
-    "科学图形",
-    "制作科学图形",
-    "漂亮美学",
-    "好看图形",
-    "好看的图",
-    "漂亮",
-    "好看",
-    "通用"
-  )
-  normalized_values <- tolower(c(
-    parsed$source_anchor,
-    parsed$applied_decision
-  ))
-  generic_language <- vapply(
-    disallowed_generic_language,
-    function(term) any(grepl(
-      tolower(term),
-      normalized_values,
-      fixed = TRUE
-    )),
-    logical(1L)
-  )
-  if (any(generic_language)) {
-    return(FALSE)
-  }
-
   !case_trace_has_absolute_path(parsed$source_anchor) &&
-    !case_trace_has_absolute_path(parsed$applied_decision)
+    !case_trace_has_absolute_path(parsed$generated_anchor)
 }
 
 case_trace_adopted_pattern_items <- function(value) {
@@ -192,7 +177,39 @@ case_trace_patterns_are_concrete <- function(value, qa_available = TRUE) {
     ))
 }
 
-case_trace_adopted_anchors_match <- function(value, case_dir) {
+case_trace_regular_nonempty_file <- function(path) {
+  regular <- tryCatch(
+    isTRUE(file_test("-f", path)),
+    error = function(error) FALSE
+  )
+  if (!regular) {
+    return(FALSE)
+  }
+  size <- tryCatch(file.info(path)$size[[1L]], error = function(error) NA_real_)
+  is.finite(size) && size > 0
+}
+
+case_trace_file_contains_anchor <- function(path, anchor) {
+  if (!case_trace_regular_nonempty_file(path)) {
+    return(FALSE)
+  }
+  lines <- suppressWarnings(
+    tryCatch(
+      readLines(path, warn = FALSE, encoding = "UTF-8"),
+      error = function(error) NULL
+    )
+  )
+  if (is.null(lines)) {
+    return(FALSE)
+  }
+  grepl(
+    tolower(anchor),
+    tolower(paste(lines, collapse = "\n")),
+    fixed = TRUE
+  )
+}
+
+case_trace_source_anchors_match <- function(value, case_dir) {
   patterns <- case_trace_adopted_pattern_items(value)
   length(patterns) > 0L && all(vapply(
     patterns,
@@ -201,19 +218,26 @@ case_trace_adopted_anchors_match <- function(value, case_dir) {
       if (is.null(parsed)) {
         return(FALSE)
       }
-      evidence_path <- file.path(case_dir, parsed$evidence_file)
-      if (!file.exists(evidence_path)) {
-        return(FALSE)
-      }
-      evidence_text <- paste(
-        readLines(evidence_path, warn = FALSE, encoding = "UTF-8"),
-        collapse = "\n"
+      case_trace_file_contains_anchor(
+        file.path(case_dir, parsed$source_file),
+        parsed$source_anchor
       )
-      grepl(
-        tolower(parsed$source_anchor),
-        tolower(evidence_text),
-        fixed = TRUE
-      )
+    },
+    logical(1L)
+  ))
+}
+
+case_trace_generated_anchors_match <- function(value, script_path) {
+  patterns <- case_trace_adopted_pattern_items(value)
+  length(patterns) > 0L && all(vapply(
+    patterns,
+    function(pattern) {
+      parsed <- parse_adopted_pattern(pattern)
+      !is.null(parsed) &&
+        case_trace_file_contains_anchor(
+          script_path,
+          parsed$generated_anchor
+        )
     },
     logical(1L)
   ))
@@ -271,11 +295,13 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
   script_hash_matches <- FALSE
   if (!is.null(script_path)) {
     script_hash_matches <- script_hash_format_ok &&
-      file.exists(script_path) &&
+      case_trace_regular_nonempty_file(script_path) &&
       identical(
-        tryCatch(
-          figureforge_sha256(script_path),
-          error = function(error) ""
+        suppressWarnings(
+          tryCatch(
+            figureforge_sha256(script_path),
+            error = function(error) ""
+          )
         ),
         recorded_script_hash
       )
@@ -362,39 +388,51 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
     }
     evidence_hashes_match <- FALSE
     qa_matches <- FALSE
-    adopted_anchors_match <- FALSE
+    source_anchors_match <- FALSE
+    generated_anchors_match <- FALSE
     if (!is.null(case_dir)) {
       directory_ok <- dir.exists(case_dir) &&
         identical(basename(normalizePath(case_dir)), primary_case_id)
       case_md_path <- file.path(case_dir, "case.md")
       plot_r_path <- file.path(case_dir, "plot.R")
       evidence_hashes_match <- directory_ok &&
-        file.exists(case_md_path) &&
-        file.exists(plot_r_path) &&
+        case_trace_regular_nonempty_file(case_md_path) &&
+        case_trace_regular_nonempty_file(plot_r_path) &&
         identical(
-          tryCatch(
-            figureforge_sha256(case_md_path),
-            error = function(error) ""
+          suppressWarnings(
+            tryCatch(
+              figureforge_sha256(case_md_path),
+              error = function(error) ""
+            )
           ),
           metadata$case_md_sha256
         ) &&
         identical(
-          tryCatch(
-            figureforge_sha256(plot_r_path),
-            error = function(error) ""
+          suppressWarnings(
+            tryCatch(
+              figureforge_sha256(plot_r_path),
+              error = function(error) ""
+            )
           ),
           metadata$plot_r_sha256
         )
-      adopted_anchors_match <- patterns_ok &&
+      source_anchors_match <- patterns_ok &&
         directory_ok &&
-        case_trace_adopted_anchors_match(
+        case_trace_source_anchors_match(
           metadata$adopted_patterns,
           case_dir
         )
 
       qa_path <- file.path(case_dir, "qa.md")
-      if (file.exists(qa_path)) {
-        qa_lines <- trimws(readLines(qa_path, warn = FALSE))
+      if (case_trace_regular_nonempty_file(qa_path)) {
+        qa_lines <- tryCatch(
+          trimws(readLines(
+            qa_path,
+            warn = FALSE,
+            encoding = "UTF-8"
+          )),
+          error = function(error) character(0)
+        )
         qa_markers <- unique(tolower(qa_lines)[
           tolower(qa_lines) %in% c(
             "status: verified",
@@ -409,9 +447,11 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
         qa_matches <- qa_declared_ok &&
           identical(qa_status, actual_qa_status) &&
           identical(
-            tryCatch(
-              figureforge_sha256(qa_path),
-              error = function(error) ""
+            suppressWarnings(
+              tryCatch(
+                figureforge_sha256(qa_path),
+                error = function(error) ""
+              )
             ),
             metadata$qa_md_sha256
           )
@@ -419,6 +459,13 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
         qa_matches <- qa_declared_ok &&
           identical(qa_status, "missing")
       }
+    }
+    if (!is.null(script_path)) {
+      generated_anchors_match <- patterns_ok &&
+        case_trace_generated_anchors_match(
+          metadata$adopted_patterns,
+          script_path
+        )
     }
 
     checks <- c(
@@ -436,9 +483,16 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       checks <- c(
         checks,
         "case evidence hashes match" = evidence_hashes_match,
-        "adopted pattern anchors match evidence" =
-          adopted_anchors_match,
+        "source anchors match case evidence" =
+          source_anchors_match,
         "QA evidence matches case" = qa_matches
+      )
+    }
+    if (!is.null(script_path)) {
+      checks <- c(
+        checks,
+        "generated anchors match script" =
+          generated_anchors_match
       )
     }
   } else if (identical(mode, "general_fallback")) {

@@ -50,6 +50,7 @@ case_md_lines <- c(
   "",
   "A reusable layered scatter-plot case.",
   "Overall composition supports a single explanatory panel.",
+  "Generalized additive model is available for nonlinear response.",
   "分面布局按处理组组织图形。",
   "颜色映射区分处理组。"
 )
@@ -82,11 +83,16 @@ writeLines(
   useBytes = TRUE
 )
 script_path <- file.path(output_dir, "plot.R")
+generated_script_lines <- c(
+  "library(ggplot2)",
+  "ggplot(input, aes(predictor, response)) + geom_point()",
+  "# preserve nonlinear smooth",
+  "# alpha mapped to confidence",
+  "# treatment group panels",
+  "# lower and upper bounds"
+)
 writeLines(
-  c(
-    "library(ggplot2)",
-    "ggplot(input, aes(predictor, response)) + geom_point()"
-  ),
+  generated_script_lines,
   script_path,
   useBytes = TRUE
 )
@@ -119,8 +125,8 @@ case_based_fields <- function(case_directory = case_dir) {
     plot_r_sha256 = figureforge_sha256(file.path(case_directory, "plot.R")),
     schema_mapping = "predictor -> x | response -> y",
     adopted_patterns = paste(
-      "case.md#overall composition => single-panel explanatory biplot",
-      "plot.R#geom_point => alpha mapped to confidence",
+      "case.md#overall composition => plot.R#geom_point",
+      "plot.R#geom_point => plot.R#alpha mapped to confidence",
       sep = " | "
     ),
     departures = "renamed source columns"
@@ -211,9 +217,8 @@ stopifnot(identical(
 stopifnot(identical(valid$evidence$verification_level, "strict"))
 stopifnot("generated script hash matches" %in% names(valid$checks))
 stopifnot("case evidence hashes match" %in% names(valid$checks))
-stopifnot(
-  "adopted pattern anchors match evidence" %in% names(valid$checks)
-)
+stopifnot("source anchors match case evidence" %in% names(valid$checks))
+stopifnot("generated anchors match script" %in% names(valid$checks))
 
 write_trace(valid_fields)
 structural <- validate_case_trace(trace_path)
@@ -230,7 +235,8 @@ stopifnot(!any(c(
   "generated script hash matches",
   "case evidence hashes match",
   "QA evidence matches case",
-  "adopted pattern anchors match evidence"
+  "source anchors match case evidence",
+  "generated anchors match script"
 ) %in% names(structural$checks)))
 
 case_only <- validate_case_trace(
@@ -241,9 +247,8 @@ expect_result_shape(case_only)
 stopifnot(isTRUE(case_only$ok))
 stopifnot(identical(case_only$evidence$verification_level, "partial"))
 stopifnot("case evidence hashes match" %in% names(case_only$checks))
-stopifnot(
-  "adopted pattern anchors match evidence" %in% names(case_only$checks)
-)
+stopifnot("source anchors match case evidence" %in% names(case_only$checks))
+stopifnot(!"generated anchors match script" %in% names(case_only$checks))
 stopifnot(!"generated script hash matches" %in% names(case_only$checks))
 
 script_only <- validate_case_trace(
@@ -256,9 +261,8 @@ stopifnot(identical(script_only$evidence$verification_level, "partial"))
 stopifnot("generated script hash matches" %in% names(script_only$checks))
 stopifnot(!"case evidence hashes match" %in% names(script_only$checks))
 stopifnot(!"QA evidence matches case" %in% names(script_only$checks))
-stopifnot(
-  !"adopted pattern anchors match evidence" %in% names(script_only$checks)
-)
+stopifnot(!"source anchors match case evidence" %in% names(script_only$checks))
+stopifnot("generated anchors match script" %in% names(script_only$checks))
 
 missing_case_md <- valid_fields[
   !names(valid_fields) %in% c("case_md_file", "case_md_sha256")
@@ -290,6 +294,46 @@ writeLines(
   useBytes = TRUE
 )
 
+directory_case_fields <- case_based_fields()
+write_trace(directory_case_fields)
+unlink(file.path(case_dir, "case.md"))
+dir.create(file.path(case_dir, "case.md"))
+directory_case_result <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(directory_case_result)
+stopifnot(!isTRUE(directory_case_result$ok))
+stopifnot(
+  "source anchors match case evidence" %in%
+    directory_case_result$failed_checks
+)
+unlink(file.path(case_dir, "case.md"), recursive = TRUE, force = TRUE)
+writeLines(
+  case_md_lines,
+  file.path(case_dir, "case.md"),
+  useBytes = TRUE
+)
+
+unreadable_case_fields <- case_based_fields()
+write_trace(unreadable_case_fields)
+Sys.chmod(file.path(case_dir, "case.md"), mode = "0000")
+if (file.access(file.path(case_dir, "case.md"), mode = 4L) != 0L) {
+  unreadable_case_result <- validate_case_trace(
+    trace_path,
+    case_dir = case_dir,
+    script_path = script_path
+  )
+  expect_result_shape(unreadable_case_result)
+  stopifnot(!isTRUE(unreadable_case_result$ok))
+  stopifnot(
+    "source anchors match case evidence" %in%
+      unreadable_case_result$failed_checks
+  )
+}
+Sys.chmod(file.path(case_dir, "case.md"), mode = "0644")
+
 write_trace(valid_fields)
 writeLines(
   c(
@@ -310,13 +354,27 @@ stopifnot(
   "generated script hash matches" %in% changed_script$failed_checks
 )
 writeLines(
-  c(
-    "library(ggplot2)",
-    "ggplot(input, aes(predictor, response)) + geom_point()"
-  ),
+  generated_script_lines,
   script_path,
   useBytes = TRUE
 )
+
+directory_script_fields <- case_based_fields()
+write_trace(directory_script_fields)
+unlink(script_path)
+dir.create(script_path)
+directory_script_result <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(directory_script_result)
+stopifnot(!isTRUE(directory_script_result$ok))
+stopifnot(
+  "generated anchors match script" %in%
+    directory_script_result$failed_checks
+)
+unlink(script_path, recursive = TRUE, force = TRUE)
+writeLines(generated_script_lines, script_path, useBytes = TRUE)
 
 empty_mapping <- case_based_fields()
 empty_mapping$schema_mapping <- ""
@@ -327,13 +385,15 @@ empty_patterns$adopted_patterns <- ""
 expect_invalid(empty_patterns, "auditable adopted pattern format")
 
 auditable_pattern_examples <- c(
-  "plot.R#geom_point => alpha mapped to confidence",
-  "case.md#overall composition => single-panel explanatory biplot",
-  "qa.md#confidence ribbon => lower and upper bounds",
-  "plot.R#FACET_WRAP => treatment group panels",
-  "case.md#分面布局 => 按处理组拆分图形",
-  "qa.md#置信区间带 => 展示不确定性",
-  "case.md#颜色映射 => 区分处理组"
+  "plot.R#geom_point => plot.R#alpha mapped to confidence",
+  "case.md#overall composition => plot.R#geom_point",
+  "qa.md#confidence ribbon => plot.R#lower and upper bounds",
+  "plot.R#FACET_WRAP => plot.R#treatment group panels",
+  paste(
+    "case.md#generalized additive model",
+    "plot.R#preserve nonlinear smooth",
+    sep = " => "
+  )
 )
 auditable_patterns <- case_based_fields()
 auditable_patterns$adopted_patterns <- paste(
@@ -355,19 +415,22 @@ stopifnot(all(vapply(
 )))
 
 invalid_pattern_examples <- c(
-  "overall composition => single-panel explanatory biplot",
-  "data.csv#overall composition => single-panel explanatory biplot",
-  "case.md# => single-panel explanatory biplot",
-  "case.md#foo => bar decision",
-  "case.md#labels => labels",
-  "case.md#used colors => made a scientific plot",
-  "case.md#nice aesthetics => good figure",
-  "case.md#使用漂亮颜色 => 制作科学图形",
-  "case.md#/private/case => applied decision",
-  "plot.R#geom_point => C:\\private\\decision",
-  "plot.R#geom_point => decision => extra",
-  "plot.R#geom_point => alpha mapped to confidence |",
-  "| plot.R#geom_point => alpha mapped to confidence"
+  "overall composition => plot.R#preserve nonlinear smooth",
+  "data.csv#overall composition => plot.R#preserve nonlinear smooth",
+  "case.md# => plot.R#preserve nonlinear smooth",
+  "case.md#made plot => plot.R#preserve nonlinear smooth",
+  "case.md#drew chart => plot.R#preserve nonlinear smooth",
+  "case.md#made figure => plot.R#preserve nonlinear smooth",
+  "case.md#colors => plot.R#preserve nonlinear smooth",
+  "case.md#plot => plot.R#preserve nonlinear smooth",
+  "case.md#overall composition => case.md#preserve nonlinear smooth",
+  "case.md#overall composition => data.csv#preserve nonlinear smooth",
+  "case.md#overall composition => plot.R#plot",
+  "case.md#/private/case => plot.R#preserve nonlinear smooth",
+  "plot.R#geom_point => plot.R#C:\\private\\decision",
+  "plot.R#geom_point => plot.R#decision => extra",
+  "plot.R#geom_point => plot.R#alpha mapped to confidence |",
+  "| plot.R#geom_point => plot.R#alpha mapped to confidence"
 )
 for (invalid_pattern in invalid_pattern_examples) {
   invalid_adopted_pattern <- case_based_fields()
@@ -382,7 +445,7 @@ for (invalid_pattern in invalid_pattern_examples) {
 mixed_auditable_and_invalid <- case_based_fields()
 mixed_auditable_and_invalid$adopted_patterns <- paste(
   auditable_pattern_examples[[1L]],
-  "case.md#used colors => made a scientific plot",
+  "case.md#made plot => plot.R#preserve nonlinear smooth",
   sep = " | "
 )
 expect_invalid(
@@ -390,25 +453,74 @@ expect_invalid(
   "auditable adopted pattern format"
 )
 
-nonexistent_anchor <- case_based_fields()
-nonexistent_anchor$adopted_patterns <-
-  "plot.R#nonexistent anchor => alpha mapped to confidence"
-write_trace(nonexistent_anchor)
-nonexistent_anchor_structural <- validate_case_trace(trace_path)
-expect_result_shape(nonexistent_anchor_structural)
-stopifnot(isTRUE(nonexistent_anchor_structural$ok))
-stopifnot(!"adopted pattern anchors match evidence" %in%
-  names(nonexistent_anchor_structural$checks))
-nonexistent_anchor_strict <- validate_case_trace(
+nonexistent_source_anchor <- case_based_fields()
+nonexistent_source_anchor$adopted_patterns <-
+  "plot.R#nonexistent source anchor => plot.R#alpha mapped to confidence"
+write_trace(nonexistent_source_anchor)
+nonexistent_source_structural <- validate_case_trace(trace_path)
+expect_result_shape(nonexistent_source_structural)
+stopifnot(isTRUE(nonexistent_source_structural$ok))
+nonexistent_source_script_only <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(nonexistent_source_script_only)
+stopifnot(isTRUE(nonexistent_source_script_only$ok))
+nonexistent_source_case_only <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir
+)
+expect_result_shape(nonexistent_source_case_only)
+stopifnot(!isTRUE(nonexistent_source_case_only$ok))
+stopifnot(
+  "source anchors match case evidence" %in%
+    nonexistent_source_case_only$failed_checks
+)
+nonexistent_source_strict <- validate_case_trace(
   trace_path,
   case_dir = case_dir,
   script_path = script_path
 )
-expect_result_shape(nonexistent_anchor_strict)
-stopifnot(!isTRUE(nonexistent_anchor_strict$ok))
+expect_result_shape(nonexistent_source_strict)
+stopifnot(!isTRUE(nonexistent_source_strict$ok))
 stopifnot(
-  "adopted pattern anchors match evidence" %in%
-    nonexistent_anchor_strict$failed_checks
+  "source anchors match case evidence" %in%
+    nonexistent_source_strict$failed_checks
+)
+
+nonexistent_generated_anchor <- case_based_fields()
+nonexistent_generated_anchor$adopted_patterns <-
+  "case.md#overall composition => plot.R#nonexistent generated anchor"
+write_trace(nonexistent_generated_anchor)
+nonexistent_generated_structural <- validate_case_trace(trace_path)
+expect_result_shape(nonexistent_generated_structural)
+stopifnot(isTRUE(nonexistent_generated_structural$ok))
+nonexistent_generated_case_only <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir
+)
+expect_result_shape(nonexistent_generated_case_only)
+stopifnot(isTRUE(nonexistent_generated_case_only$ok))
+nonexistent_generated_script_only <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(nonexistent_generated_script_only)
+stopifnot(!isTRUE(nonexistent_generated_script_only$ok))
+stopifnot(
+  "generated anchors match script" %in%
+    nonexistent_generated_script_only$failed_checks
+)
+nonexistent_generated_strict <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(nonexistent_generated_strict)
+stopifnot(!isTRUE(nonexistent_generated_strict$ok))
+stopifnot(
+  "generated anchors match script" %in%
+    nonexistent_generated_strict$failed_checks
 )
 
 qa_missing_reference <- case_based_fields()
@@ -417,7 +529,7 @@ qa_missing_reference <- qa_missing_reference[
 ]
 qa_missing_reference$qa_status <- "missing"
 qa_missing_reference$adopted_patterns <-
-  "qa.md#confidence ribbon => lower and upper bounds"
+  "qa.md#confidence ribbon => plot.R#lower and upper bounds"
 write_trace(qa_missing_reference)
 qa_missing_structural <- validate_case_trace(trace_path)
 expect_result_shape(qa_missing_structural)
