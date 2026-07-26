@@ -36,6 +36,12 @@ Only exit status zero with `Verification level: strict` authorizes
 `claim: case_grounded`. `structural` and `partial` checks are diagnostic only
 and never authorize a case-grounded claim.
 
+When `qa.md` exists, read it and hash it. Read the unique `Status:` marker; it
+must be `verified` or `review_required`. Use `qa_status: verified` or
+`qa_status: review_required` to record that status unchanged, together with
+`qa_md_file: qa.md` and its SHA-256.
+Strict validation fails when the declared status conflicts with `qa.md`.
+
 Required trace fields:
 
 ```yaml
@@ -58,7 +64,7 @@ qa_status: verified
 ```
 
 If `qa.md` does not exist, omit its file and hash fields and set
-`qa_status: missing`.
+`qa_status: missing`. Do not use `missing` when the file exists.
 
 ## `general_fallback`
 

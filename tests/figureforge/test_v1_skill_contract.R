@@ -207,7 +207,13 @@ for (phrase in c(
   "case_grounded",
   "general_method",
   "structural",
-  "partial"
+  "partial",
+  "`qa_status: verified`",
+  "`qa_status: review_required`",
+  "`qa_status: missing`",
+  "Read the unique `Status:` marker",
+  "record that status unchanged",
+  "Strict validation fails when the declared status conflicts with `qa.md`"
 )) {
   assert_contains(
     paste(
