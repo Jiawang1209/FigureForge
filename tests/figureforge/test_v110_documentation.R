@@ -60,6 +60,78 @@ live_harness <- read_document("scripts/run_figureforge_live_evals.sh")
 plotting_harness <- read_document(
   "scripts/run_figureforge_plotting_eval.sh"
 )
+
+expected_readme_sections <- list(
+  english = c(
+    "## Install",
+    "## Use",
+    "## Default outputs",
+    "## Iris PCA demo",
+    "## Maintainer documentation",
+    "## Scope",
+    "## License"
+  ),
+  chinese = c(
+    "## 安装",
+    "## 使用",
+    "## 默认输出",
+    "## Iris PCA 演示",
+    "## 维护者文档",
+    "## 范围",
+    "## 许可"
+  )
+)
+extract_h2_sections <- function(document) {
+  lines <- strsplit(document, "\n", fixed = TRUE)[[1L]]
+  lines[grepl("^## [^#]", lines)]
+}
+stopifnot(identical(
+  extract_h2_sections(english),
+  expected_readme_sections$english
+))
+stopifnot(identical(
+  extract_h2_sections(chinese),
+  expected_readme_sections$chinese
+))
+
+old_maintainer_walkthrough_headings <- c(
+  "## Maintainer workflow",
+  "### Historical v1.0.1 compatibility and release evidence",
+  "### Install and discover",
+  "### Runtime and public workflow",
+  "### Verify, evaluate, and upgrade",
+  "### Case-system rationale",
+  "### Maintained case workflow",
+  "## 维护者工作流",
+  "### v1.0.1 历史兼容与发布证据",
+  "### 安装与发现",
+  "### R 运行时与公开工作流",
+  "### 验证、评测与升级",
+  "### 案例系统原理",
+  "### 维护中的案例工作流"
+)
+for (heading in old_maintainer_walkthrough_headings) {
+  stopifnot(!grepl(heading, english, fixed = TRUE))
+  stopifnot(!grepl(heading, chinese, fixed = TRUE))
+}
+
+for (document in list(english, chinese)) {
+  stopifnot(contains_all(
+    document,
+    c(
+      "examples/iris-pca",
+      "plot.R",
+      "plot.png",
+      "plot.pdf",
+      "skills/figureforge/references/maintainer-workflow.md",
+      "docs/figureforge-skill-v1.1.0-release.md",
+      "docs/figureforge-skill-v1.1.0-evidence/README.md",
+      "docs/figureforge-skill-mvp-status.md",
+      "skills/figureforge/cases/",
+      "LICENSE"
+    )
+  ))
+}
 evidence_root <- file.path(
   repo_root,
   "docs",
