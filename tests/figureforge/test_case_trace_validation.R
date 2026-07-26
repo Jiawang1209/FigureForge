@@ -370,6 +370,26 @@ for (generic_technical_noun in generic_technical_noun_patterns) {
   )
 }
 
+specific_action_led_patterns <- case_based_fields()
+specific_action_led_patterns$adopted_patterns <- paste(
+  "used geom_point with alpha mapped to treatment",
+  "applied log10 scale for skewed abundance",
+  "created facet_wrap by site",
+  "added zero reference line at 0",
+  "made confidence ribbon from lower to upper",
+  "采用对数尺度处理偏态丰度",
+  "添加零值参考线标示效应方向",
+  sep = " | "
+)
+write_trace(specific_action_led_patterns)
+valid_specific_action_led <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(valid_specific_action_led)
+stopifnot(isTRUE(valid_specific_action_led$ok))
+
 mixed_concrete_and_generic_patterns <- case_based_fields()
 mixed_concrete_and_generic_patterns$adopted_patterns <-
   "validated geom_point implementation | used nice colors"

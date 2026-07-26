@@ -122,13 +122,10 @@ case_trace_regex_alternation <- function(terms) {
   paste(terms, collapse = "|")
 }
 
-case_trace_pattern_is_superficial <- function(pattern) {
+case_trace_pattern_has_subjective_lead <- function(pattern) {
   vocabulary <- case_trace_superficial_pattern_vocabulary()
   subjective <- case_trace_regex_alternation(
     vocabulary$subjective_modifiers
-  )
-  actions <- case_trace_regex_alternation(
-    vocabulary$generic_action_prefixes
   )
   normalized <- tolower(trimws(pattern))
   english_subjective <- grepl(
@@ -136,33 +133,36 @@ case_trace_pattern_is_superficial <- function(pattern) {
     normalized,
     perl = TRUE
   )
-  english_generic_action <- grepl(
-    paste0("^(?:", actions, ")\\b"),
-    normalized,
-    perl = TRUE
-  )
 
   chinese_subjective <- case_trace_regex_alternation(
     vocabulary$chinese_subjective_modifiers
-  )
-  chinese_actions <- case_trace_regex_alternation(
-    vocabulary$chinese_generic_action_prefixes
   )
   chinese_subjective_pattern <- grepl(
     paste0("^(?:", chinese_subjective, ")"),
     pattern,
     perl = TRUE
   )
-  chinese_generic_action <- grepl(
+
+  english_subjective || chinese_subjective_pattern
+}
+
+case_trace_pattern_is_action_led <- function(pattern) {
+  vocabulary <- case_trace_superficial_pattern_vocabulary()
+  actions <- case_trace_regex_alternation(
+    vocabulary$generic_action_prefixes
+  )
+  chinese_actions <- case_trace_regex_alternation(
+    vocabulary$chinese_generic_action_prefixes
+  )
+  grepl(
+    paste0("^(?:", actions, ")\\b"),
+    tolower(trimws(pattern)),
+    perl = TRUE
+  ) || grepl(
     paste0("^(?:", chinese_actions, ")"),
-    pattern,
+    trimws(pattern),
     perl = TRUE
   )
-
-  english_subjective ||
-    english_generic_action ||
-    chinese_subjective_pattern ||
-    chinese_generic_action
 }
 
 case_trace_concrete_pattern_vocabulary <- function() {
@@ -247,10 +247,7 @@ case_trace_concrete_pattern_vocabulary <- function() {
   )
 }
 
-case_trace_pattern_has_concrete_signal <- function(pattern) {
-  if (case_trace_pattern_is_superficial(pattern)) {
-    return(FALSE)
-  }
+case_trace_pattern_has_domain_signal <- function(pattern) {
   vocabulary <- case_trace_concrete_pattern_vocabulary()
   normalized <- tolower(pattern)
   design_category_signal <- any(vapply(
@@ -285,6 +282,61 @@ case_trace_pattern_has_concrete_signal <- function(pattern) {
     plot_analysis_signal ||
     identifier_signal ||
     chinese_signal
+}
+
+case_trace_action_led_pattern_is_specific <- function(pattern) {
+  normalized <- tolower(trimws(pattern))
+  ggplot_identifier <- grepl(
+    "\\b(?:geom|stat|scale|coord|facet|theme)_[a-z0-9_]+\\b",
+    normalized,
+    perl = TRUE
+  )
+  parameter_or_number <- grepl(
+    paste(
+      "\\b(?:alpha|log(?:2|10)?|linewidth|linetype|size|width|height)\\b",
+      "\\b[0-9]+(?:\\.[0-9]+)?\\b",
+      sep = "|"
+    ),
+    normalized,
+    perl = TRUE
+  )
+  relationship <- grepl(
+    "\\b(?:with|by|at|from|to|for|mapped)\\b",
+    normalized,
+    perl = TRUE
+  )
+  words <- strsplit(normalized, "\\s+", perl = TRUE)[[1L]]
+
+  # Action-led prose is allowed only when the remainder records an auditable
+  # component, parameter, or relationship instead of merely naming a noun.
+  english_specific <- ggplot_identifier || (
+    length(words) >= 4L &&
+      case_trace_pattern_has_domain_signal(pattern) &&
+      (parameter_or_number || relationship)
+  )
+  chinese_specific <- (
+    grepl("对数尺度", pattern, fixed = TRUE) &&
+      grepl("偏态丰度", pattern, fixed = TRUE)
+  ) || (
+    grepl("零值参考线", pattern, fixed = TRUE) &&
+      grepl("效应方向", pattern, fixed = TRUE)
+  )
+
+  english_specific || chinese_specific
+}
+
+case_trace_pattern_has_concrete_signal <- function(pattern) {
+  if (case_trace_pattern_has_subjective_lead(pattern)) {
+    return(FALSE)
+  }
+  if (
+    case_trace_pattern_is_action_led(pattern) &&
+      !case_trace_action_led_pattern_is_specific(pattern)
+  ) {
+    return(FALSE)
+  }
+  case_trace_pattern_has_domain_signal(pattern) ||
+    case_trace_action_led_pattern_is_specific(pattern)
 }
 
 case_trace_patterns_are_concrete <- function(value) {
