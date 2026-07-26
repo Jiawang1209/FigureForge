@@ -118,10 +118,13 @@ contains_absolute_local_path <- function(document) {
 }
 
 contains_remote_resource_dependency <- function(document) {
+  if (grepl("<script\\b", document, ignore.case = TRUE, perl = TRUE)) {
+    return(TRUE)
+  }
   resource_tags <- regmatches(
     document,
     gregexpr(
-      "(?is)<(?:script|link|img|source|iframe|video|audio)\\b[^>]*>",
+      "(?is)<(?:link|img|source|iframe|video|audio|object|embed|track)\\b[^>]*>",
       document,
       perl = TRUE
     )
@@ -136,13 +139,15 @@ contains_remote_resource_dependency <- function(document) {
     ))
     relevant_attributes <- switch(
       tag_name,
-      script = "src",
       link = "href",
       img = "src",
       source = "src",
       iframe = "src",
       video = c("src", "poster"),
       audio = c("src", "poster"),
+      object = "data",
+      embed = "src",
+      track = "src",
       character()
     )
     if (length(relevant_attributes) == 0L) {
@@ -182,12 +187,19 @@ contains_remote_resource_dependency <- function(document) {
     }
   }
 
-  grepl(
+  remote_css_url <- grepl(
     "url\\([[:space:]]*[\"']?[[:space:]]*(?:(?:https?:)?//)",
     document,
     ignore.case = TRUE,
     perl = TRUE
   )
+  remote_css_import <- grepl(
+    "@import[[:space:]]+(?:url\\([[:space:]]*)?[\"']?[[:space:]]*(?:(?:https?:)?//)",
+    document,
+    ignore.case = TRUE,
+    perl = TRUE
+  )
+  remote_css_url || remote_css_import
 }
 
 unsafe_path_examples <- c(
@@ -221,9 +233,15 @@ assert_true(
 
 remote_resource_examples <- c(
   "<script src='https://cdn.example.org/framework.js'></script>",
+  "<script src='./assets/app.js'></script>",
+  "<script>document.body.classList.add('ready')</script>",
   "<link rel='stylesheet' href='//cdn.example.org/theme.css'>",
   "<img src=https://cdn.example.org/plot.png>",
-  "<style>.hero { background: url(https://cdn.example.org/bg.png); }</style>"
+  "<object data='https://cdn.example.org/report.svg'></object>",
+  "<embed src='//cdn.example.org/widget.svg'>",
+  "<track src='https://cdn.example.org/captions.vtt'>",
+  "<style>.hero { background: url(https://cdn.example.org/bg.png); }</style>",
+  "<style>@import '//cdn.example.org/fonts.css';</style>"
 )
 assert_true(
   all(vapply(
@@ -235,9 +253,11 @@ assert_true(
 )
 local_resource_examples <- c(
   paste0(
-    "<script src='./assets/app.js'></script>",
     "<link rel='stylesheet' href='styles.css'>",
     "<img src='plot.png'>",
+    "<object data='diagram.svg'></object>",
+    "<embed src='preview.svg'>",
+    "<track src='captions.vtt'>",
     "<video src='movie.mp4' poster='poster.png'></video>",
     "<audio src='data:audio/ogg;base64,T2dn'></audio>"
   ),
