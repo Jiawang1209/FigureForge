@@ -811,12 +811,13 @@ has_relative_href <- function(document, filename) {
     paste0("href=\"./", filename, "\""),
     paste0("href='./", filename, "'")
   )
+  normalized_document <- tolower(document)
+  normalized_candidates <- tolower(candidates)
   any(vapply(
-    candidates,
+    normalized_candidates,
     grepl,
     logical(1),
-    x = document,
-    ignore.case = TRUE,
+    x = normalized_document,
     fixed = TRUE
   ))
 }
@@ -852,7 +853,7 @@ decode_html_text <- function(value) {
       replacements[[entity]],
       value,
       ignore.case = TRUE,
-      fixed = TRUE
+      perl = TRUE
     )
   }
   trimws(gsub("[[:space:]]+", " ", value))
@@ -952,10 +953,20 @@ assert_live_html <- function(
     paste(label, "index.html must declare a responsive viewport")
   )
   assert_true(
-    grepl("FigureForge", html, ignore.case = TRUE, fixed = TRUE) &&
-      grepl("request", html, ignore.case = TRUE, fixed = TRUE) &&
-      grepl("Iris", html, ignore.case = TRUE, fixed = TRUE) &&
-      grepl("PCA", html, ignore.case = TRUE, fixed = TRUE),
+    grepl(
+      "<link[^>]+rel=[\"']icon[\"'][^>]+href=[\"']data:[^\"']*[\"']",
+      html,
+      ignore.case = TRUE,
+      perl = TRUE
+    ),
+    paste(label, "index.html must declare an offline data-URI favicon")
+  )
+  normalized_html <- tolower(html)
+  assert_true(
+    contains_all(
+      normalized_html,
+      tolower(c("FigureForge", "request", "Iris", "PCA"))
+    ),
     paste(label, "index.html must identify FigureForge and the Iris PCA request")
   )
   assert_true(
@@ -983,10 +994,10 @@ assert_live_html <- function(
     paste(label, "index.html must show the live input dimensions")
   )
   assert_true(
-    grepl("prcomp", html, ignore.case = TRUE, fixed = TRUE) &&
-      grepl("center", html, ignore.case = TRUE, fixed = TRUE) &&
-      grepl("scal", html, ignore.case = TRUE, fixed = TRUE) &&
-      grepl("adapt", html, ignore.case = TRUE, fixed = TRUE),
+    contains_all(
+      normalized_html,
+      c("prcomp", "center", "scal", "adapt")
+    ),
     paste(label, "index.html must explain the PCA method and adaptation")
   )
   assert_true(
@@ -1683,13 +1694,18 @@ renamed_targets <- vapply(
   },
   character(1)
 )
+renamed_relative_targets <- renamed_targets[!grepl(
+  "^(?:[A-Za-z][A-Za-z0-9+.-]*:|//)",
+  renamed_targets,
+  perl = TRUE
+)]
 assert_true(
-  all(file.exists(file.path(renamed_root, renamed_targets))),
+  all(file.exists(file.path(renamed_root, renamed_relative_targets))),
   paste(
     "Every renamed-input report link must resolve to a real relative target; missing:",
     paste(
-      renamed_targets[
-        !file.exists(file.path(renamed_root, renamed_targets))
+      renamed_relative_targets[
+        !file.exists(file.path(renamed_root, renamed_relative_targets))
       ],
       collapse = ", "
     )

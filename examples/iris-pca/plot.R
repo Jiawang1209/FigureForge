@@ -207,9 +207,15 @@ arrow_scale <- if (loading_extent > 0) {
 loading_plot <- loadings
 loading_plot$PC1_plot <- loading_plot$PC1 * arrow_scale
 loading_plot$PC2_plot <- loading_plot$PC2 * arrow_scale
-loading_plot$label_x <- loading_plot$PC1_plot * 1.08
-loading_plot$label_y <- loading_plot$PC2_plot * 1.08 +
-  c(-0.10, 0.08, 0.18, -0.12)
+loading_plot$label_x <- loading_plot$PC1_plot * 1.15
+loading_plot$label_y <- loading_plot$PC2_plot * 1.15 +
+  c(-0.12, 0.12, 0.18, -0.16)
+loading_plot$label_hjust <- ifelse(
+  loading_plot$PC1_plot >= 0,
+  -0.08,
+  1.08
+)
+loading_plot$label_vjust <- c(1.10, -0.10, -0.10, 1.10)
 
 species_levels <- unique(input$Species)
 okabe_ito <- c("#0072B2", "#E69F00", "#009E73")
@@ -299,7 +305,9 @@ p <- ggplot2::ggplot(
     ggplot2::aes(
       x = label_x,
       y = label_y,
-      label = variable
+      label = variable,
+      hjust = label_hjust,
+      vjust = label_vjust
     ),
     inherit.aes = FALSE,
     color = "#252525",
@@ -491,6 +499,7 @@ html <- c(
   "<head>",
   "<meta charset=\"UTF-8\">",
   "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">",
+  "<link rel=\"icon\" href=\"data:,\">",
   "<title>FigureForge Iris PCA report</title>",
   "<style>",
   ":root{color-scheme:light;--ink:#17202a;--muted:#59636e;--line:#dce3e8;--accent:#0072b2;--paper:#fff;--wash:#f3f7f9}",
