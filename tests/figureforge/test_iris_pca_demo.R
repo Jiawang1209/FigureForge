@@ -575,8 +575,8 @@ assert_rendered_artifacts <- function(root, label) {
     NA_integer_
   }
   assert_true(
-    !is.na(page_count) && page_count >= 1L,
-    paste(label, "plot.pdf must contain at least one page")
+    !is.na(page_count) && page_count == 1L,
+    paste(label, "plot.pdf must contain exactly one page")
   )
   render_prefix <- tempfile("figureforge-iris-pca-pdf-")
   render_log <- tempfile("figureforge-iris-pca-pdf-", fileext = ".log")
@@ -622,6 +622,119 @@ has_relative_href <- function(document, filename) {
     ignore.case = TRUE,
     fixed = TRUE
   ))
+}
+
+decode_html_text <- function(value) {
+  replacements <- c(
+    "&nbsp;" = " ",
+    "&#160;" = " ",
+    "&amp;" = "&",
+    "&#38;" = "&",
+    "&#038;" = "&",
+    "&#x26;" = "&",
+    "&lt;" = "<",
+    "&#60;" = "<",
+    "&#060;" = "<",
+    "&#x3c;" = "<",
+    "&gt;" = ">",
+    "&#62;" = ">",
+    "&#062;" = ">",
+    "&#x3e;" = ">",
+    "&quot;" = "\"",
+    "&#34;" = "\"",
+    "&#034;" = "\"",
+    "&#x22;" = "\"",
+    "&#39;" = "'",
+    "&#039;" = "'",
+    "&#x27;" = "'",
+    "&apos;" = "'"
+  )
+  for (entity in names(replacements)) {
+    value <- gsub(
+      entity,
+      replacements[[entity]],
+      value,
+      ignore.case = TRUE,
+      fixed = TRUE
+    )
+  }
+  trimws(gsub("[[:space:]]+", " ", value))
+}
+
+extract_html_table_rows <- function(html) {
+  row_markup <- regmatches(
+    html,
+    gregexpr(
+      "(?s)<tr[^>]*>.*?</tr>",
+      html,
+      ignore.case = TRUE,
+      perl = TRUE
+    )
+  )[[1L]]
+  lapply(row_markup, function(row) {
+    cell_markup <- regmatches(
+      row,
+      gregexpr(
+        "(?s)<t[dh][^>]*>.*?</t[dh]>",
+        row,
+        ignore.case = TRUE,
+        perl = TRUE
+      )
+    )[[1L]]
+    vapply(
+      cell_markup,
+      function(cell) {
+        decode_html_text(gsub("<[^>]+>", "", cell, perl = TRUE))
+      },
+      character(1)
+    )
+  })
+}
+
+parse_html_number <- function(value) {
+  normalized <- gsub("%", "", value, fixed = TRUE)
+  normalized <- gsub(",", "", normalized, fixed = TRUE)
+  normalized <- gsub("\u2212", "-", normalized, fixed = TRUE)
+  suppressWarnings(as.numeric(trimws(normalized)))
+}
+
+assert_numeric_table_row <- function(
+    table_rows,
+    row_label,
+    expected,
+    label,
+    tolerance = 0.01) {
+  candidates <- Filter(
+    function(row) length(row) >= length(expected) + 1L &&
+      identical(row[[1L]], row_label),
+    table_rows
+  )
+  assert_true(
+    length(candidates) >= 1L,
+    paste(label, "index.html must contain a table row for", row_label)
+  )
+  matches <- vapply(
+    candidates,
+    function(row) {
+      actual <- vapply(
+        row[seq_len(length(expected)) + 1L],
+        parse_html_number,
+        numeric(1)
+      )
+      all(is.finite(actual)) &&
+        all(abs(actual - expected) <= tolerance)
+    },
+    logical(1)
+  )
+  assert_true(
+    any(matches),
+    paste(
+      label,
+      "index.html table row",
+      row_label,
+      "must numerically match its CSV values"
+    )
+  )
 }
 
 assert_live_html <- function(
@@ -717,83 +830,30 @@ assert_live_html <- function(
     paste(label, "index.html must not contain an absolute local path")
   )
 
-  variance_cells <- c(
-    live_variance$component,
-    formatC(live_variance$eigenvalue, format = "f", digits = 4L),
-    paste0(formatC(
-      live_variance$explained_percent,
-      format = "f",
-      digits = 2L
-    ), "%"),
-    paste0(formatC(
-      live_variance$cumulative_percent,
-      format = "f",
-      digits = 2L
-    ), "%")
-  )
-  loading_cells <- c(
-    live_loadings$variable,
-    unlist(lapply(
-      live_loadings[paste0("PC", 1:4)],
-      formatC,
-      format = "f",
-      digits = 4L
-    ), use.names = FALSE)
-  )
-  table_markup <- regmatches(
-    html,
-    gregexpr(
-      "(?s)<t[dh][^>]*>.*?</t[dh]>",
-      html,
-      ignore.case = TRUE,
-      perl = TRUE
-    )
-  )[[1L]]
-  table_cells <- trimws(gsub(
-    "<[^>]+>",
-    "",
-    table_markup,
-    perl = TRUE
-  ))
-  for (cell in c(variance_cells, loading_cells)) {
-    assert_true(
-      cell %in% table_cells,
-      paste(label, "index.html must contain live table cell", shQuote(cell))
+  table_rows <- extract_html_table_rows(html)
+  for (index in seq_len(nrow(live_variance))) {
+    assert_numeric_table_row(
+      table_rows,
+      live_variance$component[[index]],
+      unlist(
+        live_variance[
+          index,
+          c("eigenvalue", "explained_percent", "cumulative_percent")
+        ],
+        use.names = FALSE
+      ),
+      label
     )
   }
-  table_rows <- regmatches(
-    html,
-    gregexpr(
-      "(?s)<tr[^>]*>.*?</tr>",
-      html,
-      ignore.case = TRUE,
-      perl = TRUE
-    )
-  )[[1L]]
-  for (component in c("PC1", "PC2")) {
-    explained <- live_variance$explained_percent[
-      live_variance$component == component
-    ]
-    explained_cell <- paste0(
-      formatC(explained, format = "f", digits = 2L),
-      "%"
-    )
-    assert_true(
-      length(explained) == 1L &&
-        any(vapply(
-          table_rows,
-          function(row) {
-            grepl(component, row, fixed = TRUE) &&
-              grepl(explained_cell, row, fixed = TRUE)
-          },
-          logical(1)
-        )),
-      paste(
-        label,
-        "index.html must show the exact live",
-        component,
-        "explained variance"
-      )
+  for (index in seq_len(nrow(live_loadings))) {
+    assert_numeric_table_row(
+      table_rows,
+      live_loadings$variable[[index]],
+      unlist(
+        live_loadings[index, paste0("PC", 1:4)],
+        use.names = FALSE
+      ),
+      label
     )
   }
 }
@@ -824,6 +884,213 @@ assert_live_html(
   rerun_variance,
   rerun_loadings,
   "Independent rerun"
+)
+
+run_valid_case <- function(data, case_label) {
+  input_root <- tempfile(
+    paste0("figureforge-iris-pca-", case_label, "-input-")
+  )
+  output_root <- tempfile(
+    paste0("figureforge-iris-pca-", case_label, "-output-")
+  )
+  dir.create(input_root, recursive = TRUE)
+  dir.create(output_root, recursive = TRUE)
+  input_path <- file.path(input_root, "iris.csv")
+  write.csv(data, input_path, row.names = FALSE)
+  log_path <- tempfile(
+    paste0("figureforge-iris-pca-", case_label, "-"),
+    fileext = ".log"
+  )
+  status <- system2(
+    file.path(R.home("bin"), "Rscript"),
+    c(
+      shQuote(plot_script_path),
+      shQuote(input_path),
+      shQuote(output_root)
+    ),
+    stdout = log_path,
+    stderr = log_path
+  )
+  if (!identical(as.integer(status), 0L)) {
+    stop(
+      paste(
+        case_label,
+        "valid input failed:",
+        paste(readLines(log_path, warn = FALSE), collapse = "\n")
+      ),
+      call. = FALSE
+    )
+  }
+  assert_true(
+    all(file.exists(file.path(output_root, generated_outputs))) &&
+      all(file.info(file.path(output_root, generated_outputs))$size > 0L),
+    paste(case_label, "valid run must generate every non-empty output")
+  )
+
+  case_variance <- read.csv(
+    file.path(output_root, "pca-variance.csv"),
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  case_scores <- read.csv(
+    file.path(output_root, "pca-scores.csv"),
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  case_loadings <- read.csv(
+    file.path(output_root, "pca-loadings.csv"),
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  assert_true(
+    identical(
+      names(case_variance),
+      c(
+        "component",
+        "eigenvalue",
+        "explained_percent",
+        "cumulative_percent"
+      )
+    ),
+    paste(case_label, "variance CSV has an unexpected schema")
+  )
+  assert_true(
+    identical(
+      names(case_scores),
+      c("sample_id", "Species", paste0("PC", 1:4))
+    ),
+    paste(case_label, "scores CSV has an unexpected schema")
+  )
+  assert_true(
+    identical(
+      names(case_loadings),
+      c("variable", paste0("PC", 1:4))
+    ),
+    paste(case_label, "loadings CSV has an unexpected schema")
+  )
+
+  case_pca <- prcomp(
+    data[measure_columns],
+    center = TRUE,
+    scale. = TRUE
+  )
+  case_percent <- 100 * case_pca$sdev^2 / sum(case_pca$sdev^2)
+  assert_true(
+    identical(case_variance$component, paste0("PC", 1:4)),
+    paste(case_label, "variance CSV must identify PC1 through PC4")
+  )
+  assert_numeric_equal(
+    case_variance[
+      c("eigenvalue", "explained_percent", "cumulative_percent")
+    ],
+    data.frame(
+      eigenvalue = case_pca$sdev^2,
+      explained_percent = case_percent,
+      cumulative_percent = cumsum(case_percent)
+    ),
+    paste(case_label, "variance CSV")
+  )
+  assert_true(
+    identical(case_scores$Species, data$Species),
+    paste(case_label, "scores CSV must preserve Species row order")
+  )
+  assert_numeric_equal(
+    case_scores[paste0("PC", 1:4)],
+    case_pca$x[, paste0("PC", 1:4), drop = FALSE],
+    paste(case_label, "scores CSV")
+  )
+  assert_true(
+    identical(case_loadings$variable, measure_columns),
+    paste(case_label, "loadings CSV must preserve measure order")
+  )
+  assert_numeric_equal(
+    case_loadings[paste0("PC", 1:4)],
+    case_pca$rotation[
+      measure_columns,
+      paste0("PC", 1:4),
+      drop = FALSE
+    ],
+    paste(case_label, "loadings CSV")
+  )
+
+  assert_rendered_artifacts(output_root, case_label)
+  assert_live_html(
+    file.path(output_root, "index.html"),
+    data,
+    case_variance,
+    case_loadings,
+    case_label
+  )
+  list(
+    root = output_root,
+    variance = case_variance,
+    loadings = case_loadings,
+    html = read_text(file.path(output_root, "index.html"))
+  )
+}
+
+balanced_indices <- unlist(
+  lapply(
+    split(seq_len(nrow(iris_data)), iris_data$Species),
+    head,
+    n = 12L
+  ),
+  use.names = FALSE
+)
+altered_input <- iris_data[balanced_indices, , drop = FALSE]
+altered_input$Sepal.Length <- altered_input$Sepal.Length +
+  seq_len(nrow(altered_input)) * 0.013
+altered_input$Sepal.Width <- altered_input$Sepal.Width +
+  rep(c(-0.12, 0.04, 0.09), length.out = nrow(altered_input))
+altered_input$Petal.Length <- altered_input$Petal.Length *
+  rep(c(0.96, 1.03), length.out = nrow(altered_input))
+altered_result <- run_valid_case(altered_input, "Altered balanced input")
+assert_true(
+  !isTRUE(all.equal(
+    altered_result$variance$explained_percent[1:2],
+    variance$explained_percent[1:2],
+    tolerance = 1e-3
+  )),
+  "Altered input must produce non-canonical live PC1/PC2 variance values"
+)
+
+escaping_input <- iris_data[seq_len(12L), , drop = FALSE]
+unsafe_species_labels <- c(
+  "A & B",
+  "C < D",
+  "E > F",
+  "<b title=\"O'Reilly\">quoted</b>"
+)
+escaping_input$Species <- rep(unsafe_species_labels, each = 3L)
+escaping_result <- run_valid_case(escaping_input, "Escaped species input")
+escaping_html <- escaping_result$html
+escaping_visible_text <- decode_html_text(gsub(
+  "<[^>]+>",
+  " ",
+  escaping_html,
+  perl = TRUE
+))
+assert_true(
+  grepl("&(?:amp|#0*38|#x0*26);", escaping_html, ignore.case = TRUE, perl = TRUE) &&
+    grepl("&(?:lt|#0*60|#x0*3c);", escaping_html, ignore.case = TRUE, perl = TRUE) &&
+    grepl("&(?:gt|#0*62|#x0*3e);", escaping_html, ignore.case = TRUE, perl = TRUE) &&
+    grepl("&(?:quot|#0*34|#x0*22);", escaping_html, ignore.case = TRUE, perl = TRUE) &&
+    grepl("&(?:apos|#0*39|#x0*27);", escaping_html, ignore.case = TRUE, perl = TRUE),
+  "Dynamic Species labels must HTML-escape ampersands, brackets, and quotes"
+)
+for (unsafe_label in unsafe_species_labels) {
+  assert_true(
+    grepl(unsafe_label, escaping_visible_text, fixed = TRUE),
+    paste("Escaped report must preserve Species label text", shQuote(unsafe_label))
+  )
+  assert_true(
+    !grepl(unsafe_label, escaping_html, fixed = TRUE),
+    paste("Escaped report must not contain raw Species label", shQuote(unsafe_label))
+  )
+}
+assert_true(
+  !grepl("<b title=\"O'Reilly\">quoted</b>", escaping_html, fixed = TRUE),
+  "Escaped report must not permit raw Species markup injection"
 )
 
 english <- read_text(file.path(repo_root, "README.md"))
