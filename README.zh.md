@@ -13,6 +13,7 @@ FigureForge 是一个绘图能力增强器：把真实数据和绘图需求交�
 
 ```sh
 # figureforge-install:start
+(
 set -eu
 
 FIGUREFORGE_REPO_URL=${FIGUREFORGE_REPO_URL:-https://github.com/Jiawang1209/FigureForge.git}
@@ -69,6 +70,7 @@ figureforge_backup_root=
 figureforge_stage_root=
 figureforge_clone=
 trap - 0 HUP INT TERM
+)
 # figureforge-install:end
 ```
 

@@ -14,6 +14,7 @@ POSIX shell block:
 
 ```sh
 # figureforge-install:start
+(
 set -eu
 
 FIGUREFORGE_REPO_URL=${FIGUREFORGE_REPO_URL:-https://github.com/Jiawang1209/FigureForge.git}
@@ -70,6 +71,7 @@ figureforge_backup_root=
 figureforge_stage_root=
 figureforge_clone=
 trap - 0 HUP INT TERM
+)
 # figureforge-install:end
 ```
 

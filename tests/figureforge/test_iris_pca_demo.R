@@ -1855,6 +1855,19 @@ assert_true(
   identical(install_script_en, install_script_zh),
   "English and Chinese READMEs must ship identical install logic"
 )
+install_script_lines <- strsplit(
+  install_script_en,
+  "\n",
+  fixed = TRUE
+)[[1L]]
+assert_true(
+  identical(install_script_lines[[2L]], "(") &&
+    identical(
+      install_script_lines[[length(install_script_lines) - 1L]],
+      ")"
+    ),
+  "Documented install logic must run inside a subshell"
+)
 
 local({
   install_test_root <- tempfile("figureforge-readme-install-")
@@ -1985,6 +1998,130 @@ local({
     paste(
       "Failed staged validation must preserve the previous install:",
       paste(preserved_output, collapse = "\n")
+    )
+  )
+
+  publish_mv <- paste0(
+    'mv "$figureforge_stage_root/figureforge" ',
+    '"$figureforge_target"'
+  )
+  publish_matches <- gregexpr(
+    publish_mv,
+    install_script_en,
+    fixed = TRUE
+  )[[1L]]
+  assert_true(
+    length(publish_matches) == 1L && publish_matches[[1L]] > 0L,
+    "Install script must contain exactly one publish rename"
+  )
+  rollback_script <- sub(
+    publish_mv,
+    "false # forced publish failure for rollback regression",
+    install_script_en,
+    fixed = TRUE
+  )
+  rollback_script_path <- file.path(install_test_root, "rollback-install.sh")
+  writeLines(rollback_script, rollback_script_path, useBytes = TRUE)
+
+  old_marker <- file.path(installed, "pre-publish-old-marker")
+  writeLines("preserve this exact install", old_marker, useBytes = TRUE)
+  rollback_snapshot_root <- file.path(install_test_root, "rollback-snapshot")
+  dir.create(rollback_snapshot_root)
+  rollback_copy_ok <- file.copy(
+    installed,
+    rollback_snapshot_root,
+    recursive = TRUE,
+    copy.mode = TRUE,
+    copy.date = TRUE
+  )
+  assert_true(rollback_copy_ok, "Could not snapshot install for rollback test")
+  rollback_snapshot <- file.path(rollback_snapshot_root, "figureforge")
+
+  previous <- setwd(workspace)
+  rollback_output <- suppressWarnings(system2(
+    "sh",
+    shQuote(rollback_script_path),
+    stdout = TRUE,
+    stderr = TRUE,
+    env = paste0(
+      "FIGUREFORGE_REPO_URL=",
+      shQuote(normalizePath(repo_root, mustWork = TRUE))
+    )
+  ))
+  setwd(previous)
+  assert_true(
+    !is.null(attr(rollback_output, "status")) &&
+      as.integer(attr(rollback_output, "status")) != 0L,
+    "Instrumented publish failure must return nonzero"
+  )
+  rollback_diff <- system2(
+    "diff",
+    c("-qr", shQuote(rollback_snapshot), shQuote(installed)),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  assert_true(
+    is.null(attr(rollback_diff, "status")),
+    paste(
+      "Publish failure must fully restore the old install:",
+      paste(rollback_diff, collapse = "\n")
+    )
+  )
+  rollback_debris <- list.files(
+    file.path(workspace, ".agents", "skills"),
+    pattern = "^\\.figureforge-(?:stage|backup)\\.",
+    all.files = TRUE
+  )
+  assert_true(
+    length(rollback_debris) == 0L,
+    "Successful rollback must clean staging and backup directories"
+  )
+
+  parent_probe_path <- file.path(install_test_root, "parent-probe.sh")
+  writeLines(
+    c(
+      "set +eu",
+      "before_flags=$-",
+      paste0(
+        "FIGUREFORGE_REPO_URL=",
+        shQuote(normalizePath(repo_root, mustWork = TRUE))
+      ),
+      "export FIGUREFORGE_REPO_URL",
+      paste(".", shQuote(install_script_path)),
+      "valid_status=$?",
+      "after_valid_flags=$-",
+      '[ "$before_flags" = "$after_valid_flags" ] || exit 91',
+      '[ "$valid_status" -eq 0 ] || exit 92',
+      paste0(
+        "FIGUREFORGE_REPO_URL=",
+        shQuote(normalizePath(invalid_repo, mustWork = TRUE))
+      ),
+      paste(".", shQuote(install_script_path)),
+      "invalid_status=$?",
+      "after_invalid_flags=$-",
+      '[ "$before_flags" = "$after_invalid_flags" ] || exit 93',
+      '[ "$invalid_status" -ne 0 ] || exit 94',
+      "false",
+      "controlled_probe=$?",
+      '[ "$controlled_probe" -eq 1 ] || exit 95',
+      "exit 0"
+    ),
+    parent_probe_path,
+    useBytes = TRUE
+  )
+  previous <- setwd(workspace)
+  parent_probe_output <- system2(
+    "sh",
+    shQuote(parent_probe_path),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  setwd(previous)
+  assert_true(
+    is.null(attr(parent_probe_output, "status")),
+    paste(
+      "Sourced install block must not alter or terminate the parent shell:",
+      paste(parent_probe_output, collapse = "\n")
     )
   )
 })
