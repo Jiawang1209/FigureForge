@@ -432,7 +432,7 @@ unsafe_content_receipt$search_receipt_sha256 <-
   figureforge_sha256(search_receipt_path)
 expect_invalid(
   unsafe_content_receipt,
-  "search receipt content is privacy-safe"
+  "search receipt excludes raw query and path fields"
 )
 write_search_receipt()
 

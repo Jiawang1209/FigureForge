@@ -56,7 +56,7 @@ stopifnot(all(
 ))
 
 valid_identity <- data.frame(
-  schema_version = "1",
+  schema_version = "2",
   release_version = "1.1.0",
   certified_source_commit = paste(rep("a", 40L), collapse = ""),
   certified_source_tree = paste(rep("b", 40L), collapse = ""),
@@ -66,6 +66,9 @@ valid_identity <- data.frame(
   manifest_sha256 = paste(rep("d", 64L), collapse = ""),
   archive_bytes = 200L,
   archive_sha256 = paste(rep("e", 64L), collapse = ""),
+  live_trigger_summary_sha256 = paste(rep("1", 64L), collapse = ""),
+  live_plotting_summary_sha256 = paste(rep("2", 64L), collapse = ""),
+  live_mode_summary_sha256 = paste(rep("3", 64L), collapse = ""),
   certified_at = "2026-07-26T12:00:00+0800",
   stringsAsFactors = FALSE
 )
@@ -112,6 +115,15 @@ archive_ignored <- compare_figureforge_certification_identity(
 )
 stopifnot(isTRUE(archive_ignored$ok))
 
+stale_live <- valid_identity
+stale_live$live_mode_summary_sha256 <- paste(rep("4", 64L), collapse = "")
+live_result <- compare_figureforge_certification_identity(
+  valid_identity,
+  stale_live
+)
+stopifnot(!isTRUE(live_result$ok))
+stopifnot("live_mode_summary_sha256" %in% live_result$failures)
+
 invalid <- valid_identity
 invalid$certified_source_commit <- "not-a-commit"
 invalid_error <- tryCatch(
@@ -131,6 +143,65 @@ stopifnot(grepl(
 fixture_root <- tempfile("figureforge-certification-source-")
 dir.create(file.path(fixture_root, "skills", "figureforge"), recursive = TRUE)
 dir.create(file.path(fixture_root, "scripts"), recursive = TRUE)
+trigger_summary_path <- file.path(fixture_root, "live-trigger-summary.csv")
+plotting_summary_path <- file.path(fixture_root, "live-plotting-summary.csv")
+mode_summary_path <- file.path(fixture_root, "live-mode-summary.csv")
+write.csv(
+  data.frame(
+    kind = c("explicit", rep("implicit", 10L)),
+    passed = rep(TRUE, 11L)
+  ),
+  trigger_summary_path,
+  row.names = FALSE
+)
+write.csv(
+  data.frame(
+    script_exists = TRUE,
+    png_exists = TRUE,
+    pdf_exists = TRUE,
+    passed = TRUE
+  ),
+  plotting_summary_path,
+  row.names = FALSE
+)
+write.csv(
+  data.frame(
+    expected_mode = c("case_based", "general_fallback"),
+    generation_mode = c("case_based", "general_fallback"),
+    claim = c("case_grounded", "general_method"),
+    case_md_read = c(TRUE, FALSE),
+    plot_r_read = c(TRUE, FALSE),
+    qa_md_read = c(TRUE, FALSE),
+    passed = c(TRUE, TRUE)
+  ),
+  mode_summary_path,
+  row.names = FALSE
+)
+validate_figureforge_live_certification_summaries(
+  trigger_summary_path,
+  plotting_summary_path,
+  mode_summary_path
+)
+invalid_mode <- read.csv(mode_summary_path)
+invalid_mode$case_md_read[[1L]] <- FALSE
+write.csv(invalid_mode, mode_summary_path, row.names = FALSE)
+invalid_live_error <- tryCatch(
+  {
+    validate_figureforge_live_certification_summaries(
+      trigger_summary_path,
+      plotting_summary_path,
+      mode_summary_path
+    )
+    NULL
+  },
+  error = identity
+)
+stopifnot(inherits(invalid_live_error, "error"))
+write.csv(
+  transform(invalid_mode, case_md_read = c(TRUE, FALSE)),
+  mode_summary_path,
+  row.names = FALSE
+)
 writeLines(
   "skill",
   file.path(fixture_root, "skills", "figureforge", "SKILL.md")
@@ -248,6 +319,40 @@ current_certification <- check_figureforge_current_certification(
 )
 stopifnot(isTRUE(current_certification$ok))
 stopifnot(length(current_certification$failures) == 0L)
+portable_check_root <- tempfile("figureforge-portable-certification-")
+dir.create(portable_check_root)
+portable_files <- c(
+  "certification-identity.tsv",
+  "live-trigger-summary.csv",
+  "live-plotting-summary.csv",
+  "live-mode-summary.csv"
+)
+stopifnot(all(file.copy(
+  file.path(dirname(portable_identity_path), portable_files),
+  file.path(portable_check_root, portable_files)
+)))
+copied_identity_path <- file.path(
+  portable_check_root,
+  "certification-identity.tsv"
+)
+stopifnot(isTRUE(check_figureforge_current_certification(
+  repo_root,
+  copied_identity_path
+)$ok))
+write(
+  "tampered",
+  file.path(portable_check_root, "live-mode-summary.csv"),
+  append = TRUE
+)
+tampered_live_result <- check_figureforge_current_certification(
+  repo_root,
+  copied_identity_path
+)
+stopifnot(!isTRUE(tampered_live_result$ok))
+stopifnot(any(c(
+  "live_certification_summaries",
+  "live_mode_summary_sha256"
+) %in% tampered_live_result$failures))
 latest_release_input_commit <- system2(
   "git",
   c(

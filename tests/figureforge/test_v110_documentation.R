@@ -335,10 +335,13 @@ stopifnot(identical(
     "manifest_sha256",
     "archive_bytes",
     "archive_sha256",
+    "live_trigger_summary_sha256",
+    "live_plotting_summary_sha256",
+    "live_mode_summary_sha256",
     "certified_at"
   )
 ))
-stopifnot(identical(certification_identity$schema_version, 1L))
+stopifnot(identical(certification_identity$schema_version, 2L))
 stopifnot(identical(certification_identity$release_version, "1.1.0"))
 stopifnot(all(grepl(
   "^[0-9a-f]{40}$",
@@ -352,9 +355,24 @@ stopifnot(all(grepl(
   c(
     certification_identity$release_source_sha256,
     certification_identity$manifest_sha256,
-    certification_identity$archive_sha256
+    certification_identity$archive_sha256,
+    certification_identity$live_trigger_summary_sha256,
+    certification_identity$live_plotting_summary_sha256,
+    certification_identity$live_mode_summary_sha256
   )
 )))
+stopifnot(identical(
+  certification_identity$live_trigger_summary_sha256,
+  sha256_file(file.path(evidence_root, "live-trigger-summary.csv"))
+))
+stopifnot(identical(
+  certification_identity$live_plotting_summary_sha256,
+  sha256_file(file.path(evidence_root, "live-plotting-summary.csv"))
+))
+stopifnot(identical(
+  certification_identity$live_mode_summary_sha256,
+  sha256_file(file.path(evidence_root, "live-mode-summary.csv"))
+))
 
 environment <- read.delim(
   file.path(evidence_root, "environment.tsv"),
@@ -370,7 +388,7 @@ stopifnot(identical(
 ))
 stopifnot(all(c(
   "timezone",
-  "codex_path",
+  "codex_command",
   "codex_version",
   "codex_model",
   "rscript_path",
@@ -380,12 +398,12 @@ stopifnot(all(c(
   "architecture"
 ) %in% environment$key))
 stopifnot(identical(
-  environment$value[environment$key == "codex_path"],
-  "/Users/liuyue/.local/bin/codex"
+  environment$value[environment$key == "codex_command"],
+  "codex"
 ))
-stopifnot(identical(
-  environment$value[environment$key == "codex_version"],
-  "codex-cli 0.145.0"
+stopifnot(grepl(
+  "^codex-cli [0-9]+[.][0-9]+[.][0-9]+$",
+  environment$value[environment$key == "codex_version"]
 ))
 stopifnot(identical(
   environment$observability[environment$key == "codex_model"],
@@ -395,6 +413,11 @@ stopifnot(!any(grepl(
   "(api[_-]?key|token|secret|password)",
   paste(environment$key, environment$value),
   ignore.case = TRUE,
+  perl = TRUE
+)))
+stopifnot(!any(grepl(
+  "/Users/|/home/",
+  environment$value,
   perl = TRUE
 )))
 

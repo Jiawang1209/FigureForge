@@ -196,7 +196,7 @@ live_mode_command_reads <- function(
       identical(executable, trusted_reader_paths[["sed"]]) &&
         length(words) == 4L &&
         identical(words[[2L]], "-n") &&
-        grepl("^[0-9]+(?:,[0-9]+)?p$", words[[3L]], perl = TRUE)
+        grepl("^1(?:,[1-9][0-9]*)?p$", words[[3L]], perl = TRUE)
     ) {
       candidate <- words[[4L]]
     } else {
@@ -213,7 +213,7 @@ live_mode_command_reads <- function(
     if (!file.exists(resolved)) return("")
     normalizePath(resolved, mustWork = TRUE)
   }, character(1L))
-  (!newline_chain || all(nzchar(resolved_targets))) &&
+  all(nzchar(resolved_targets)) &&
     expected %in% resolved_targets[nzchar(resolved_targets)]
 }
 

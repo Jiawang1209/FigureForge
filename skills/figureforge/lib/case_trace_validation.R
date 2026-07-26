@@ -741,7 +741,7 @@ validate_case_trace <- function(
     "search receipt binds input schema" =
       case_trace_search_receipt_schema_supported(search_receipt) &&
         case_trace_sha256(search_receipt$schema_sha256[[1L]]),
-    "search receipt content is privacy-safe" =
+    "search receipt excludes raw query and path fields" =
       case_trace_search_receipt_is_privacy_safe(search_receipt),
     "search receipt hash format" = search_receipt_hash_format_ok,
     "search receipt hash matches" = search_receipt_hash_matches,

@@ -32,6 +32,9 @@ by SHA-256, plus a controlled abstract intent, public/private scope,
 input-schema SHA-256, limit, filtering flags,
 result ranks, and scores. Candidate identifiers are persisted only as SHA-256
 values; the raw query, titles, corpus metadata, and case paths are forbidden.
+The hashes are pseudonymous and linkable across identical inputs; they are not
+encryption. Keep the raw query abstract and never include credentials, row
+values, personal identifiers, or other secrets.
 Do not put row values, identifiers, credentials, or source snippets in
 `search_intent`; choose one value from the controlled list shown above. The
 normal candidate table is still printed to the terminal so the agent can

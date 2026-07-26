@@ -62,6 +62,9 @@ Keep the nonempty CSV beside `case-trace.yml`, then record its
 or receipt. The command still prints candidates for selection, while the
 persisted versioned receipt binds the query hash and search context and stores
 only hashed candidate IDs. A console-only search is not a valid search receipt.
+These hashes are pseudonymous and linkable, not encryption. Keep the raw
+search query abstract and never include credentials, row values, personal
+identifiers, or other secrets.
 
 Choose exactly one generation mode after search:
 

@@ -10,6 +10,9 @@ figureforge_certification_identity_fields <- function() {
     "manifest_sha256",
     "archive_bytes",
     "archive_sha256",
+    "live_trigger_summary_sha256",
+    "live_plotting_summary_sha256",
+    "live_mode_summary_sha256",
     "certified_at"
   )
 }
@@ -29,8 +32,8 @@ validate_figureforge_certification_identity <- function(identity) {
       paste(extra, collapse = ",")
     )
   }
-  if (!identical(as.character(identity$schema_version), "1")) {
-    stop("schema_version must be 1")
+  if (!identical(as.character(identity$schema_version), "2")) {
+    stop("schema_version must be 2")
   }
   if (!grepl(
     "^[0-9]+\\.[0-9]+\\.[0-9]+$",
@@ -51,7 +54,10 @@ validate_figureforge_certification_identity <- function(identity) {
   for (field in c(
     "release_source_sha256",
     "manifest_sha256",
-    "archive_sha256"
+    "archive_sha256",
+    "live_trigger_summary_sha256",
+    "live_plotting_summary_sha256",
+    "live_mode_summary_sha256"
   )) {
     if (!grepl(
       "^[0-9a-f]{64}$",
@@ -91,7 +97,10 @@ compare_figureforge_certification_identity <- function(
     "release_source_sha256",
     "manifest_rows",
     "manifest_bytes",
-    "manifest_sha256"
+    "manifest_sha256",
+    "live_trigger_summary_sha256",
+    "live_plotting_summary_sha256",
+    "live_mode_summary_sha256"
   )
   if (isTRUE(compare_archive)) {
     compared_fields <- c(
@@ -281,10 +290,82 @@ figureforge_manifest_identical <- function(left, right) {
   identical(left, right)
 }
 
+validate_figureforge_live_certification_summaries <- function(
+  trigger_summary_path,
+  plotting_summary_path,
+  mode_summary_path
+) {
+  paths <- c(trigger_summary_path, plotting_summary_path, mode_summary_path)
+  if (any(!file.exists(paths)) || any(dir.exists(paths)) ||
+      any(nzchar(Sys.readlink(paths))) ||
+      any(file.info(paths)$size <= 0L)) {
+    stop("Live certification summaries must be regular non-empty files")
+  }
+  read_summary <- function(path) {
+    read.csv(
+      path,
+      stringsAsFactors = FALSE,
+      check.names = FALSE,
+      na.strings = character(0)
+    )
+  }
+  trigger <- read_summary(trigger_summary_path)
+  plotting <- read_summary(plotting_summary_path)
+  mode <- read_summary(mode_summary_path)
+  if (!all(c("kind", "passed") %in% names(trigger)) ||
+      nrow(trigger) != 11L ||
+      sum(trigger$kind == "explicit") != 1L ||
+      sum(trigger$kind == "implicit") != 10L ||
+      !all(trigger$passed)) {
+    stop("Live trigger summary does not meet the 1/1 and 10/10 gate")
+  }
+  if (!all(c("passed", "script_exists", "png_exists", "pdf_exists") %in%
+      names(plotting)) ||
+      nrow(plotting) != 1L ||
+      !all(plotting$passed) ||
+      !all(plotting$script_exists) ||
+      !all(plotting$png_exists) ||
+      !all(plotting$pdf_exists)) {
+    stop("Live plotting summary does not meet the artifact gate")
+  }
+  required_mode_fields <- c(
+    "expected_mode",
+    "generation_mode",
+    "claim",
+    "case_md_read",
+    "plot_r_read",
+    "qa_md_read",
+    "passed"
+  )
+  if (!all(required_mode_fields %in% names(mode)) ||
+      nrow(mode) != 2L ||
+      !identical(
+        as.character(mode$expected_mode),
+        c("case_based", "general_fallback")
+      ) ||
+      !identical(
+        as.character(mode$generation_mode),
+        c("case_based", "general_fallback")
+      ) ||
+      !identical(
+        as.character(mode$claim),
+        c("case_grounded", "general_method")
+      ) ||
+      !all(mode$passed) ||
+      !all(mode[1L, c("case_md_read", "plot_r_read", "qa_md_read")]) ||
+      any(mode[2L, c("case_md_read", "plot_r_read", "qa_md_read")])) {
+    stop("Live mode summary does not meet the two-mode evidence gate")
+  }
+  invisible(paths)
+}
+
 build_figureforge_certification_identity <- function(
   repo_root,
   manifest_path,
   archive_path,
+  trigger_summary_path,
+  plotting_summary_path,
+  mode_summary_path,
   certified_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")
 ) {
   required_functions <- c(
@@ -308,6 +389,20 @@ build_figureforge_certification_identity <- function(
   repo_root <- normalizePath(repo_root, mustWork = TRUE)
   manifest_path <- normalizePath(manifest_path, mustWork = TRUE)
   archive_path <- normalizePath(archive_path, mustWork = TRUE)
+  trigger_summary_path <- normalizePath(
+    trigger_summary_path,
+    mustWork = TRUE
+  )
+  plotting_summary_path <- normalizePath(
+    plotting_summary_path,
+    mustWork = TRUE
+  )
+  mode_summary_path <- normalizePath(mode_summary_path, mustWork = TRUE)
+  validate_figureforge_live_certification_summaries(
+    trigger_summary_path,
+    plotting_summary_path,
+    mode_summary_path
+  )
   supplied_manifest <- read_release_manifest(manifest_path)
   current_manifest <- build_release_manifest(repo_root)
   if (!figureforge_manifest_identical(supplied_manifest, current_manifest)) {
@@ -347,7 +442,7 @@ build_figureforge_certification_identity <- function(
     stop("Release VERSION must contain one semantic version")
   }
   identity <- data.frame(
-    schema_version = "1",
+    schema_version = "2",
     release_version = version,
     certified_source_commit = commit$output[[1L]],
     certified_source_tree = tree$output[[1L]],
@@ -360,6 +455,13 @@ build_figureforge_certification_identity <- function(
     manifest_sha256 = figureforge_sha256(manifest_path),
     archive_bytes = as.numeric(file.info(archive_path)$size),
     archive_sha256 = figureforge_sha256(archive_path),
+    live_trigger_summary_sha256 = figureforge_sha256(
+      trigger_summary_path
+    ),
+    live_plotting_summary_sha256 = figureforge_sha256(
+      plotting_summary_path
+    ),
+    live_mode_summary_sha256 = figureforge_sha256(mode_summary_path),
     certified_at = certified_at,
     stringsAsFactors = FALSE
   )
@@ -407,12 +509,56 @@ check_figureforge_current_certification <- function(
   observed$manifest_rows <- nrow(current_manifest)
   observed$manifest_bytes <- as.numeric(file.info(current_manifest_path)$size)
   observed$manifest_sha256 <- figureforge_sha256(current_manifest_path)
+  evidence_root <- dirname(normalizePath(identity_path, mustWork = TRUE))
+  live_summary_paths <- c(
+    live_trigger_summary_sha256 = file.path(
+      evidence_root,
+      "live-trigger-summary.csv"
+    ),
+    live_plotting_summary_sha256 = file.path(
+      evidence_root,
+      "live-plotting-summary.csv"
+    ),
+    live_mode_summary_sha256 = file.path(
+      evidence_root,
+      "live-mode-summary.csv"
+    )
+  )
+  live_failures <- character(0)
+  live_ok <- tryCatch(
+    {
+      validate_figureforge_live_certification_summaries(
+        live_summary_paths[["live_trigger_summary_sha256"]],
+        live_summary_paths[["live_plotting_summary_sha256"]],
+        live_summary_paths[["live_mode_summary_sha256"]]
+      )
+      TRUE
+    },
+    error = function(error) FALSE
+  )
+  if (!live_ok) {
+    live_failures <- "live_certification_summaries"
+  }
+  for (field in names(live_summary_paths)) {
+    path <- live_summary_paths[[field]]
+    if (!file.exists(path) || dir.exists(path) ||
+        nzchar(Sys.readlink(path)) || file.info(path)$size <= 0L) {
+      observed[[field]] <- paste(rep("0", 64L), collapse = "")
+      live_failures <- c(live_failures, field)
+    } else {
+      observed[[field]] <- figureforge_sha256(path)
+    }
+  }
   comparison <- compare_figureforge_certification_identity(
     certified,
     observed,
     compare_archive = FALSE
   )
-  failures <- unique(c(comparison$failures, git_binding$failures))
+  failures <- unique(c(
+    comparison$failures,
+    git_binding$failures,
+    live_failures
+  ))
   list(
     ok = length(failures) == 0L,
     failures = failures,

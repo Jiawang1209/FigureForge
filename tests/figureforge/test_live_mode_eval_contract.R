@@ -299,7 +299,7 @@ writeLines(
   batched_transcript
 )
 for (evidence_name in c("case.md", "plot.R", "qa.md")) {
-  stopifnot(live_mode_transcript_reads(
+  stopifnot(!live_mode_transcript_reads(
     batched_transcript,
     workspace,
     file.path(case_dir, evidence_name),
@@ -424,6 +424,16 @@ stopifnot(!live_mode_trusted_reader_paths(c(
 )))
 
 adversarial_commands <- c(
+  paste(
+    trusted_sed,
+    "-n '0p'",
+    shQuote(file.path(case_dir, "case.md"))
+  ),
+  paste(
+    trusted_sed,
+    "-n '999999p'",
+    shQuote(file.path(case_dir, "case.md"))
+  ),
   paste("cat", shQuote(file.path(case_dir, "case.md"))),
   paste("sed -n '1,240p'", shQuote(file.path(case_dir, "case.md"))),
   paste(fake_cat, shQuote(file.path(case_dir, "case.md"))),

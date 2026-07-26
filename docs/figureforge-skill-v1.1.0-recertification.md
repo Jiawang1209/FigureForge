@@ -13,7 +13,8 @@ binds:
 - a SHA-256 over every packaged source file plus the deterministic verifier,
   live harnesses, and certification machinery;
 - the release manifest row count, byte count, and SHA-256; and
-- the exact run-specific archive byte count and SHA-256.
+- the exact run-specific archive byte count and SHA-256; and
+- the SHA-256 of the validated trigger, plotting, and two-mode live summaries.
 
 The manifest remains the portable package identity. The archive identity is
 also retained because gzip/tar bytes may vary between otherwise equivalent
@@ -83,6 +84,9 @@ test "$(git rev-parse HEAD^{tree})" = "$SOURCE_TREE"
   scripts/write_figureforge_v110_certification_identity.R \
   --manifest "$LIVE_ROOT/modes/release-manifest.csv" \
   --archive "$LIVE_ROOT/modes/figureforge-skill.tar.gz" \
+  --live-trigger-summary "$LIVE_ROOT/triggers/summary.csv" \
+  --live-plotting-summary "$LIVE_ROOT/plotting/summary.csv" \
+  --live-mode-summary "$LIVE_ROOT/modes/summary.csv" \
   --output \
   docs/figureforge-skill-v1.1.0-evidence/certification-identity.tsv
 ```
