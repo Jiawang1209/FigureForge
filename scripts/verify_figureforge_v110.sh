@@ -222,8 +222,9 @@ grep -F "Case trace validation OK:" "$INSTALLED_CASE_TRACE_LOG"
   --limit 3 \
   --output "$VERIFY_ROOT/installed-search.csv"
 FIGUREFORGE_SEARCH_REPORT="$VERIFY_ROOT/installed-search.csv" \
+  FIGUREFORGE_CHECKSUMS_R="$INSTALLED/lib/checksums.R" \
   "$RSCRIPT" -e \
-  'x<-read.csv(Sys.getenv("FIGUREFORGE_SEARCH_REPORT")); stopifnot(x$case_id[[1L]]=="public-correlation-heatmap")'
+  'source(Sys.getenv("FIGUREFORGE_CHECKSUMS_R")); x<-read.csv(Sys.getenv("FIGUREFORGE_SEARCH_REPORT"),check.names=FALSE); stopifnot(x$receipt_generator[[1L]]=="figureforge-search_cases",x$search_query[[1L]]=="相关性热图",x$case_id_sha256[[1L]]==figureforge_sha256_text("public-correlation-heatmap"),!any(c("case_id","title_en","title_zh","case_path") %in% names(x)))'
 sh "$INSTALLED/examples/public-demo/run_demo.sh" \
   "$VERIFY_ROOT/installed-demo"
 "$RSCRIPT" "$INSTALLED/scripts/validate_adaptation.R" \
