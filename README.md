@@ -45,7 +45,7 @@ Rscript examples/iris-pca/plot.R examples/iris-pca/iris.csv examples/iris-pca
 Open the [offline report](examples/iris-pca/index.html), or inspect the
 [source directory and README](examples/iris-pca/README.md).
 
-## Default outputs
+## Default output
 
 FigureForge's default user deliverables are exactly:
 

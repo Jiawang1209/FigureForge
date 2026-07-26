@@ -66,7 +66,7 @@ expected_readme_sections <- list(
     "## Install",
     "## Use",
     "## Iris PCA demo",
-    "## Default outputs",
+    "## Default output",
     "## Documentation",
     "## Scope",
     "## License"
