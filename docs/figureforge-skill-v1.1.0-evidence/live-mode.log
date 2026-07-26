@@ -1,0 +1,6 @@
+[PASS] case_based generation selected claim=case_grounded
+[PASS] case_based generation used trusted case evidence and read case.md, plot.R, and qa.md
+[PASS] general_fallback generation selected claim=general_method
+[PASS] general_fallback generation did not read case evidence
+[PASS] both modes passed schema-bound receipt, strict validation, installed-skill integrity, trusted-reader, and artifact checks
+source_commit=32eb3a7e3fa1a6aaef19d462b3893e9e396b3282

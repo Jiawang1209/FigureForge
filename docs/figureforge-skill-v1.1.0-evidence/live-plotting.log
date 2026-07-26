@@ -1,16 +1,5 @@
-# Sanitized real live-plotting terminal result
-command=bash scripts/run_figureforge_plotting_eval.sh --output-dir /tmp/figureforge-v110-live.740e78/plotting
-source_commit=2f92d6370563a12862c111d61f3831c83da8b025
-source_tree=b17435309d9d8e4a967d8211e5b7c4e35e323389
-worktree_state=clean
-codex=/Users/liuyue/.local/bin/codex
-codex_version=codex-cli 0.145.0
-model=default configured model; resolved name not exposed
-Plotting evaluation passed: true
-summary_sha256=856f549023725bfafa46df9cef9fc8e4edddd5fcb8225ef4632109b2a57da178
-raw_transcript_sha256=ad43b427af2778762e4ad14d878adf4423ca9af135451a51ba031cc1cde7f706
-raw_final_reply_sha256=cb6f6d7d1f6df4524b407c597bc0c75d0a3b4175c23ea2049a42786010919a1c
-delivered_script_rerun=true
-independent_rerender_png=true
-independent_rerender_pdf=true
-privacy=raw transcript, reply, input, and generated binaries excluded from Git
+[PASS] FigureForge Skill loaded
+[PASS] plot.R, plot.png, and plot.pdf are nonempty
+[PASS] independent rerender produced valid PNG and PDF
+[PASS] delivered and independently rerendered PNG identities match
+source_commit=32eb3a7e3fa1a6aaef19d462b3893e9e396b3282

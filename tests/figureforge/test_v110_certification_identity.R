@@ -24,6 +24,20 @@ source(file.path(
 ))
 source(file.path(
   repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "distribution_validation.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "release_packaging.R"
+))
+source(file.path(
+  repo_root,
   "scripts",
   "lib",
   "release_certification.R"
@@ -217,5 +231,49 @@ wrong_tree_result <- validate_figureforge_certified_git_binding(
 )
 stopifnot(!isTRUE(wrong_tree_result$ok))
 stopifnot("certified_source_tree" %in% wrong_tree_result$failures)
+
+portable_identity_path <- file.path(
+  repo_root,
+  "docs",
+  "figureforge-skill-v1.1.0-evidence",
+  "certification-identity.tsv"
+)
+stopifnot(file.exists(portable_identity_path))
+portable_identity <- read_figureforge_certification_identity(
+  portable_identity_path
+)
+current_certification <- check_figureforge_current_certification(
+  repo_root,
+  portable_identity_path
+)
+stopifnot(isTRUE(current_certification$ok))
+stopifnot(length(current_certification$failures) == 0L)
+latest_release_input_commit <- system2(
+  "git",
+  c(
+    "-C",
+    shQuote(repo_root),
+    "rev-list",
+    "--max-count=1",
+    "HEAD",
+    "--",
+    "skills/figureforge",
+    "scripts/run_figureforge_live_evals.sh",
+    "scripts/run_figureforge_plotting_eval.sh",
+    "scripts/run_figureforge_mode_evals.sh",
+    "scripts/evaluate_figureforge_mode_probe.R",
+    "scripts/lib/live_mode_evaluation.R",
+    "scripts/verify_figureforge_v110.sh",
+    "scripts/lib/release_certification.R",
+    "scripts/check_figureforge_v110_certification.R",
+    "scripts/write_figureforge_v110_certification_identity.R"
+  ),
+  stdout = TRUE
+)
+stopifnot(is.null(attr(latest_release_input_commit, "status")))
+stopifnot(identical(
+  as.character(portable_identity$certified_source_commit),
+  latest_release_input_commit[[1L]]
+))
 
 message("v1.1.0 certification identity tests: PASS")

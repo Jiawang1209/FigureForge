@@ -47,8 +47,8 @@ english_terms <- c(
   "plot.png",
   "plot.pdf",
   "Rscript plot.R <input-file> <output-directory>",
-  "FigureForge Skill 1.1.0 is the current implemented version",
-  "the changed current source is pending recertification",
+  "FigureForge Skill 1.1.0 is the current locally certified release",
+  "documentation-only commit may carry that certification",
   "FigureForge Skill 1.0.1 is the prior certified historical release",
   "15 public cases",
   "private corpus",
@@ -70,8 +70,8 @@ chinese_terms <- c(
   "plot.png",
   "plot.pdf",
   "Rscript plot.R <input-file> <output-directory>",
-  "FigureForge Skill 1.1.0 是当前实现版本",
-  "已变更的当前源码仍待重新认证",
+  "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
+  "后续仅文档 commit 可以承载该认证",
   "FigureForge Skill 1.0.1 是此前已认证的历史发布版本",
   "15 个公开案例",
   "私有案例库",
@@ -125,14 +125,14 @@ stopifnot(!grepl(
 status_terms <- c(
   "FigureForge Skill 1.1.0",
   "case-enhanced R plotting capability",
-  "real data",
-  "natural request",
   "plot.R",
   "plot.png",
   "plot.pdf",
-  "User plotting behavior",
-  "Maintainer and release reliability",
-  "MCP is planned and unimplemented"
+  "currently certified",
+  "Explicit 1/1; implicit 10/10",
+  "case-grounded 1/1; general-method fallback 1/1",
+  "MCP",
+  "planned and unimplemented"
 )
 stopifnot(all(vapply(
   status_terms,

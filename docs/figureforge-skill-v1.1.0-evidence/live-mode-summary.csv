@@ -1,0 +1,3 @@
+"expected_mode","generation_mode","claim","schema_bound_receipt","strict_validation","installed_skill_integrity","trusted_readers","trusted_case_evidence","artifacts_present","case_md_read","plot_r_read","qa_md_read","passed"
+"case_based","case_based","case_grounded",TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+"general_fallback","general_fallback","general_method",TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,FALSE,TRUE

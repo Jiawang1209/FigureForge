@@ -1,80 +1,50 @@
 # FigureForge Skill 1.1.0 Portable Certification Evidence
 
-This directory is the sanitized, repository-tracked evidence bundle for the
-local FigureForge Skill 1.1.0 certification. It preserves machine-readable
-summaries, immutable source bindings, environment facts, exact commands,
-artifact identities, package identities, and checksums without retaining raw
-agent transcripts, prompts, user data, rendered images, private corpus files,
-credentials, or temporary installed trees.
+This is the sanitized, repository-tracked evidence bundle for the current
+local FigureForge Skill 1.1.0 certification.
 
-## Immutable source boundary
+## Certified boundary
 
-The real live gates ran from a clean worktree at commit
-`2f92d6370563a12862c111d61f3831c83da8b025`, whose complete Git tree is
-`b17435309d9d8e4a967d8211e5b7c4e35e323389`. The tested Skill subtree and
-live/plotting harness blobs are recorded in
-[source-binding.tsv](source-binding.tsv), together with SHA-256 identities.
-
-The live gates did **not** run on the later evidence-document commits.
-`2983880a8d8f19cd53d73f4a64236e75c9b247c0` added the certification prose and
-tests; `f475a308709269f35a7253f8ce930f7ba7e49f10` corrected an evidence root.
-Those commits changed documentation and documentation tests only. The tested
-Skill subtree, live harness, plotting harness, verifier, and package builder
-remain byte-identical to the clean tested source binding.
+The machine-readable
+[certification-identity.tsv](certification-identity.tsv) binds release `1.1.0`
+to source commit `32eb3a7e3fa1a6aaef19d462b3893e9e396b3282`, source tree
+`403bd3c9de57345480244d7a57174522afc062f1`, the release-source digest, and the
+canonical package manifest. A later documentation-only commit may carry this
+bundle without changing the certified source commit, provided the currentness
+checker confirms that every release input remains identical.
 
 ## Files
 
-- [environment.tsv](environment.tsv) records observable runtime and OS facts.
-- [commands.tsv](commands.tsv) records exact commands, evidence time windows,
-  source binding, worktree state, and result.
-- [deterministic-verification.log](deterministic-verification.log) is a
-  sanitized terminal-result log for the deterministic verifier runs.
-- [live-trigger-summary.csv](live-trigger-summary.csv) and
-  [live-trigger.log](live-trigger.log) preserve the trigger result and
-  sanitized terminal output.
-- [live-plotting-summary.csv](live-plotting-summary.csv) and
-  [live-plotting.log](live-plotting.log) preserve the executable plotting and
-  independent-rerender result.
-- [artifact-identities.tsv](artifact-identities.tsv) records the nonempty
-  delivered and independently rerendered artifacts by size, type, and SHA-256
-  without committing the generated binaries or user input.
-- [package-identities.tsv](package-identities.tsv) records the canonical
-  release-manifest identity and the run-specific compressed archive identities.
-- [SHA256SUMS](SHA256SUMS) authenticates every other file in this bundle.
+- `certification-identity.tsv`: authoritative source/package identity.
+- `source-binding.tsv`: Git objects and SHA-256 values for the Skill and all
+  certification machinery.
+- `environment.tsv` and `commands.tsv`: observable environment and sanitized
+  gate commands.
+- `live-trigger-summary.csv`, `live-plotting-summary.csv`, and
+  `live-mode-summary.csv`: machine-readable gate outcomes.
+- `live-trigger.log`, `live-plotting.log`, `live-mode.log`, and
+  `deterministic-verification.log`: tracked sanitized certification logs.
+- `artifact-identities.tsv` and `package-identities.tsv`: generated artifact
+  and package identities without the generated binaries.
+- `SHA256SUMS`: checksums for every other file in this directory.
 
-## Package identity and gzip nondeterminism
+## Package identity
 
-All three recorded verifier runs produced the same 156-row release manifest:
+All three live gates produced the same 159-row manifest:
 
-`12752a5688f4939a6d5deb72a60cbc2587077d6ad0672d9ea8218d021ecf0398`
+`a6dbd539aba44cf566cf974c6b7eaa277b3d8d5717c1ebe88d2399e783c5e6bf`
 
-That manifest is the canonical portable package identity because it fixes every
-member path, byte count, and member SHA-256. The three `.tar.gz` files have
-different SHA-256 values even though their manifests are identical. The
-packaging pipeline does not promise a reproducible gzip/tar byte stream:
-container metadata and gzip headers can vary by run. Therefore each compressed
-archive hash is recorded as run-specific evidence and is not substituted for
-the stable manifest identity.
-
-## Time and model observability
-
-Times in [commands.tsv](commands.tsv) are exact filesystem evidence times from
-the retained artifacts. For verifier runs, the start column is the release
-manifest creation time and the end column is the last verifier-root event; it
-is not misrepresented as a process start timestamp. Trigger and plotting
-windows use package-log creation and summary completion times.
-
-The live commands did not pass `--model`, so the configured default model was
-used. Codex CLI 0.145.0 did not expose the resolved model name in the retained
-JSONL `thread.started` event. The evidence records that limit explicitly rather
-than guessing a model name.
+This manifest is the portable package identity because it binds each member
+path, size, and SHA-256. The three compressed archives differ only at the
+container-byte level; gzip/tar byte reproducibility is not part of the contract,
+so each run-specific archive hash is retained separately.
 
 ## Privacy boundary
 
-Raw JSONL transcripts and final replies remain outside Git because they can
-contain prompts, local paths, and agent working context. The private 165-case
-corpus, third-party source assets, reproductions, rendered outputs, and
-credentials are also excluded. Raw or unsanitized logs are excluded as well.
-Tracked sanitized certification logs are limited to the `.log` summaries in this
-directory; they contain aggregate gate results and cryptographic identities,
-not raw prompts, transcripts, user data, or private-corpus content.
+Raw or unsanitized logs, JSONL transcripts, final replies, prompts, local
+temporary paths, user data, private corpus content, rendered images, package
+archives, credentials, and installed trees are excluded.
+
+Tracked sanitized certification logs contain aggregate outcomes and
+cryptographic identities only. The configured Codex model name was not exposed
+by the retained events and is recorded as `not_exposed`, not guessed.

@@ -1,14 +1,4 @@
-# Sanitized real live-trigger terminal result
-command=bash scripts/run_figureforge_live_evals.sh --output-dir /tmp/figureforge-v110-live.740e78/triggers
-source_commit=2f92d6370563a12862c111d61f3831c83da8b025
-source_tree=b17435309d9d8e4a967d8211e5b7c4e35e323389
-worktree_state=clean
-codex=/Users/liuyue/.local/bin/codex
-codex_version=codex-cli 0.145.0
-model=default configured model; resolved name not exposed
-Explicit live probes: 1/1
-Implicit live probes: 10/10
-summary_sha256=d0ba1359bfa058000d0840b8eba2653ec836a6c5b34822719327b6bb07330040
-raw_jsonl_hash_list_sha256=dc5235e972a7943c1bb1786d3bf657553ce3b2740a9c47a609a99cb117517d81
-raw_final_reply_hash_list_sha256=64b8c08a80a9e0bdab200d8014a28b593e01b08bddf8fd59efa032d3f5a28bad
-privacy=raw transcripts and replies excluded from Git
+[PASS] explicit trigger: 1/1
+[PASS] implicit triggers: 10/10
+[PASS] every probe loaded FigureForge, selected the plotting capability, and returned the artifact contract
+source_commit=32eb3a7e3fa1a6aaef19d462b3893e9e396b3282

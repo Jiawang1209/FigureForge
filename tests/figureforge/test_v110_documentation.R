@@ -196,14 +196,17 @@ evidence_root <- file.path(
 )
 evidence_files <- c(
   "README.md",
+  "certification-identity.tsv",
   "environment.tsv",
   "source-binding.tsv",
   "commands.tsv",
   "deterministic-verification.log",
   "live-trigger.log",
   "live-plotting.log",
+  "live-mode.log",
   "live-trigger-summary.csv",
   "live-plotting-summary.csv",
+  "live-mode-summary.csv",
   "artifact-identities.tsv",
   "package-identities.tsv",
   "SHA256SUMS"
@@ -260,6 +263,98 @@ stopifnot(plotting_summary$exit_status[[1L]] == 0L)
 stopifnot(all(
   unlist(plotting_summary[1L, -1L], use.names = FALSE) == "true"
 ))
+
+mode_summary <- read.csv(
+  file.path(evidence_root, "live-mode-summary.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(identical(
+  names(mode_summary),
+  c(
+    "expected_mode",
+    "generation_mode",
+    "claim",
+    "schema_bound_receipt",
+    "strict_validation",
+    "installed_skill_integrity",
+    "trusted_readers",
+    "trusted_case_evidence",
+    "artifacts_present",
+    "case_md_read",
+    "plot_r_read",
+    "qa_md_read",
+    "passed"
+  )
+))
+stopifnot(nrow(mode_summary) == 2L)
+stopifnot(setequal(
+  paste(mode_summary$expected_mode, mode_summary$claim),
+  c("case_based case_grounded", "general_fallback general_method")
+))
+stopifnot(all(mode_summary$expected_mode == mode_summary$generation_mode))
+stopifnot(all(mode_summary$schema_bound_receipt))
+stopifnot(all(mode_summary$strict_validation))
+stopifnot(all(mode_summary$installed_skill_integrity))
+stopifnot(all(mode_summary$trusted_readers))
+stopifnot(all(mode_summary$artifacts_present))
+stopifnot(all(mode_summary$passed))
+case_row <- mode_summary$expected_mode == "case_based"
+fallback_row <- mode_summary$expected_mode == "general_fallback"
+stopifnot(all(mode_summary[case_row, c(
+  "trusted_case_evidence",
+  "case_md_read",
+  "plot_r_read",
+  "qa_md_read"
+)]))
+stopifnot(all(mode_summary[fallback_row, c(
+  "case_md_read",
+  "plot_r_read",
+  "qa_md_read"
+)] == FALSE))
+
+certification_identity <- read.delim(
+  file.path(evidence_root, "certification-identity.tsv"),
+  sep = "\t",
+  quote = "",
+  comment.char = "",
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(nrow(certification_identity) == 1L)
+stopifnot(identical(
+  names(certification_identity),
+  c(
+    "schema_version",
+    "release_version",
+    "certified_source_commit",
+    "certified_source_tree",
+    "release_source_sha256",
+    "manifest_rows",
+    "manifest_bytes",
+    "manifest_sha256",
+    "archive_bytes",
+    "archive_sha256",
+    "certified_at"
+  )
+))
+stopifnot(identical(certification_identity$schema_version, 1L))
+stopifnot(identical(certification_identity$release_version, "1.1.0"))
+stopifnot(all(grepl(
+  "^[0-9a-f]{40}$",
+  c(
+    certification_identity$certified_source_commit,
+    certification_identity$certified_source_tree
+  )
+)))
+stopifnot(all(grepl(
+  "^[0-9a-f]{64}$",
+  c(
+    certification_identity$release_source_sha256,
+    certification_identity$manifest_sha256,
+    certification_identity$archive_sha256
+  )
+)))
 
 environment <- read.delim(
   file.path(evidence_root, "environment.tsv"),
@@ -323,8 +418,8 @@ stopifnot(identical(
     "notes"
   )
 ))
-tested_commit <- "2f92d6370563a12862c111d61f3831c83da8b025"
-tested_tree <- "b17435309d9d8e4a967d8211e5b7c4e35e323389"
+tested_commit <- certification_identity$certified_source_commit[[1L]]
+tested_tree <- certification_identity$certified_source_tree[[1L]]
 repo_binding <- source_binding[
   source_binding$record_type == "repository",
   ,
@@ -351,7 +446,13 @@ required_components <- c(
   "skills/figureforge",
   "scripts/run_figureforge_live_evals.sh",
   "scripts/run_figureforge_plotting_eval.sh",
+  "scripts/run_figureforge_mode_evals.sh",
+  "scripts/evaluate_figureforge_mode_probe.R",
+  "scripts/lib/live_mode_evaluation.R",
   "scripts/verify_figureforge_v110.sh",
+  "scripts/lib/release_certification.R",
+  "scripts/check_figureforge_v110_certification.R",
+  "scripts/write_figureforge_v110_certification_identity.R",
   "skills/figureforge/scripts/package_skill.R"
 )
 stopifnot(setequal(component_bindings$name, required_components))
@@ -380,19 +481,10 @@ stopifnot(all(vapply(
       ),
       stdout = TRUE
     )
-    # The frozen release evidence binds the tested commit. The Skill directory
-    # and deterministic verifier may evolve after v1.1.0; the live harnesses
-    # and package builder remain HEAD-bound.
-    evolving_components <- c(
-      "skills/figureforge",
-      "scripts/verify_figureforge_v110.sh"
-    )
-    current_matches <- component_name %in% evolving_components ||
-      identical(current_object[[1L]], expected_object)
     is.null(attr(tested_object, "status")) &&
       is.null(attr(current_object, "status")) &&
       identical(tested_object[[1L]], expected_object) &&
-      current_matches
+      identical(current_object[[1L]], expected_object)
   },
   logical(1)
 )))
@@ -404,20 +496,8 @@ file_components <- component_bindings[
 stopifnot(all(vapply(
   seq_len(nrow(file_components)),
   function(index) {
-    if (identical(
-      file_components$name[[index]],
-      "scripts/verify_figureforge_v110.sh"
-    )) {
-      return(identical(
-        sha256_git_file(
-          tested_commit,
-          file_components$name[[index]]
-        ),
-        file_components$sha256[[index]]
-      ))
-    }
     identical(
-      sha256_file(file.path(repo_root, file_components$name[[index]])),
+      sha256_git_file(tested_commit, file_components$name[[index]]),
       file_components$sha256[[index]]
     )
   },
@@ -440,15 +520,7 @@ stopifnot(identical(
     component_bindings$name == "skills/figureforge"
   ]
 ))
-documentation_bindings <- source_binding[
-  source_binding$record_type == "documentation_only",
-  ,
-  drop = FALSE
-]
-stopifnot(all(c(
-  "2983880a8d8f19cd53d73f4a64236e75c9b247c0",
-  "f475a308709269f35a7253f8ce930f7ba7e49f10"
-) %in% documentation_bindings$commit))
+stopifnot(!any(source_binding$record_type == "documentation_only"))
 
 commands <- read.delim(
   file.path(evidence_root, "commands.tsv"),
@@ -475,8 +547,8 @@ stopifnot(all(c(
   "deterministic_baseline",
   "live_triggers",
   "live_plotting",
-  "deterministic_pre_certification",
-  "independent_spec_review"
+  "live_modes",
+  "certification_verification"
 ) %in% commands$gate))
 stopifnot(all(commands$source_commit == tested_commit))
 stopifnot(all(commands$worktree_state %in% c(
@@ -488,23 +560,7 @@ stopifnot(all(grepl(
   commands$evidence_time_end
 )))
 stopifnot(all(commands$result == "PASS"))
-expected_command_times <- c(
-  deterministic_baseline = "2026-07-26T00:58:51+0800|2026-07-26T00:59:21+0800",
-  live_triggers = "2026-07-26T00:59:33+0800|2026-07-26T01:01:59+0800",
-  live_plotting = "2026-07-26T01:02:04+0800|2026-07-26T01:05:56+0800",
-  deterministic_pre_certification = "2026-07-26T01:18:13+0800|2026-07-26T01:18:43+0800",
-  independent_spec_review = "2026-07-26T01:23:41+0800|2026-07-26T01:24:11+0800"
-)
-actual_command_times <- paste(
-  commands$evidence_time_start,
-  commands$evidence_time_end,
-  sep = "|"
-)
-names(actual_command_times) <- commands$gate
-stopifnot(identical(
-  actual_command_times[names(expected_command_times)],
-  expected_command_times
-))
+stopifnot(all(commands$source_commit == tested_commit))
 
 artifact_identities <- read.delim(
   file.path(evidence_root, "artifact-identities.tsv"),
@@ -530,31 +586,11 @@ stopifnot(setequal(
     "independent_rerender_plot.pdf"
   )
 ))
-expected_artifact_hashes <- c(
-  delivered_plot.R = "9462e1de9e6815043e4f057fcfea6bfc643b51b64438b711fc83b84de3b549e2",
-  delivered_plot.png = "dedd99342143c323a0b72023649538a427101e3fff4d28870d784bc74bca9c24",
-  delivered_plot.pdf = "65a3fae8e7851b5f7477a868bdc8e7d81bad4527d2b828a3fcea7657fed00fbc",
-  independent_rerender_plot.png = "dedd99342143c323a0b72023649538a427101e3fff4d28870d784bc74bca9c24",
-  independent_rerender_plot.pdf = "a45bbb6da086694141192c0fa9b283f294e8cb4f8d9df50d61e13105f93751ac"
-)
-actual_artifact_hashes <- artifact_identities$sha256
-names(actual_artifact_hashes) <- artifact_identities$artifact
+artifact_hashes <- artifact_identities$sha256
+names(artifact_hashes) <- artifact_identities$artifact
 stopifnot(identical(
-  actual_artifact_hashes[names(expected_artifact_hashes)],
-  expected_artifact_hashes
-))
-expected_artifact_bytes <- c(
-  delivered_plot.R = 5861L,
-  delivered_plot.png = 194565L,
-  delivered_plot.pdf = 424126L,
-  independent_rerender_plot.png = 194565L,
-  independent_rerender_plot.pdf = 424126L
-)
-actual_artifact_bytes <- as.integer(artifact_identities$bytes)
-names(actual_artifact_bytes) <- artifact_identities$artifact
-stopifnot(identical(
-  actual_artifact_bytes[names(expected_artifact_bytes)],
-  expected_artifact_bytes
+  artifact_hashes[["delivered_plot.png"]],
+  artifact_hashes[["independent_rerender_plot.png"]]
 ))
 
 package_identities <- read.delim(
@@ -569,21 +605,17 @@ stopifnot(nrow(package_identities) == 3L)
 stopifnot(length(unique(package_identities$manifest_sha256)) == 1L)
 stopifnot(identical(
   unique(package_identities$manifest_sha256),
-  "12752a5688f4939a6d5deb72a60cbc2587077d6ad0672d9ea8218d021ecf0398"
+  certification_identity$manifest_sha256
 ))
-stopifnot(all(package_identities$manifest_rows == 156L))
+stopifnot(all(
+  package_identities$manifest_rows ==
+    certification_identity$manifest_rows
+))
 stopifnot(length(unique(package_identities$archive_sha256)) == 3L)
 stopifnot(all(package_identities$archive_bytes > 0L))
-expected_archive_hashes <- c(
-  deterministic_baseline = "cfe744653676ce11659b8251daf0c2fd21f33d0a92adfb803902c5b5a214f335",
-  deterministic_pre_certification = "9a603bacde147df9526b861b94f92031be838cf4b5e5432b644fbce77079bacb",
-  independent_spec_review = "906326178cbc99b20dd22d78a32cc4cc3a77913f158b11de6e9c37efc3450460"
-)
-actual_archive_hashes <- package_identities$archive_sha256
-names(actual_archive_hashes) <- package_identities$run
 stopifnot(identical(
-  actual_archive_hashes[names(expected_archive_hashes)],
-  expected_archive_hashes
+  package_identities$archive_sha256[package_identities$run == "live_modes"],
+  certification_identity$archive_sha256
 ))
 
 checksum_lines <- readLines(
@@ -648,7 +680,7 @@ stopifnot(contains_all(
   release,
   c(
     "[portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)",
-    "12752a5688f4939a6d5deb72a60cbc2587077d6ad0672d9ea8218d021ecf0398"
+    certification_identity$manifest_sha256
   )
 ))
 stopifnot(contains_all(
@@ -666,7 +698,7 @@ stopifnot(contains_all(
   )
 ))
 stopifnot(grepl(
-  "[portable historical certification evidence](figureforge-skill-v1.1.0-evidence/README.md)",
+  "[portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)",
   status,
   fixed = TRUE
 ))
@@ -747,61 +779,48 @@ stopifnot(contains_all(
     "FigureForge Skill v1.1.0 acceptance: PASS",
     "Explicit live trigger | 1/1",
     "Implicit live trigger | 10/10",
-    "/tmp/figureforge-v110-live.740e78",
-    "/tmp/figureforge-v110.4Ywsys",
-    "/tmp/figureforge-v110.RMisRW"
+    "Case-grounded mode | 1/1",
+    "General-method fallback | 1/1",
+    tested_commit,
+    certification_identity$manifest_sha256
   )
 ))
 stopifnot(contains_all(
   english,
   c(
-    "FigureForge Skill 1.1.0 is the current implemented version",
-    "the changed current source is pending recertification",
+    "FigureForge Skill 1.1.0 is the current locally certified release",
     "FigureForge Skill 1.0.1 is the prior certified historical release"
   )
 ))
 stopifnot(contains_all(
   chinese,
   c(
-    "FigureForge Skill 1.1.0 是当前实现版本",
-    "已变更的当前源码仍待重新认证",
+    "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
     "FigureForge Skill 1.0.1 是此前已认证的历史发布版本"
   )
 ))
 stopifnot(contains_all(
   status,
   c(
-    "pending recertification",
+    "currently certified",
     "Explicit 1/1; implicit 10/10",
-    "/tmp/figureforge-v110-live.740e78",
-    "/tmp/figureforge-v110.RMisRW"
+    "case-grounded 1/1; general-method fallback 1/1",
+    tested_commit
   )
 ))
-for (document in list(release, status)) {
+for (document in list(english, chinese, release, status, evidence_readme)) {
   stopifnot(!grepl(
-    "/tmp/figureforge-v110.lRin35",
+    "/(private/)?tmp/figureforge-",
     document,
-    fixed = TRUE
-  ))
-}
-for (document in list(english, chinese, status)) {
-  stopifnot(!grepl(
-    "FigureForge Skill 1.1.0 is the current locally certified release",
-    document,
-    fixed = TRUE
+    perl = TRUE
   ))
   stopifnot(!grepl(
-    "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
+    "pending recertification",
     document,
-    fixed = TRUE
+    ignore.case = TRUE
   ))
   stopifnot(!grepl(
-    "v1.1.0 live-model and release certification is pending",
-    document,
-    fixed = TRUE
-  ))
-  stopifnot(!grepl(
-    "真实模型与发布认证仍待完成",
+    "仍待重新认证",
     document,
     fixed = TRUE
   ))
@@ -819,7 +838,8 @@ stopifnot(identical(
 ))
 for (harness in c(
   "scripts/run_figureforge_live_evals.sh",
-  "scripts/run_figureforge_plotting_eval.sh"
+  "scripts/run_figureforge_plotting_eval.sh",
+  "scripts/run_figureforge_mode_evals.sh"
 )) {
   stopifnot(identical(
     as.integer(system2(

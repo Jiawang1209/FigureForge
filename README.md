@@ -129,9 +129,9 @@ Rscript plot.R <input-file> <output-directory>
 - [Skill entry](skills/figureforge/SKILL.md)
 - [Plotting workflow](skills/figureforge/references/plotting-workflow.md)
 - [Maintainer workflow](skills/figureforge/references/maintainer-workflow.md)
-- [Historical FigureForge Skill 1.1.0 certification snapshot](docs/figureforge-skill-v1.1.0-release.md)
-- [Portable evidence for that historical snapshot](docs/figureforge-skill-v1.1.0-evidence/README.md)
-- [Current-source recertification procedure](docs/figureforge-skill-v1.1.0-recertification.md)
+- [Current FigureForge Skill 1.1.0 certification](docs/figureforge-skill-v1.1.0-release.md)
+- [Portable certification evidence](docs/figureforge-skill-v1.1.0-evidence/README.md)
+- [Recertification procedure](docs/figureforge-skill-v1.1.0-recertification.md)
 - [Current status](docs/figureforge-skill-mvp-status.md)
 - [Historical v1.0.1 release evidence](docs/figureforge-skill-v1.0.1-release.md)
 
@@ -140,9 +140,10 @@ Rscript plot.R <input-file> <output-directory>
 FigureForge defaults to R and ggplot2, adding specialist R packages when a
 scientific chart needs them.
 
-FigureForge Skill 1.1.0 is the current implemented version. Its linked
-certification evidence binds an earlier v1.1.0 source and package identity, so
-the changed current source is pending recertification.
+FigureForge Skill 1.1.0 is the current locally certified release. Its
+machine-readable identity binds the exact release-input commit and package
+manifest; a later documentation-only commit may carry that certification
+without changing the certified source commit.
 FigureForge Skill 1.0.1 is the prior certified historical release. The shipped
 package contains 15 public cases.
 

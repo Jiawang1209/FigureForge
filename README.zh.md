@@ -128,9 +128,9 @@ Rscript plot.R <input-file> <output-directory>
 - [Skill 入口](skills/figureforge/SKILL.md)
 - [绘图工作流](skills/figureforge/references/plotting-workflow.md)
 - [维护者工作流](skills/figureforge/references/maintainer-workflow.md)
-- [FigureForge Skill 1.1.0 历史认证快照](docs/figureforge-skill-v1.1.0-release.md)
-- [该历史快照的可移植证据](docs/figureforge-skill-v1.1.0-evidence/README.md)
-- [当前源码重新认证流程](docs/figureforge-skill-v1.1.0-recertification.md)
+- [FigureForge Skill 1.1.0 当前认证](docs/figureforge-skill-v1.1.0-release.md)
+- [可移植认证证据](docs/figureforge-skill-v1.1.0-evidence/README.md)
+- [重新认证流程](docs/figureforge-skill-v1.1.0-recertification.md)
 - [当前状态](docs/figureforge-skill-mvp-status.md)
 - [历史 v1.0.1 发布证据](docs/figureforge-skill-v1.0.1-release.md)
 
@@ -138,8 +138,9 @@ Rscript plot.R <input-file> <output-directory>
 
 FigureForge 默认使用 R 和 ggplot2；科研图形确有需要时，再引入专业 R 包。
 
-FigureForge Skill 1.1.0 是当前实现版本。链接的认证证据绑定的是较早的
-v1.1.0 源码与包身份，因此已变更的当前源码仍待重新认证。
+FigureForge Skill 1.1.0 是当前完成本地认证的发布版本。机器可读身份绑定
+准确的发布输入 commit 与包清单；后续仅文档 commit 可以承载该认证，而
+无需改变已认证源码 commit。
 FigureForge Skill 1.0.1 是此前已认证的历史发布版本。随包提供 15 个公开案例。
 
 本地 `skills/figureforge/cases/` 私有案例库和受限来源材料不会公开分发；

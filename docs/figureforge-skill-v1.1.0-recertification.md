@@ -1,9 +1,8 @@
 # FigureForge Skill 1.1.0 Recertification Procedure
 
 Use this procedure only after all release-input work is committed and the
-intended source HEAD is stable. The existing portable evidence binds an older
-v1.1.0 source snapshot; it must not be presented as certification of a changed
-Skill or package.
+intended source HEAD is stable. Every certification must bind fresh evidence
+to that exact committed source.
 
 ## Certification identity
 
@@ -32,8 +31,8 @@ Before starting, obtain:
 2. a clean worktree for every release-input path;
 3. the output directory from a successful deterministic v1.1.0 verifier run;
 4. its manifest, archive, and archive SHA-256 sidecar; and
-5. fresh live-trigger and plotting gate outputs when the release claim includes
-   live-model behavior.
+5. fresh live-trigger, plotting, and generation-mode gate outputs when the
+   release claim includes live-model behavior.
 
 Do not copy a commit, tree, manifest hash, archive hash, row count, or byte
 count from an older evidence bundle.
@@ -57,13 +56,6 @@ ARCHIVE="$VERIFY_ROOT/figureforge-skill-1.1.0.tar.gz"
 test -s "$MANIFEST"
 test -s "$ARCHIVE"
 test -s "$ARCHIVE.sha256"
-
-/usr/local/bin/Rscript \
-  scripts/write_figureforge_v110_certification_identity.R \
-  --manifest "$MANIFEST" \
-  --archive "$ARCHIVE" \
-  --output \
-  docs/figureforge-skill-v1.1.0-evidence/certification-identity.tsv
 ```
 
 Run the live gates from the same `SOURCE_COMMIT` before claiming fresh live
@@ -75,15 +67,37 @@ bash scripts/run_figureforge_live_evals.sh \
   --output-dir "$LIVE_ROOT/triggers"
 bash scripts/run_figureforge_plotting_eval.sh \
   --output-dir "$LIVE_ROOT/plotting"
+bash scripts/run_figureforge_mode_evals.sh \
+  --output-dir "$LIVE_ROOT/modes"
+test -s "$LIVE_ROOT/triggers/summary.csv"
+test -s "$LIVE_ROOT/plotting/summary.csv"
+test -s "$LIVE_ROOT/modes/summary.csv"
+cmp "$LIVE_ROOT/triggers/release-manifest.csv" \
+  "$LIVE_ROOT/plotting/release-manifest.csv"
+cmp "$LIVE_ROOT/triggers/release-manifest.csv" \
+  "$LIVE_ROOT/modes/release-manifest.csv"
 test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
 test "$(git rev-parse HEAD^{tree})" = "$SOURCE_TREE"
+
+/usr/local/bin/Rscript \
+  scripts/write_figureforge_v110_certification_identity.R \
+  --manifest "$LIVE_ROOT/modes/release-manifest.csv" \
+  --archive "$LIVE_ROOT/modes/figureforge-skill.tar.gz" \
+  --output \
+  docs/figureforge-skill-v1.1.0-evidence/certification-identity.tsv
 ```
+
+Require explicit 1/1 and implicit 10/10 trigger passes, one plotting pass, and
+both mode passes (`case_based`/`case_grounded` and
+`general_fallback`/`general_method`). Generate the certification identity from
+one of these gates only after confirming that all three manifests are
+byte-identical.
 
 Regenerate the portable evidence summaries from those exact outputs. Update
 `source-binding.tsv`, `commands.tsv`, package and artifact identities,
-sanitized logs, and then regenerate `SHA256SUMS` for every evidence file except
-`SHA256SUMS` itself. Never edit hashes by hand and never mix runs from different
-source commits.
+sanitized trigger, plotting, and mode logs, and then regenerate `SHA256SUMS` for
+every evidence file except `SHA256SUMS` itself. Never edit hashes by hand and
+never mix runs from different source commits.
 
 Before changing README or status wording from “pending recertification” to
 “currently certified”, run:
