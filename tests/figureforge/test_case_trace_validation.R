@@ -88,6 +88,8 @@ write_trace <- function(fields, path = trace_path) {
 }
 
 case_based_fields <- function(case_directory = case_dir) {
+  qa_path <- file.path(case_directory, "qa.md")
+  qa_exists <- file.exists(qa_path)
   fields <- list(
     schema_version = "1",
     generation_mode = "case_based",
@@ -99,9 +101,6 @@ case_based_fields <- function(case_directory = case_dir) {
     case_md_sha256 = figureforge_sha256(file.path(case_directory, "case.md")),
     plot_r_file = "plot.R",
     plot_r_sha256 = figureforge_sha256(file.path(case_directory, "plot.R")),
-    qa_md_file = "qa.md",
-    qa_md_sha256 = figureforge_sha256(file.path(case_directory, "qa.md")),
-    qa_status = "verified",
     schema_mapping = "predictor -> x | response -> y",
     adopted_patterns = paste(
       "layered point composition",
@@ -110,6 +109,11 @@ case_based_fields <- function(case_directory = case_dir) {
     ),
     departures = "renamed source columns"
   )
+  if (qa_exists) {
+    fields$qa_md_file <- "qa.md"
+    fields$qa_md_sha256 <- figureforge_sha256(qa_path)
+  }
+  fields$qa_status <- if (qa_exists) "verified" else "missing"
   fields
 }
 
@@ -249,10 +253,6 @@ file.copy(
 )
 missing_qa_fields <- case_based_fields(case_without_qa)
 missing_qa_fields$primary_case_id <- "unverified-scatter"
-missing_qa_fields <- missing_qa_fields[
-  !names(missing_qa_fields) %in% c("qa_md_file", "qa_md_sha256")
-]
-missing_qa_fields$qa_status <- "missing"
 write_trace(missing_qa_fields)
 valid_missing_qa <- validate_case_trace(
   trace_path,
