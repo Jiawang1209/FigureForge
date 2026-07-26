@@ -98,7 +98,13 @@ tryCatch(
     message("Case trace validation OK: ", options$trace_path)
   },
   error = function(error) {
-    message(conditionMessage(error))
+    detail <- conditionMessage(error)
+    message(detail)
+    message("Verification level: unavailable")
+    message(
+      "Case trace validation failed: ",
+      strsplit(detail, "\n", fixed = TRUE)[[1L]][[1L]]
+    )
     quit(status = 1L)
   }
 )

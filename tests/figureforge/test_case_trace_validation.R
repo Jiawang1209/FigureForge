@@ -271,6 +271,35 @@ run_case_trace_cli <- function(arguments) {
   )
 }
 
+expect_cli_input_failure <- function(arguments, detail) {
+  result <- run_case_trace_cli(arguments)
+  stopifnot(!is.null(result$status))
+  stopifnot(identical(as.integer(result$status), 1L))
+  stopifnot(grepl(
+    "Case trace validation failed:",
+    result$output,
+    fixed = TRUE
+  ))
+  stopifnot(grepl(
+    "Verification level: unavailable",
+    result$output,
+    fixed = TRUE
+  ))
+  stopifnot(grepl(detail, result$output, fixed = TRUE))
+  stopifnot(grepl("Usage: validate_case_trace.R", result$output, fixed = TRUE))
+  invisible(result)
+}
+
+expect_cli_input_failure(character(0), "Usage: validate_case_trace.R")
+expect_cli_input_failure(
+  c(trace_path, "--unknown"),
+  "Unknown or incomplete argument: --unknown"
+)
+expect_cli_input_failure(
+  c(trace_path, "--case-dir"),
+  "Unknown or incomplete argument: --case-dir"
+)
+
 strict_cli <- run_case_trace_cli(c(
   trace_path,
   "--case-dir", case_dir,
