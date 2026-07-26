@@ -4,4 +4,4 @@
 [PASS] general_fallback generation did not read case evidence
 [PASS] both modes passed schema-bound receipt, strict validation, installed-skill integrity, trusted-reader, and artifact checks
 summary_sha256=bee9b99a7c0b2acb68de944f839ae1e4c5a1017026c4e89be4ffa36a7d2efbc6
-source_commit=9888601f2119e03380855aaadd92b340f8a24964
+source_commit=ab1213c36fbe1591b44581b78c7d182c35f79ffb

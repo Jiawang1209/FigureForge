@@ -3,4 +3,4 @@
 [PASS] independent rerender produced valid PNG and PDF
 [PASS] delivered and independently rerendered PNG identities match
 summary_sha256=856f549023725bfafa46df9cef9fc8e4edddd5fcb8225ef4632109b2a57da178
-source_commit=9888601f2119e03380855aaadd92b340f8a24964
+source_commit=ab1213c36fbe1591b44581b78c7d182c35f79ffb

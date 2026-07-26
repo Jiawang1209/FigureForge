@@ -2,4 +2,4 @@
 [PASS] implicit triggers: 10/10
 [PASS] every probe loaded FigureForge, selected the plotting capability, and returned the artifact contract
 summary_sha256=d0ba1359bfa058000d0840b8eba2653ec836a6c5b34822719327b6bb07330040
-source_commit=9888601f2119e03380855aaadd92b340f8a24964
+source_commit=ab1213c36fbe1591b44581b78c7d182c35f79ffb

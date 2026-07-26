@@ -2,8 +2,8 @@
 
 Status: currently certified locally
 Version: `1.1.0`
-Certified source commit: `9888601f2119e03380855aaadd92b340f8a24964`
-Certified source tree: `dd6026c700b5d715d0a66b31db6531324793ec80`
+Certified source commit: `ab1213c36fbe1591b44581b78c7d182c35f79ffb`
+Certified source tree: `ac92d3fee946fe06e86aaeb0e4633741bfc1cc15`
 
 FigureForge Skill 1.1.0 is the current locally certified release. The
 certification is bound by

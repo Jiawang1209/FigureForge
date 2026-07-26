@@ -9,7 +9,7 @@ contract (`plot.R`, `plot.png`, and `plot.pdf`) while selecting either
 case-grounded generation or a general-method fallback.
 
 The certified release-input commit is
-`9888601f2119e03380855aaadd92b340f8a24964`. Certification documentation may
+`ab1213c36fbe1591b44581b78c7d182c35f79ffb`. Certification documentation may
 land in a later documentation-only commit; the identity checker confirms that
 the release inputs and all three live summaries still match the certified
 identity.

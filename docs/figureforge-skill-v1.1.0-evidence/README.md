@@ -7,8 +7,8 @@ local FigureForge Skill 1.1.0 certification.
 
 The machine-readable
 [certification-identity.tsv](certification-identity.tsv) binds release `1.1.0`
-to source commit `9888601f2119e03380855aaadd92b340f8a24964`, source tree
-`dd6026c700b5d715d0a66b31db6531324793ec80`, the release-source digest, the
+to source commit `ab1213c36fbe1591b44581b78c7d182c35f79ffb`, source tree
+`ac92d3fee946fe06e86aaeb0e4633741bfc1cc15`, the release-source digest, the
 canonical package manifest, and SHA-256 identities for all three live gate
 summaries. A later documentation-only commit may carry this bundle without
 changing the certified source commit, provided the currentness checker confirms

@@ -2,5 +2,5 @@
 [PASS] all three release manifests are byte-identical
 [PASS] schema v2 identity binds all three live summary SHA-256 values
 [PASS] certification identity checker reported CURRENT
-source_commit=9888601f2119e03380855aaadd92b340f8a24964
+source_commit=ab1213c36fbe1591b44581b78c7d182c35f79ffb
 manifest_sha256=45e2bc2cf42249c037ccca63876fe30864684de1026768787cb03806dcea5b04
