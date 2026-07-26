@@ -18,6 +18,7 @@ if (length(args) != 2L) {
   )
 }
 
+main <- function() {
 input_file <- args[[1L]]
 output_directory <- args[[2L]]
 measure_columns <- c(
@@ -130,7 +131,17 @@ pca <- stats::prcomp(
   center = TRUE,
   scale. = TRUE
 )
-components <- paste0("PC", seq_along(pca$sdev))
+components <- colnames(pca$rotation)
+component_signs <- vapply(
+  seq_along(components),
+  function(index) {
+    anchor <- which.max(abs(pca$rotation[, index]))
+    if (pca$rotation[anchor, index] < 0) -1 else 1
+  },
+  numeric(1)
+)
+pca$rotation <- sweep(pca$rotation, 2L, component_signs, FUN = "*")
+pca$x <- sweep(pca$x, 2L, component_signs, FUN = "*")
 eigenvalues <- pca$sdev^2
 explained_percent <- 100 * eigenvalues / sum(eigenvalues)
 
@@ -153,19 +164,36 @@ loadings <- data.frame(
   check.names = FALSE
 )
 
+staging_directory <- tempfile(
+  pattern = ".figureforge-iris-pca-stage-",
+  tmpdir = output_directory
+)
+if (!dir.create(staging_directory, showWarnings = FALSE)) {
+  abort("Could not create a temporary staging directory for generated outputs.")
+}
+on.exit({
+  if (dir.exists(staging_directory)) {
+    unlink(staging_directory, recursive = TRUE, force = TRUE)
+  }
+}, add = TRUE)
+
+staged_path <- function(filename) {
+  file.path(staging_directory, filename)
+}
+
 utils::write.csv(
   variance,
-  file.path(output_directory, "pca-variance.csv"),
+  staged_path("pca-variance.csv"),
   row.names = FALSE
 )
 utils::write.csv(
   scores,
-  file.path(output_directory, "pca-scores.csv"),
+  staged_path("pca-scores.csv"),
   row.names = FALSE
 )
 utils::write.csv(
   loadings,
-  file.path(output_directory, "pca-loadings.csv"),
+  staged_path("pca-loadings.csv"),
   row.names = FALSE
 )
 
@@ -302,7 +330,7 @@ p <- ggplot2::ggplot(
   )
 
 ggplot2::ggsave(
-  file.path(output_directory, "plot.png"),
+  staged_path("plot.png"),
   plot = p,
   width = 10,
   height = 7.2,
@@ -311,7 +339,7 @@ ggplot2::ggsave(
   bg = "white"
 )
 ggplot2::ggsave(
-  file.path(output_directory, "plot.pdf"),
+  staged_path("plot.pdf"),
   plot = p,
   width = 10,
   height = 7.2,
@@ -410,6 +438,22 @@ relative_path <- function(target, from_directory) {
   if (nzchar(result)) result else "."
 }
 
+url_encode_relative_path <- function(path) {
+  parts <- strsplit(enc2utf8(path), "/", fixed = TRUE)[[1L]]
+  encoded_parts <- vapply(
+    parts,
+    function(part) {
+      if (part %in% c("", ".", "..")) {
+        part
+      } else {
+        utils::URLencode(part, reserved = TRUE)
+      }
+    },
+    character(1)
+  )
+  paste(encoded_parts, collapse = "/")
+}
+
 output_path <- normalizePath(output_directory, winslash = "/", mustWork = TRUE)
 script_relative <- relative_path(script_path, output_path)
 input_relative <- relative_path(input_file, output_path)
@@ -421,7 +465,7 @@ file_link <- function(target, label) {
   }
   paste0(
     "<li><a href=\"",
-    html_escape(relative_path(target, output_path)),
+    html_escape(url_encode_relative_path(relative_path(target, output_path))),
     "\">",
     html_escape(label),
     "</a></li>"
@@ -520,8 +564,51 @@ html <- c(
 )
 writeLines(
   html,
-  file.path(output_directory, "index.html"),
+  staged_path("index.html"),
   useBytes = TRUE
 )
 
+staged_outputs <- file.path(staging_directory, output_filenames)
+if (
+  !all(file.exists(staged_outputs)) ||
+    !all(file.info(staged_outputs)$size > 0L)
+) {
+  abort("Generation failed because one or more staged outputs are missing or empty.")
+}
+
+is_symbolic_link <- function(path) {
+  target <- Sys.readlink(path)
+  length(target) == 1L && !is.na(target) && nzchar(target)
+}
+
+for (filename in output_filenames) {
+  staged_file <- staged_path(filename)
+  destination <- file.path(output_directory, filename)
+  destination_exists <- file.exists(destination) ||
+    is_symbolic_link(destination)
+  if (destination_exists) {
+    if (isTRUE(file.info(destination)$isdir)) {
+      abort(paste0(
+        "Cannot publish ",
+        filename,
+        " because its destination is a directory."
+      ))
+    }
+    unlink_status <- unlink(destination, recursive = FALSE, force = TRUE)
+    if (
+      unlink_status != 0L ||
+        file.exists(destination) ||
+        is_symbolic_link(destination)
+    ) {
+      abort(paste0("Could not remove existing output destination: ", filename))
+    }
+  }
+  if (!file.rename(staged_file, destination)) {
+    abort(paste0("Could not atomically publish generated output: ", filename))
+  }
+}
+
 message("FigureForge Iris PCA outputs written to: ", output_directory)
+}
+
+main()

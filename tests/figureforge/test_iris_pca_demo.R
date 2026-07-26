@@ -30,6 +30,36 @@ read_text <- function(path) {
   )
 }
 
+sha256_file <- function(path) {
+  shasum <- Sys.which("shasum")
+  assert_true(nzchar(shasum), "shasum is required for input preservation tests")
+  output <- system2(
+    shasum,
+    c("-a", "256", shQuote(path)),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  assert_true(
+    is.null(attr(output, "status")) && length(output) == 1L,
+    paste("Could not calculate SHA-256 for", path)
+  )
+  sub("[[:space:]].*$", "", output[[1L]])
+}
+
+orient_pca <- function(model) {
+  component_signs <- vapply(
+    seq_len(ncol(model$rotation)),
+    function(index) {
+      anchor <- which.max(abs(model$rotation[, index]))
+      if (model$rotation[anchor, index] < 0) -1 else 1
+    },
+    numeric(1)
+  )
+  model$rotation <- sweep(model$rotation, 2L, component_signs, FUN = "*")
+  model$x <- sweep(model$x, 2L, component_signs, FUN = "*")
+  model
+}
+
 contains_all <- function(document, terms) {
   all(vapply(terms, grepl, logical(1), x = document, fixed = TRUE))
 }
@@ -613,11 +643,11 @@ assert_true(
   "pca-loadings.csv must contain one row per measure"
 )
 
-pca <- prcomp(
+pca <- orient_pca(prcomp(
   iris_data[measure_columns],
   center = TRUE,
   scale. = TRUE
-)
+))
 variance_percent <- 100 * pca$sdev^2 / sum(pca$sdev^2)
 expected_variance <- data.frame(
   component = paste0("PC", seq_along(variance_percent)),
@@ -665,6 +695,29 @@ assert_numeric_equal(
   loadings[paste0("PC", 1:4)],
   expected_loadings[paste0("PC", 1:4)],
   "pca-loadings.csv"
+)
+loading_anchor_values <- vapply(
+  paste0("PC", 1:4),
+  function(component) {
+    values <- loadings[[component]]
+    values[[which.max(abs(values))]]
+  },
+  numeric(1)
+)
+assert_true(
+  all(loading_anchor_values > 0),
+  "Each PCA component must use the deterministic positive anchor-loading sign"
+)
+assert_numeric_equal(
+  as.matrix(scores[paste0("PC", 1:4)]) %*%
+    t(as.matrix(loadings[paste0("PC", 1:4)])),
+  scale(
+    iris_data[measure_columns],
+    center = pca$center,
+    scale = pca$scale
+  ),
+  "Sign-oriented PCA scores and loadings reconstruction",
+  tolerance = 1e-7
 )
 
 for (filename in c(
@@ -1094,11 +1147,11 @@ run_valid_case <- function(data, case_label) {
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
-  case_pca <- prcomp(
+  case_pca <- orient_pca(prcomp(
     data[measure_columns],
     center = TRUE,
     scale. = TRUE
-  )
+  ))
   case_components <- colnames(case_pca$rotation)
   assert_true(
     identical(
@@ -1232,9 +1285,75 @@ assert_true(
   )
 )
 
+hardlink_root <- tempfile("figureforge-iris-pca-hardlink-")
+dir.create(hardlink_root, recursive = TRUE)
+hardlink_input <- file.path(hardlink_root, "source.csv")
+assert_true(
+  file.copy(file.path(demo_root, "iris.csv"), hardlink_input),
+  "Hard-link fixture input must be created"
+)
+hardlink_output <- file.path(hardlink_root, "pca-scores.csv")
+assert_true(
+  file.link(hardlink_input, hardlink_output),
+  "Hard-link fixture output alias must be created"
+)
+hardlink_sha_before <- sha256_file(hardlink_input)
+hardlink_log <- tempfile("figureforge-iris-pca-hardlink-", fileext = ".log")
+hardlink_status <- system2(
+  file.path(R.home("bin"), "Rscript"),
+  c(
+    shQuote(plot_script_path),
+    shQuote(hardlink_input),
+    shQuote(hardlink_root)
+  ),
+  stdout = hardlink_log,
+  stderr = hardlink_log
+)
+assert_true(
+  identical(as.integer(hardlink_status), 0L),
+  paste(
+    "Pre-existing hard-link output run failed:",
+    paste(readLines(hardlink_log, warn = FALSE), collapse = "\n")
+  )
+)
+assert_true(
+  identical(sha256_file(hardlink_input), hardlink_sha_before),
+  "Publishing over a hard-link output target must preserve input SHA-256"
+)
+assert_true(
+  all(file.exists(file.path(hardlink_root, generated_outputs))) &&
+    all(file.info(file.path(hardlink_root, generated_outputs))$size > 0L),
+  "Hard-link regression must still generate every non-empty output"
+)
+assert_true(
+  !any(grepl(
+    "^\\.figureforge-iris-pca-stage-",
+    list.files(hardlink_root, all.files = TRUE)
+  )),
+  "Temporary staging directories must be cleaned after publication"
+)
+hardlink_input_data <- read.csv(
+  hardlink_input,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+hardlink_scores <- read.csv(
+  hardlink_output,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+assert_true(
+  identical(names(hardlink_input_data), c(measure_columns, "Species")) &&
+    identical(
+      names(hardlink_scores),
+      c("sample_id", "Species", paste0("PC", 1:4))
+    ),
+  "Hard-link publication must leave input and generated scores independently valid"
+)
+
 renamed_root <- tempfile("figureforge-iris-pca-renamed-input-")
 dir.create(renamed_root, recursive = TRUE)
-renamed_filename <- "renamed input's.csv"
+renamed_filename <- "input#frag? 50% O'Reilly-数据.csv"
 renamed_path <- file.path(renamed_root, renamed_filename)
 assert_true(
   file.copy(file.path(demo_root, "iris.csv"), renamed_path),
@@ -1261,12 +1380,17 @@ assert_true(
 renamed_html <- read_text(file.path(renamed_root, "index.html"))
 assert_true(
   grepl(
-    "href=[\"']renamed input(?:&#39;|&#0*39;|&#x27;)s\\.csv[\"']",
+    paste0(
+      "href=[\"']",
+      "input%23frag%3F%2050%25%20O%27Reilly-",
+      "%E6%95%B0%E6%8D%AE\\.csv",
+      "[\"']"
+    ),
     renamed_html,
     ignore.case = TRUE,
     perl = TRUE
   ),
-  "Same-directory renamed input must have a safely escaped working input link"
+  "Special input filename must be URL component encoded in its working link"
 )
 assert_true(
   !has_relative_href(renamed_html, "plot.R") &&
@@ -1285,13 +1409,13 @@ renamed_hrefs <- regmatches(
 renamed_targets <- vapply(
   renamed_hrefs,
   function(attribute) {
-    decode_html_text(sub(
-      "^href=[\"']([^\"']+)[\"']$",
-      "\\1",
-      attribute,
-      ignore.case = TRUE,
-      perl = TRUE
-    ))
+    utils::URLdecode(decode_html_text(sub(
+        "^href=[\"']([^\"']+)[\"']$",
+        "\\1",
+        attribute,
+        ignore.case = TRUE,
+        perl = TRUE
+      )))
   },
   character(1)
 )
@@ -1321,8 +1445,8 @@ assert_true(
 )
 rerun_command <- decode_html_text(gsub("<[^>]+>", "", rerun_markup, perl = TRUE))
 assert_true(
-  grepl("renamed input's\\.csv", rerun_command, perl = TRUE),
-  "Rerun command must use the live renamed input filename"
+  grepl(renamed_filename, rerun_command, fixed = TRUE),
+  "Rerun command must keep the live input filename human-readable"
 )
 old_working_directory <- getwd()
 setwd(renamed_root)
