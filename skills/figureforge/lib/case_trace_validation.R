@@ -80,273 +80,67 @@ case_trace_has_absolute_path <- function(value) {
   )
 }
 
-case_trace_superficial_pattern_vocabulary <- function() {
-  list(
-    subjective_modifiers = c(
-      "nice",
-      "pretty",
-      "beautiful",
-      "good",
-      "attractive",
-      "clear",
-      "scientific"
-    ),
-    generic_action_prefixes = c(
-      "us(?:e|ed|es|ing)",
-      "adopt(?:ed|s|ing)?",
-      "appl(?:y|ied|ies|ying)",
-      "add(?:ed|s|ing)?",
-      "ma(?:ke|de|kes|king)",
-      "creat(?:e|ed|es|ing)"
-    ),
-    chinese_subjective_modifiers = c(
-      "漂亮",
-      "美观",
-      "好看",
-      "科学",
-      "清晰"
-    ),
-    chinese_generic_action_prefixes = c(
-      "使用",
-      "采用",
-      "运用",
-      "添加",
-      "创建",
-      "制作",
-      "用了"
-    )
-  )
-}
-
-case_trace_regex_alternation <- function(terms) {
-  paste(terms, collapse = "|")
-}
-
-case_trace_pattern_has_subjective_lead <- function(pattern) {
-  vocabulary <- case_trace_superficial_pattern_vocabulary()
-  subjective <- case_trace_regex_alternation(
-    vocabulary$subjective_modifiers
-  )
-  normalized <- tolower(trimws(pattern))
-  english_subjective <- grepl(
-    paste0("^(?:", subjective, ")\\b"),
-    normalized,
-    perl = TRUE
-  )
-
-  chinese_subjective <- case_trace_regex_alternation(
-    vocabulary$chinese_subjective_modifiers
-  )
-  chinese_subjective_pattern <- grepl(
-    paste0("^(?:", chinese_subjective, ")"),
-    pattern,
-    perl = TRUE
-  )
-
-  english_subjective || chinese_subjective_pattern
-}
-
-case_trace_pattern_is_action_led <- function(pattern) {
-  vocabulary <- case_trace_superficial_pattern_vocabulary()
-  actions <- case_trace_regex_alternation(
-    vocabulary$generic_action_prefixes
-  )
-  chinese_actions <- case_trace_regex_alternation(
-    vocabulary$chinese_generic_action_prefixes
-  )
-  grepl(
-    paste0("^(?:", actions, ")\\b"),
-    tolower(trimws(pattern)),
-    perl = TRUE
-  ) || grepl(
-    paste0("^(?:", chinese_actions, ")"),
-    trimws(pattern),
-    perl = TRUE
-  )
-}
-
-case_trace_concrete_pattern_vocabulary <- function() {
-  list(
-    design_category_phrases = c(
-      "group color and shape",
-      "overall composition",
-      "implementation technique"
-    ),
-    plot_analysis_terms = c(
-      "aesthetic",
-      "aesthetics",
-      "aes",
-      "annotation",
-      "annotations",
-      "axis",
-      "axes",
-      "bar",
-      "bars",
-      "boxplot",
-      "boxplots",
-      "confidence interval",
-      "coordinate",
-      "coordinates",
-      "density",
-      "errorbar",
-      "errorbars",
-      "facet",
-      "facets",
-      "histogram",
-      "histograms",
-      "jitter",
-      "label",
-      "labels",
-      "layer",
-      "layered",
-      "layers",
-      "legend",
-      "legends",
-      "line",
-      "lines",
-      "loess",
-      "mapping",
-      "biplot",
-      "pca",
-      "point",
-      "points",
-      "regression",
-      "ribbon",
-      "ribbons",
-      "scale",
-      "scales",
-      "smoothing",
-      "stack",
-      "transformation",
-      "transformations",
-      "violin",
-      "violins"
-    ),
-    chinese_plot_analysis_terms = c(
-      "坐标轴",
-      "图例",
-      "图层",
-      "尺度",
-      "映射",
-      "标注",
-      "标签",
-      "散点",
-      "折线",
-      "柱形",
-      "箱线",
-      "小提琴",
-      "直方",
-      "密度",
-      "误差线",
-      "回归",
-      "拟合",
-      "置信区间",
-      "分面",
-      "变换"
-    )
-  )
-}
-
-case_trace_pattern_has_domain_signal <- function(pattern) {
-  vocabulary <- case_trace_concrete_pattern_vocabulary()
-  normalized <- tolower(pattern)
-  design_category_signal <- any(vapply(
-    vocabulary$design_category_phrases,
-    grepl,
-    logical(1L),
-    x = normalized,
-    fixed = TRUE
-  ))
-  plot_analysis_signal <- any(vapply(
-    vocabulary$plot_analysis_terms,
-    function(term) grepl(
-      paste0("\\b", term, "\\b"),
-      normalized,
-      perl = TRUE
-    ),
-    logical(1L)
-  ))
-  identifier_signal <- grepl(
-    "\\b(?:geom|stat|scale|coord|facet|theme)_[a-z0-9_]+\\b",
-    normalized,
-    perl = TRUE
-  )
-  chinese_signal <- any(vapply(
-    vocabulary$chinese_plot_analysis_terms,
-    grepl,
-    logical(1L),
-    x = pattern,
-    fixed = TRUE
-  ))
-  design_category_signal ||
-    plot_analysis_signal ||
-    identifier_signal ||
-    chinese_signal
-}
-
-case_trace_action_led_pattern_is_specific <- function(pattern) {
-  normalized <- tolower(trimws(pattern))
-  ggplot_identifier <- grepl(
-    "\\b(?:geom|stat|scale|coord|facet|theme)_[a-z0-9_]+\\b",
-    normalized,
-    perl = TRUE
-  )
-  parameter_or_number <- grepl(
-    paste(
-      "\\b(?:alpha|log(?:2|10)?|linewidth|linetype|size|width|height)\\b",
-      "\\b[0-9]+(?:\\.[0-9]+)?\\b",
-      sep = "|"
-    ),
-    normalized,
-    perl = TRUE
-  )
-  relationship <- grepl(
-    "\\b(?:with|by|at|from|to|for|mapped)\\b",
-    normalized,
-    perl = TRUE
-  )
-  words <- strsplit(normalized, "\\s+", perl = TRUE)[[1L]]
-
-  # Action-led prose is allowed only when the remainder records an auditable
-  # component, parameter, or relationship instead of merely naming a noun.
-  english_specific <- ggplot_identifier || (
-    length(words) >= 4L &&
-      case_trace_pattern_has_domain_signal(pattern) &&
-      (parameter_or_number || relationship)
-  )
-  chinese_specific <- (
-    grepl("对数尺度", pattern, fixed = TRUE) &&
-      grepl("偏态丰度", pattern, fixed = TRUE)
-  ) || (
-    grepl("零值参考线", pattern, fixed = TRUE) &&
-      grepl("效应方向", pattern, fixed = TRUE)
-  )
-
-  english_specific || chinese_specific
-}
-
-case_trace_pattern_has_concrete_signal <- function(pattern) {
-  if (case_trace_pattern_has_subjective_lead(pattern)) {
+adopted_pattern_is_auditable <- function(pattern) {
+  pattern <- trimws(pattern)
+  if (!nzchar(pattern) || grepl("|", pattern, fixed = TRUE)) {
     return(FALSE)
   }
+  separators <- gregexpr("=>", pattern, fixed = TRUE)[[1L]]
+  if (separators[[1L]] < 0L || length(separators) != 1L) {
+    return(FALSE)
+  }
+
+  separator <- separators[[1L]]
+  source_pattern <- trimws(substr(pattern, 1L, separator - 1L))
+  applied_decision <- trimws(substr(pattern, separator + 2L, nchar(pattern)))
   if (
-    case_trace_pattern_is_action_led(pattern) &&
-      !case_trace_action_led_pattern_is_specific(pattern)
+    nchar(source_pattern) < 3L ||
+      nchar(applied_decision) < 3L ||
+      identical(tolower(source_pattern), tolower(applied_decision))
   ) {
     return(FALSE)
   }
-  case_trace_pattern_has_domain_signal(pattern) ||
-    case_trace_action_led_pattern_is_specific(pattern)
+
+  disallowed_standalone_values <- c(
+    "nice",
+    "pretty",
+    "beautiful",
+    "good",
+    "attractive",
+    "clear",
+    "scientific",
+    "generic",
+    "general",
+    "plot",
+    "chart",
+    "figure",
+    "漂亮",
+    "好看",
+    "美观",
+    "清晰",
+    "科学",
+    "通用",
+    "一般"
+  )
+  normalized_values <- tolower(c(source_pattern, applied_decision))
+  if (any(normalized_values %in% disallowed_standalone_values)) {
+    return(FALSE)
+  }
+
+  !case_trace_has_absolute_path(source_pattern) &&
+    !case_trace_has_absolute_path(applied_decision)
 }
 
 case_trace_patterns_are_concrete <- function(value) {
+  if (grepl("^\\s*\\||\\|\\s*$|\\|\\s*\\|", value, perl = TRUE)) {
+    return(FALSE)
+  }
   patterns <- trimws(strsplit(value, "|", fixed = TRUE)[[1L]])
   length(patterns) > 0L &&
     all(nzchar(patterns)) &&
-    all(nchar(patterns) >= 5L) &&
     all(vapply(
       patterns,
-      case_trace_pattern_has_concrete_signal,
+      adopted_pattern_is_auditable,
       logical(1L)
     ))
 }

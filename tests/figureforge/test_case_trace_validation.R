@@ -105,8 +105,8 @@ case_based_fields <- function(case_directory = case_dir) {
     plot_r_sha256 = figureforge_sha256(file.path(case_directory, "plot.R")),
     schema_mapping = "predictor -> x | response -> y",
     adopted_patterns = paste(
-      "layered point composition",
-      "validated geom_point implementation",
+      "overall composition => single-panel explanatory biplot",
+      "geom_point => alpha mapped to confidence",
       sep = " | "
     ),
     departures = "renamed source columns"
@@ -306,129 +306,91 @@ empty_patterns <- case_based_fields()
 empty_patterns$adopted_patterns <- ""
 expect_invalid(empty_patterns, "concrete adopted patterns")
 
-generic_patterns <- case_based_fields()
-generic_patterns$adopted_patterns <- "used colors | made a scientific plot"
-expect_invalid(generic_patterns, "concrete adopted patterns")
-
-generic_pattern_variant <- case_based_fields()
-generic_pattern_variant$adopted_patterns <- "used nice colors"
-expect_invalid(generic_pattern_variant, "concrete adopted patterns")
-
-generic_pattern_chinese <- case_based_fields()
-generic_pattern_chinese$adopted_patterns <- "使用漂亮颜色"
-expect_invalid(generic_pattern_chinese, "concrete adopted patterns")
-
-superficial_aesthetics <- case_based_fields()
-superficial_aesthetics$adopted_patterns <- "nice aesthetics"
-expect_invalid(superficial_aesthetics, "concrete adopted patterns")
-
-superficial_axis_use <- case_based_fields()
-superficial_axis_use$adopted_patterns <- "used an axis"
-expect_invalid(superficial_axis_use, "concrete adopted patterns")
-
-superficial_axis_use_chinese <- case_based_fields()
-superficial_axis_use_chinese$adopted_patterns <- "使用坐标轴"
-expect_invalid(
-  superficial_axis_use_chinese,
-  "concrete adopted patterns"
+auditable_pattern_examples <- c(
+  "overall composition => single-panel explanatory biplot",
+  paste(
+    "validated implementation technique",
+    "deterministic centered and scaled PCA",
+    sep = " => "
+  ),
+  "specialist PCA biplot idiom => scaled loading arrows",
+  "geom_point => alpha mapped to confidence",
+  "log10 scale => skewed abundance",
+  "facet_wrap => treatment group panels",
+  "zero reference line => null value",
+  "confidence ribbon => lower and upper bounds",
+  "分面布局 => 按处理组拆分图形",
+  "置信区间带 => 展示不确定性",
+  "颜色映射 => 区分处理组"
 )
+auditable_patterns <- case_based_fields()
+auditable_patterns$adopted_patterns <- paste(
+  auditable_pattern_examples,
+  collapse = " | "
+)
+write_trace(auditable_patterns)
+valid_auditable_patterns <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(valid_auditable_patterns)
+stopifnot(isTRUE(valid_auditable_patterns$ok))
+stopifnot(all(vapply(
+  auditable_pattern_examples,
+  adopted_pattern_is_auditable,
+  logical(1L)
+)))
 
-generic_technical_noun_patterns <- c(
-  "use labels",
-  "using labels",
-  "used axis labels",
+invalid_pattern_examples <- c(
+  "used colors",
+  "made a scientific plot",
+  "used nice colors",
+  "使用漂亮颜色",
+  "nice aesthetics",
   "used labels",
   "used bars",
   "used lines",
   "used annotations",
-  "used points",
-  "adopted axis labels",
-  "adopting points",
-  "applied bars",
-  "applying annotations",
-  "added lines",
-  "adding points",
-  "made lines",
-  "making annotations",
-  "created bars",
-  "creating labels",
-  "使用坐标轴标签",
-  "使用散点",
   "采用图例",
   "运用散点",
-  "添加标注",
-  "创建柱形",
-  "制作折线",
-  "用了散点"
+  "labels => labels",
+  "plot => nice",
+  "pretty => applied decision",
+  "source pattern => pretty",
+  "漂亮 => 应用决策",
+  "源模式 => 好看",
+  "generic => applied decision",
+  "source pattern => ",
+  " => applied decision",
+  "a => applied decision",
+  "source pattern => b",
+  "source => decision => extra",
+  "source pattern => applied decision |",
+  "| source pattern => applied decision",
+  "/private/case => applied decision",
+  "source pattern => C:\\private\\x"
 )
-for (generic_technical_noun in generic_technical_noun_patterns) {
-  generic_technical_pattern <- case_based_fields()
-  generic_technical_pattern$adopted_patterns <- generic_technical_noun
+for (invalid_pattern in invalid_pattern_examples) {
+  invalid_adopted_pattern <- case_based_fields()
+  invalid_adopted_pattern$adopted_patterns <- invalid_pattern
   expect_invalid(
-    generic_technical_pattern,
+    invalid_adopted_pattern,
     "concrete adopted patterns"
   )
+  stopifnot(!isTRUE(adopted_pattern_is_auditable(invalid_pattern)))
 }
 
-specific_action_led_patterns <- case_based_fields()
-specific_action_led_patterns$adopted_patterns <- paste(
-  "used geom_point with alpha mapped to treatment",
-  "applied log10 scale for skewed abundance",
-  "created facet_wrap by site",
-  "added zero reference line at 0",
-  "made confidence ribbon from lower to upper",
-  "采用对数尺度处理偏态丰度",
-  "添加零值参考线标示效应方向",
+mixed_auditable_and_invalid <- case_based_fields()
+mixed_auditable_and_invalid$adopted_patterns <- paste(
+  auditable_pattern_examples[[1L]],
+  "used labels",
   sep = " | "
 )
-write_trace(specific_action_led_patterns)
-valid_specific_action_led <- validate_case_trace(
-  trace_path,
-  case_dir = case_dir,
-  script_path = script_path
-)
-expect_result_shape(valid_specific_action_led)
-stopifnot(isTRUE(valid_specific_action_led$ok))
-
-mixed_concrete_and_generic_patterns <- case_based_fields()
-mixed_concrete_and_generic_patterns$adopted_patterns <-
-  "validated geom_point implementation | used nice colors"
 expect_invalid(
-  mixed_concrete_and_generic_patterns,
+  mixed_auditable_and_invalid,
   "concrete adopted patterns"
 )
-
-design_category_patterns <- case_based_fields()
-design_category_patterns$adopted_patterns <- paste(
-  "overall composition",
-  "validated implementation technique",
-  "specialist PCA biplot idiom",
-  sep = " | "
-)
-write_trace(design_category_patterns)
-valid_design_categories <- validate_case_trace(
-  trace_path,
-  case_dir = case_dir,
-  script_path = script_path
-)
-expect_result_shape(valid_design_categories)
-stopifnot(isTRUE(valid_design_categories$ok))
-
-specific_adaptation_patterns <- case_based_fields()
-specific_adaptation_patterns$adopted_patterns <- paste(
-  "variance in axis labels",
-  "group color and shape",
-  "zero reference lines",
-  sep = " | "
-)
-write_trace(specific_adaptation_patterns)
-valid_specific_adaptations <- validate_case_trace(
-  trace_path,
-  case_dir = case_dir,
-  script_path = script_path
-)
-expect_result_shape(valid_specific_adaptations)
-stopifnot(isTRUE(valid_specific_adaptations$ok))
 
 missing_qa <- case_based_fields()
 missing_qa <- missing_qa[
