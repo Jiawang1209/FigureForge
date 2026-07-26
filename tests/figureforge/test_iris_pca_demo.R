@@ -140,8 +140,8 @@ contains_remote_resource_dependency <- function(document) {
     relevant_attributes <- switch(
       tag_name,
       link = "href",
-      img = "src",
-      source = "src",
+      img = c("src", "srcset"),
+      source = c("src", "srcset"),
       iframe = "src",
       video = c("src", "poster"),
       audio = c("src", "poster"),
@@ -169,6 +169,7 @@ contains_remote_resource_dependency <- function(document) {
       )
     )[[1L]]
     for (attribute in attribute_matches) {
+      attribute_name <- tolower(trimws(sub("=.*$", "", attribute)))
       value <- trimws(sub("^[^=]+=", "", attribute))
       value <- sub(
         "^[\"'](.*)[\"']$",
@@ -176,12 +177,23 @@ contains_remote_resource_dependency <- function(document) {
         value,
         perl = TRUE
       )
-      if (grepl(
+      candidate_urls <- if (identical(attribute_name, "srcset")) {
+        vapply(
+          strsplit(value, ",", fixed = TRUE)[[1L]],
+          function(candidate) {
+            sub("[[:space:]].*$", "", trimws(candidate))
+          },
+          character(1)
+        )
+      } else {
+        trimws(value)
+      }
+      if (any(grepl(
         remote_url,
-        trimws(value),
+        candidate_urls,
         ignore.case = TRUE,
         perl = TRUE
-      )) {
+      ))) {
         return(TRUE)
       }
     }
@@ -237,6 +249,11 @@ remote_resource_examples <- c(
   "<script>document.body.classList.add('ready')</script>",
   "<link rel='stylesheet' href='//cdn.example.org/theme.css'>",
   "<img src=https://cdn.example.org/plot.png>",
+  paste0(
+    "<img src='plot.png' ",
+    "srcset='plot.png 1x, https://cdn.example.org/plot@2x.png 2x'>"
+  ),
+  "<source src='plot.png' srcset='plot.png 1x, //cdn.example.org/plot@2x.png 2x'>",
   "<object data='https://cdn.example.org/report.svg'></object>",
   "<embed src='//cdn.example.org/widget.svg'>",
   "<track src='https://cdn.example.org/captions.vtt'>",
@@ -255,6 +272,7 @@ local_resource_examples <- c(
   paste0(
     "<link rel='stylesheet' href='styles.css'>",
     "<img src='plot.png'>",
+    "<source src='plot.png' srcset='plot.png 1x, ./plot@2x.png 2x'>",
     "<object data='diagram.svg'></object>",
     "<embed src='preview.svg'>",
     "<track src='captions.vtt'>",
