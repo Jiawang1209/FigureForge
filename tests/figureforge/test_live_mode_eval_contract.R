@@ -55,6 +55,8 @@ stopifnot(any(grepl(
 )))
 stopifnot(any(grepl("trusted-install", harness, fixed = TRUE)))
 stopifnot(any(grepl("--manifest", harness, fixed = TRUE)))
+stopifnot(any(grepl("--trusted-cat", harness, fixed = TRUE)))
+stopifnot(any(grepl("--trusted-sed", harness, fixed = TRUE)))
 stopifnot(any(grepl("chmod -R a-w", harness, fixed = TRUE)))
 stopifnot(any(grepl("run_figureforge_mode_evals[.]sh", verifier)))
 
@@ -65,6 +67,9 @@ live_block <- verifier[live_start[[1L]]:live_end]
 stopifnot(any(grepl("run_figureforge_mode_evals[.]sh", live_block)))
 
 source(evaluator_path)
+trusted_cat <- normalizePath(Sys.which("cat"), mustWork = TRUE)
+trusted_sed <- normalizePath(Sys.which("sed"), mustWork = TRUE)
+trusted_reader_paths <- c(cat = trusted_cat, sed = trusted_sed)
 
 fixture_root <- tempfile("figureforge-live-mode-eval-")
 workspace <- file.path(fixture_root, "workspace")
@@ -184,15 +189,20 @@ writeLines(
     json_command(sprintf(
       "/bin/zsh -lc %s",
       shQuote(paste(
-        "sed -n '1,240p'",
+        trusted_sed,
+        "-n '1,240p'",
         shQuote(file.path(case_dir, "case.md"))
       ))
     )),
     json_command(paste(
-      "sed -n '1,240p'",
+      trusted_sed,
+      "-n '1,240p'",
       shQuote(file.path(case_dir, "plot.R"))
     )),
-    json_command(paste("cat", shQuote(file.path(case_dir, "qa.md"))))
+    json_command(paste(
+      trusted_cat,
+      shQuote(file.path(case_dir, "qa.md"))
+    ))
   ),
   transcript
 )
@@ -202,6 +212,7 @@ result <- evaluate_live_mode_probe(
   workspace_root = workspace,
   installed_skill_root = skill_root,
   manifest_path = manifest_path,
+  trusted_reader_paths = trusted_reader_paths,
   transcript_path = transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -211,6 +222,7 @@ stopifnot(identical(result$claim[[1L]], "case_grounded"))
 stopifnot(isTRUE(result$schema_bound_receipt[[1L]]))
 stopifnot(isTRUE(result$strict_validation[[1L]]))
 stopifnot(isTRUE(result$installed_skill_integrity[[1L]]))
+stopifnot(isTRUE(result$trusted_readers[[1L]]))
 stopifnot(isTRUE(result$trusted_case_evidence[[1L]]))
 stopifnot(isTRUE(result$case_md_read[[1L]]))
 stopifnot(isTRUE(result$plot_r_read[[1L]]))
@@ -221,7 +233,10 @@ stopifnot(isTRUE(result$passed[[1L]]))
 failed_transcript <- file.path(fixture_root, "failed-transcript.jsonl")
 writeLines(
   c(
-    json_command(paste("cat", shQuote(file.path(case_dir, "case.md"))), 1L),
+    json_command(paste(
+      trusted_cat,
+      shQuote(file.path(case_dir, "case.md"))
+    ), 1L),
     json_command("echo case.md plot.R qa.md")
   ),
   failed_transcript
@@ -231,6 +246,7 @@ failed_result <- evaluate_live_mode_probe(
   workspace_root = workspace,
   installed_skill_root = skill_root,
   manifest_path = manifest_path,
+  trusted_reader_paths = trusted_reader_paths,
   transcript_path = failed_transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -250,6 +266,7 @@ mutated_install <- evaluate_live_mode_probe(
   workspace_root = workspace,
   installed_skill_root = skill_root,
   manifest_path = manifest_path,
+  trusted_reader_paths = trusted_reader_paths,
   transcript_path = transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -271,6 +288,7 @@ symlink_escape <- evaluate_live_mode_probe(
   workspace_root = workspace,
   installed_skill_root = skill_root,
   manifest_path = manifest_path,
+  trusted_reader_paths = trusted_reader_paths,
   transcript_path = transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -281,7 +299,40 @@ stopifnot(!isTRUE(symlink_escape$passed[[1L]]))
 unlink(file.path(case_dir, "case.md"))
 writeLines(original_case_md, file.path(case_dir, "case.md"))
 
+fake_bin <- file.path(workspace, "fake-bin")
+dir.create(fake_bin, recursive = TRUE)
+fake_cat <- file.path(fake_bin, "cat")
+fake_sed <- file.path(fake_bin, "sed")
+writeLines("#!/bin/sh\nexit 0", fake_cat)
+writeLines("#!/bin/sh\nexit 0", fake_sed)
+Sys.chmod(c(fake_cat, fake_sed), mode = "0755")
+linked_cat <- file.path(fake_bin, "linked-cat")
+stopifnot(file.symlink(trusted_cat, linked_cat))
+stopifnot(!live_mode_trusted_reader_paths(c(
+  cat = fake_cat,
+  sed = trusted_sed
+)))
+stopifnot(!live_mode_trusted_reader_paths(c(
+  cat = linked_cat,
+  sed = trusted_sed
+)))
+
 adversarial_commands <- c(
+  paste("cat", shQuote(file.path(case_dir, "case.md"))),
+  paste("sed -n '1,240p'", shQuote(file.path(case_dir, "case.md"))),
+  paste(fake_cat, shQuote(file.path(case_dir, "case.md"))),
+  paste(
+    fake_sed,
+    "-n '1,240p'",
+    shQuote(file.path(case_dir, "case.md"))
+  ),
+  paste(linked_cat, shQuote(file.path(case_dir, "case.md"))),
+  paste(
+    "env",
+    paste0("PATH=", shQuote(fake_bin)),
+    "cat",
+    shQuote(file.path(case_dir, "case.md"))
+  ),
   paste(
     "true || cat",
     shQuote(file.path(case_dir, "case.md")),
@@ -335,7 +386,8 @@ for (adversarial_command in adversarial_commands) {
   stopifnot(!live_mode_transcript_reads(
     adversarial_transcript,
     workspace,
-    file.path(case_dir, "case.md")
+    file.path(case_dir, "case.md"),
+    trusted_reader_paths = trusted_reader_paths
   ))
 }
 
@@ -366,6 +418,7 @@ fallback_result <- evaluate_live_mode_probe(
   workspace_root = workspace,
   installed_skill_root = skill_root,
   manifest_path = manifest_path,
+  trusted_reader_paths = trusted_reader_paths,
   transcript_path = failed_transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -393,6 +446,7 @@ wrong_claim <- evaluate_live_mode_probe(
   workspace_root = workspace,
   installed_skill_root = skill_root,
   manifest_path = manifest_path,
+  trusted_reader_paths = trusted_reader_paths,
   transcript_path = failed_transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -411,6 +465,7 @@ unbound <- evaluate_live_mode_probe(
   workspace_root = workspace,
   installed_skill_root = skill_root,
   manifest_path = manifest_path,
+  trusted_reader_paths = trusted_reader_paths,
   transcript_path = failed_transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -443,6 +498,8 @@ cli_result <- system2(
     "--workspace", shQuote(workspace),
     "--installed-skill", shQuote(skill_root),
     "--manifest", shQuote(manifest_path),
+    "--trusted-cat", shQuote(trusted_cat),
+    "--trusted-sed", shQuote(trusted_sed),
     "--transcript", shQuote(failed_transcript),
     "--validator-log", shQuote(validation_log),
     "--validator-status", "0",

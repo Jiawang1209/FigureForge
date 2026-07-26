@@ -84,7 +84,38 @@ live_mode_successful_commands <- function(transcript_path) {
   commands[!is.na(commands)]
 }
 
-live_mode_command_reads <- function(command, workspace_root, target_path) {
+live_mode_trusted_reader_paths <- function(paths) {
+  if (
+    !is.character(paths) ||
+      !identical(names(paths), c("cat", "sed")) ||
+      anyDuplicated(paths) ||
+      any(!startsWith(paths, "/"))
+  ) {
+    return(FALSE)
+  }
+  all(vapply(seq_along(paths), function(index) {
+    path <- paths[[index]]
+    expected_name <- names(paths)[[index]]
+    file.exists(path) &&
+      identical(Sys.readlink(path), "") &&
+      identical(
+        normalizePath(path, mustWork = TRUE),
+        path
+      ) &&
+      identical(basename(path), expected_name) &&
+      identical(unname(file.access(path, mode = 1L)), 0L)
+  }, logical(1L)))
+}
+
+live_mode_command_reads <- function(
+  command,
+  workspace_root,
+  target_path,
+  trusted_reader_paths
+) {
+  if (!live_mode_trusted_reader_paths(trusted_reader_paths)) {
+    return(FALSE)
+  }
   inner <- live_mode_unwrap_shell(command)
   if (
     length(inner) != 1L ||
@@ -96,12 +127,15 @@ live_mode_command_reads <- function(command, workspace_root, target_path) {
   }
   words <- live_mode_shell_words(inner)
   if (length(words) < 2L) return(FALSE)
-  executable <- basename(words[[1L]])
+  executable <- words[[1L]]
   candidate <- ""
-  if (identical(executable, "cat") && length(words) == 2L) {
+  if (
+    identical(executable, trusted_reader_paths[["cat"]]) &&
+      length(words) == 2L
+  ) {
     candidate <- words[[2L]]
   } else if (
-    identical(executable, "sed") &&
+    identical(executable, trusted_reader_paths[["sed"]]) &&
       length(words) == 4L &&
       identical(words[[2L]], "-n") &&
       grepl("^[0-9]+(?:,[0-9]+)?p$", words[[3L]], perl = TRUE)
@@ -127,7 +161,8 @@ live_mode_command_reads <- function(command, workspace_root, target_path) {
 live_mode_transcript_reads <- function(
   transcript_path,
   workspace_root,
-  target_path
+  target_path,
+  trusted_reader_paths
 ) {
   commands <- live_mode_successful_commands(transcript_path)
   any(vapply(
@@ -135,7 +170,8 @@ live_mode_transcript_reads <- function(
     live_mode_command_reads,
     logical(1L),
     workspace_root = workspace_root,
-    target_path = target_path
+    target_path = target_path,
+    trusted_reader_paths = trusted_reader_paths
   ))
 }
 
@@ -405,6 +441,7 @@ evaluate_live_mode_probe <- function(
   workspace_root,
   installed_skill_root,
   manifest_path,
+  trusted_reader_paths,
   transcript_path,
   validator_log,
   validator_status
@@ -445,6 +482,9 @@ evaluate_live_mode_probe <- function(
     manifest_path,
     workspace_root
   )
+  trusted_readers <- live_mode_trusted_reader_paths(
+    trusted_reader_paths
+  )
 
   case_md_read <- FALSE
   plot_r_read <- FALSE
@@ -466,21 +506,28 @@ evaluate_live_mode_probe <- function(
       installed_skill_root,
       metadata$primary_case_id
     )
-    if (installed_skill_integrity && trusted_case_evidence) {
+    if (
+      installed_skill_integrity &&
+        trusted_case_evidence &&
+        trusted_readers
+    ) {
       case_md_read <- live_mode_transcript_reads(
         transcript_path,
         workspace_root,
-        file.path(case_dir, "case.md")
+        file.path(case_dir, "case.md"),
+        trusted_reader_paths
       )
       plot_r_read <- live_mode_transcript_reads(
         transcript_path,
         workspace_root,
-        file.path(case_dir, "plot.R")
+        file.path(case_dir, "plot.R"),
+        trusted_reader_paths
       )
       qa_md_read <- live_mode_transcript_reads(
         transcript_path,
         workspace_root,
-        file.path(case_dir, "qa.md")
+        file.path(case_dir, "qa.md"),
+        trusted_reader_paths
       )
     }
   }
@@ -495,6 +542,7 @@ evaluate_live_mode_probe <- function(
     schema_bound_receipt &&
     strict_validation &&
     installed_skill_integrity &&
+    trusted_readers &&
     trusted_case_evidence &&
     artifacts_present &&
     evidence_read
@@ -506,6 +554,7 @@ evaluate_live_mode_probe <- function(
     schema_bound_receipt = schema_bound_receipt,
     strict_validation = strict_validation,
     installed_skill_integrity = installed_skill_integrity,
+    trusted_readers = trusted_readers,
     trusted_case_evidence = trusted_case_evidence,
     artifacts_present = artifacts_present,
     case_md_read = case_md_read,

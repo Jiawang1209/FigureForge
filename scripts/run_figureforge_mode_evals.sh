@@ -54,6 +54,17 @@ if ! "$RSCRIPT" --vanilla -e \
   echo "mode evaluations require the R package jsonlite" >&2
   exit 2
 fi
+resolve_trusted_reader() {
+  FIGUREFORGE_READER_NAME=$1 \
+    "$RSCRIPT" --vanilla -e '
+      name <- Sys.getenv("FIGUREFORGE_READER_NAME")
+      path <- unname(Sys.which(name))
+      if (!nzchar(path)) quit(status = 1L)
+      cat(normalizePath(path, mustWork = TRUE))
+    '
+}
+TRUSTED_CAT=$(resolve_trusted_reader cat)
+TRUSTED_SED=$(resolve_trusted_reader sed)
 if [ -e "$OUTPUT_DIR" ] &&
     [ -n "$(find "$OUTPUT_DIR" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
   echo "Mode-eval output directory must be empty: $OUTPUT_DIR" >&2
@@ -178,6 +189,8 @@ run_probe() {
     --workspace "$workspace" \
     --installed-skill "$installed_skill" \
     --manifest "$MANIFEST" \
+    --trusted-cat "$TRUSTED_CAT" \
+    --trusted-sed "$TRUSTED_SED" \
     --transcript "$transcript" \
     --validator-log "$validator_log" \
     --validator-status "$validator_status" \
@@ -187,7 +200,7 @@ run_probe() {
   fi
 }
 
-strong_prompt='Use the installed $figureforge Skill with scatter.csv. Create a publication-ready grouped scatter plot of predictor versus response with a fitted linear trend. Follow the installed Skill workflow completely: search public cases with the input schema and save the search receipt, choose the justified generation mode, and create figureforge-output/plot.R, plot.png, plot.pdf plus the hidden .figureforge/case-trace.yml. If you use case_based, actually read the selected installed case.md, plot.R, and qa.md with successful cat or sed commands so the raw transcript retains audit evidence; record concrete adopted patterns and departures, run strict trace validation, execute plot.R, and inspect the outputs. Return the three visible artifact paths.'
+strong_prompt="Use the installed \$figureforge Skill with scatter.csv. Create a publication-ready grouped scatter plot of predictor versus response with a fitted linear trend. Follow the installed Skill workflow completely: search public cases with the input schema and save the search receipt, choose the justified generation mode, and create figureforge-output/plot.R, plot.png, plot.pdf plus the hidden .figureforge/case-trace.yml. If you use case_based, actually read the selected installed case.md, plot.R, and qa.md. For successful cat or sed commands retained in the raw transcript, use exactly $TRUSTED_CAT or $TRUSTED_SED -n as the executable path; do not use bare names, PATH overrides, aliases, wrappers, or symlink executables. Record concrete adopted patterns and departures, run strict trace validation, execute plot.R, and inspect the outputs. Return the three visible artifact paths."
 fallback_prompt='Use the installed $figureforge Skill with iris.csv. Create a publication-ready PCA biplot with sample scores colored by Species, confidence ellipses, loading arrows, and variance-explained axis labels. Follow the installed Skill workflow completely: search public cases with the input schema and save the search receipt, choose the justified generation mode, and create figureforge-output/plot.R, plot.png, plot.pdf plus the hidden .figureforge/case-trace.yml. There is no public PCA or biplot case in this installed package, so use general_fallback if the search confirms there is no sufficiently relevant case; do not claim case grounding. Run strict trace validation, execute plot.R, and inspect the outputs. Return the three visible artifact paths.'
 
 run_probe \
