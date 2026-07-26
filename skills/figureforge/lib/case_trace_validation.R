@@ -49,9 +49,129 @@ case_trace_has_absolute_path <- function(value) {
   )
 }
 
-case_trace_concrete_pattern_terms <- function() {
+case_trace_superficial_pattern_vocabulary <- function() {
   list(
-    english = c(
+    subjective_modifiers = c(
+      "nice",
+      "pretty",
+      "beautiful",
+      "good",
+      "attractive",
+      "clear",
+      "scientific"
+    ),
+    generic_action_verbs = c(
+      "us(?:e|ed|es|ing)",
+      "adopt(?:ed|s|ing)?",
+      "appl(?:y|ied|ies|ying)",
+      "add(?:ed|s|ing)?",
+      "made",
+      "created"
+    ),
+    broad_nouns = c(
+      "aesthetics?",
+      "axes",
+      "axis",
+      "colou?rs?",
+      "plots?",
+      "charts?",
+      "figures?",
+      "legends?",
+      "themes?",
+      "designs?"
+    ),
+    chinese_subjective_modifiers = c(
+      "漂亮",
+      "美观",
+      "好看",
+      "科学",
+      "清晰"
+    ),
+    chinese_generic_actions = c(
+      "使用",
+      "采用",
+      "运用",
+      "添加",
+      "用了",
+      "采用了"
+    ),
+    chinese_broad_nouns = c(
+      "颜色",
+      "美学",
+      "坐标轴",
+      "轴",
+      "图例",
+      "主题",
+      "设计",
+      "图表",
+      "图形",
+      "绘图"
+    )
+  )
+}
+
+case_trace_regex_alternation <- function(terms) {
+  paste(terms, collapse = "|")
+}
+
+case_trace_pattern_is_superficial <- function(pattern) {
+  vocabulary <- case_trace_superficial_pattern_vocabulary()
+  subjective <- case_trace_regex_alternation(
+    vocabulary$subjective_modifiers
+  )
+  actions <- case_trace_regex_alternation(
+    vocabulary$generic_action_verbs
+  )
+  nouns <- case_trace_regex_alternation(vocabulary$broad_nouns)
+  normalized <- tolower(trimws(pattern))
+  english_subjective <- grepl(
+    paste0(
+      "^(?:(?:", subjective, ")\\s+)+",
+      "(?:", nouns, ")$"
+    ),
+    normalized,
+    perl = TRUE
+  )
+  english_generic_action <- grepl(
+    paste0(
+      "^(?:", actions, ")\\s+",
+      "(?:(?:a|an|the|some|", subjective, ")\\s+)*",
+      "(?:", nouns, ")$"
+    ),
+    normalized,
+    perl = TRUE
+  )
+
+  chinese_subjective <- case_trace_regex_alternation(
+    vocabulary$chinese_subjective_modifiers
+  )
+  chinese_actions <- case_trace_regex_alternation(
+    vocabulary$chinese_generic_actions
+  )
+  chinese_nouns <- case_trace_regex_alternation(
+    vocabulary$chinese_broad_nouns
+  )
+  chinese_superficial <- grepl(
+    paste0(
+      "^(?:(?:", chinese_actions, ")(?:了)?",
+      "(?:(?:一个|一种|的|", chinese_subjective, "))*)?",
+      "(?:", chinese_subjective, ")?(?:的)?",
+      "(?:", chinese_nouns, ")$"
+    ),
+    pattern,
+    perl = TRUE
+  )
+
+  english_subjective || english_generic_action || chinese_superficial
+}
+
+case_trace_concrete_pattern_vocabulary <- function() {
+  list(
+    design_category_phrases = c(
+      "overall composition",
+      "implementation technique"
+    ),
+    plot_analysis_terms = c(
       "aesthetic",
       "aesthetics",
       "aes",
@@ -85,6 +205,8 @@ case_trace_concrete_pattern_terms <- function() {
       "lines",
       "loess",
       "mapping",
+      "biplot",
+      "pca",
       "point",
       "points",
       "regression",
@@ -99,7 +221,7 @@ case_trace_concrete_pattern_terms <- function() {
       "violin",
       "violins"
     ),
-    chinese = c(
+    chinese_plot_analysis_terms = c(
       "坐标轴",
       "图例",
       "图层",
@@ -124,11 +246,21 @@ case_trace_concrete_pattern_terms <- function() {
   )
 }
 
-case_trace_pattern_has_technical_signal <- function(pattern) {
-  terms <- case_trace_concrete_pattern_terms()
+case_trace_pattern_has_concrete_signal <- function(pattern) {
+  if (case_trace_pattern_is_superficial(pattern)) {
+    return(FALSE)
+  }
+  vocabulary <- case_trace_concrete_pattern_vocabulary()
   normalized <- tolower(pattern)
-  english_signal <- any(vapply(
-    terms$english,
+  design_category_signal <- any(vapply(
+    vocabulary$design_category_phrases,
+    grepl,
+    logical(1L),
+    x = normalized,
+    fixed = TRUE
+  ))
+  plot_analysis_signal <- any(vapply(
+    vocabulary$plot_analysis_terms,
     function(term) grepl(
       paste0("\\b", term, "\\b"),
       normalized,
@@ -142,13 +274,16 @@ case_trace_pattern_has_technical_signal <- function(pattern) {
     perl = TRUE
   )
   chinese_signal <- any(vapply(
-    terms$chinese,
+    vocabulary$chinese_plot_analysis_terms,
     grepl,
     logical(1L),
     x = pattern,
     fixed = TRUE
   ))
-  english_signal || identifier_signal || chinese_signal
+  design_category_signal ||
+    plot_analysis_signal ||
+    identifier_signal ||
+    chinese_signal
 }
 
 case_trace_patterns_are_concrete <- function(value) {
@@ -158,7 +293,7 @@ case_trace_patterns_are_concrete <- function(value) {
     all(nchar(patterns) >= 5L) &&
     all(vapply(
       patterns,
-      case_trace_pattern_has_technical_signal,
+      case_trace_pattern_has_concrete_signal,
       logical(1L)
     ))
 }

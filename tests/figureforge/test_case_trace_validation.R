@@ -258,6 +258,21 @@ generic_pattern_chinese <- case_based_fields()
 generic_pattern_chinese$adopted_patterns <- "使用漂亮颜色"
 expect_invalid(generic_pattern_chinese, "concrete adopted patterns")
 
+superficial_aesthetics <- case_based_fields()
+superficial_aesthetics$adopted_patterns <- "nice aesthetics"
+expect_invalid(superficial_aesthetics, "concrete adopted patterns")
+
+superficial_axis_use <- case_based_fields()
+superficial_axis_use$adopted_patterns <- "used an axis"
+expect_invalid(superficial_axis_use, "concrete adopted patterns")
+
+superficial_axis_use_chinese <- case_based_fields()
+superficial_axis_use_chinese$adopted_patterns <- "使用坐标轴"
+expect_invalid(
+  superficial_axis_use_chinese,
+  "concrete adopted patterns"
+)
+
 mixed_concrete_and_generic_patterns <- case_based_fields()
 mixed_concrete_and_generic_patterns$adopted_patterns <-
   "validated geom_point implementation | used nice colors"
@@ -265,6 +280,22 @@ expect_invalid(
   mixed_concrete_and_generic_patterns,
   "concrete adopted patterns"
 )
+
+design_category_patterns <- case_based_fields()
+design_category_patterns$adopted_patterns <- paste(
+  "overall composition",
+  "validated implementation technique",
+  "specialist PCA biplot idiom",
+  sep = " | "
+)
+write_trace(design_category_patterns)
+valid_design_categories <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(valid_design_categories)
+stopifnot(isTRUE(valid_design_categories$ok))
 
 missing_qa <- case_based_fields()
 missing_qa <- missing_qa[
