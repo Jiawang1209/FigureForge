@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FigureForge Iris PCA report</title>
+<style>
+:root{color-scheme:light;--ink:#17202a;--muted:#59636e;--line:#dce3e8;--accent:#0072b2;--paper:#fff;--wash:#f3f7f9}
+*{box-sizing:border-box}body{margin:0;background:var(--wash);color:var(--ink);font:16px/1.55 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{width:min(1120px,calc(100% - 2rem));margin:2rem auto;background:var(--paper);padding:clamp(1.1rem,3vw,3rem);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 34px rgba(24,43,58,.08)}
+h1,h2{line-height:1.2}h1{margin-top:0}h2{margin-top:2rem}p{max-width:78ch}.lede{font-size:1.08rem;color:var(--muted)}
+figure{margin:1.5rem 0}img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:8px}figcaption{margin-top:.6rem;color:var(--muted)}
+.tables{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.25rem;align-items:start}.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{padding:.48rem .58rem;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}thead th{background:var(--wash)}
+a{color:var(--accent)}code{background:var(--wash);padding:.18rem .35rem;border-radius:4px;overflow-wrap:anywhere}
+@media(max-width:620px){main{width:100%;margin:0;border:0;border-radius:0;padding:1rem}body{background:var(--paper)}}
+</style>
+</head>
+<body><main>
+<h1>FigureForge Iris PCA report</h1>
+<p class="lede"><strong>FigureForge request:</strong> Turn the Iris measurements into a clear PC1-PC2 biplot, showing species structure, 95% group ellipses, and the variables that drive the projection.</p>
+<p><strong>Input:</strong> 150 rows × 5 columns from <code>iris.csv</code>.</p>
+<p><strong>Method and adaptation:</strong> The four measurement columns were centered and scaled, then analyzed with <code>stats::prcomp</code>. The referenced PCA case's visual grammar was adapted to this public dataset: species use both color and shape, normal ellipses summarize groups, and scaled loading arrows explain direction without reusing private data or code.</p>
+<p><strong>Result:</strong> PC1 explains 72.962445% and PC2 explains 22.850762% of scaled variance (95.813207% cumulatively).</p>
+<figure><img src="plot.png" alt="PC1-PC2 biplot of Iris measurements by species with loading arrows"><figcaption>Points encode Species by color and shape; outlines are 95% normal ellipses.</figcaption></figure>
+<div class="tables">
+<section><h2>Variance summary</h2><div class="table-wrap"><table><thead><tr><th>Component</th><th>Eigenvalue</th><th>Explained %</th><th>Cumulative %</th></tr></thead><tbody>
+<tr><th scope="row">PC1</th><td>2.918498</td><td>72.962445</td><td>72.962445</td></tr>
+<tr><th scope="row">PC2</th><td>0.914030</td><td>22.850762</td><td>95.813207</td></tr>
+<tr><th scope="row">PC3</th><td>0.146757</td><td>3.668922</td><td>99.482129</td></tr>
+<tr><th scope="row">PC4</th><td>0.020715</td><td>0.517871</td><td>100.000000</td></tr>
+</tbody></table></div></section>
+<section><h2>Loading summary</h2><div class="table-wrap"><table><thead><tr><th>Variable</th><th>PC1</th><th>PC2</th><th>PC3</th><th>PC4</th></tr></thead><tbody>
+<tr><th scope="row">Sepal.Length</th><td>0.521066</td><td>-0.377418</td><td>0.719566</td><td>0.261286</td></tr>
+<tr><th scope="row">Sepal.Width</th><td>-0.269347</td><td>-0.923296</td><td>-0.244382</td><td>-0.123510</td></tr>
+<tr><th scope="row">Petal.Length</th><td>0.580413</td><td>-0.024492</td><td>-0.142126</td><td>-0.801449</td></tr>
+<tr><th scope="row">Petal.Width</th><td>0.564857</td><td>-0.066942</td><td>-0.634273</td><td>0.523597</td></tr>
+</tbody></table></div></section>
+</div>
+<h2>Files</h2><ul>
+<li><a href="plot.png">PNG figure</a></li>
+<li><a href="plot.pdf">PDF figure</a></li>
+<li><a href="pca-variance.csv">PCA variance CSV</a></li>
+<li><a href="pca-scores.csv">PCA scores CSV</a></li>
+<li><a href="pca-loadings.csv">PCA loadings CSV</a></li>
+<li><a href="iris.csv">Input CSV</a></li>
+<li><a href="plot.R">R script</a></li>
+<li><a href="README.md">README</a></li>
+</ul>
+<h2>Reproduce</h2>
+<p>From this directory, run <code>Rscript plot.R iris.csv .</code>.</p>
+</main></body>
+</html>
