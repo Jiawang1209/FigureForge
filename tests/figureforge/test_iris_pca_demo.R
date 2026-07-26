@@ -227,7 +227,8 @@ assert_true(
       "plot.pdf",
       "pca-variance.csv",
       "pca-scores.csv",
-      "pca-loadings.csv"
+      "pca-loadings.csv",
+      "index.html"
     )
   ),
   "plot.R must name every required output explicitly"
@@ -276,6 +277,112 @@ for (invocation_name in names(invalid_invocations)) {
   )
 }
 
+assert_invalid_input <- function(data, fixture_name, expected_patterns) {
+  input_path <- tempfile(
+    paste0("figureforge-iris-pca-", fixture_name, "-"),
+    fileext = ".csv"
+  )
+  output_path <- tempfile(
+    paste0("figureforge-iris-pca-", fixture_name, "-output-")
+  )
+  log_path <- tempfile(
+    paste0("figureforge-iris-pca-", fixture_name, "-"),
+    fileext = ".log"
+  )
+  write.csv(data, input_path, row.names = FALSE, na = "")
+  status <- system2(
+    file.path(R.home("bin"), "Rscript"),
+    c(
+      shQuote(plot_script_path),
+      shQuote(input_path),
+      shQuote(output_path)
+    ),
+    stdout = log_path,
+    stderr = log_path
+  )
+  assert_true(
+    length(status) == 1L &&
+      !is.na(as.integer(status)) &&
+      as.integer(status) != 0L,
+    paste("plot.R must reject the", fixture_name, "fixture")
+  )
+  output <- paste(readLines(log_path, warn = FALSE), collapse = "\n")
+  for (pattern in expected_patterns) {
+    assert_true(
+      grepl(pattern, output, ignore.case = TRUE, perl = TRUE),
+      paste(
+        "The",
+        fixture_name,
+        "failure must explain",
+        shQuote(pattern),
+        "but output was:",
+        output
+      )
+    )
+  }
+}
+
+missing_column <- iris_data
+missing_column$Sepal.Width <- NULL
+assert_invalid_input(
+  missing_column,
+  "missing-required-column",
+  c("missing|required", "Sepal\\.Width")
+)
+
+nonnumeric <- iris_data
+nonnumeric$Sepal.Length <- as.character(nonnumeric$Sepal.Length)
+nonnumeric$Sepal.Length[[1L]] <- "not-a-number"
+assert_invalid_input(
+  nonnumeric,
+  "nonnumeric-measure",
+  c("numeric", "Sepal\\.Length")
+)
+
+missing_value <- iris_data
+missing_value$Petal.Length[[1L]] <- NA_real_
+assert_invalid_input(
+  missing_value,
+  "missing-value",
+  c("missing|NA", "Petal\\.Length")
+)
+
+nonfinite_value <- iris_data
+nonfinite_value$Petal.Width[[1L]] <- Inf
+assert_invalid_input(
+  nonfinite_value,
+  "nonfinite-value",
+  c("finite|Inf", "Petal\\.Width")
+)
+
+zero_variance <- iris_data
+zero_variance$Sepal.Width <- 1
+assert_invalid_input(
+  zero_variance,
+  "zero-variance-measure",
+  c("zero|constant|variance", "Sepal\\.Width")
+)
+
+empty_species <- iris_data
+empty_species$Species[[1L]] <- ""
+assert_invalid_input(
+  empty_species,
+  "empty-species",
+  c("empty|blank|missing", "Species")
+)
+
+undersized_group <- iris_data[
+  iris_data$Species != "setosa" |
+    seq_len(nrow(iris_data)) %in% which(iris_data$Species == "setosa")[1:2],
+  ,
+  drop = FALSE
+]
+assert_invalid_input(
+  undersized_group,
+  "fewer-than-three-per-group",
+  c("at least[[:space:]]+3|fewer than[[:space:]]+3|minimum.*3", "group|Species")
+)
+
 rerun_root <- tempfile("figureforge-iris-pca-")
 dir.create(rerun_root, recursive = TRUE)
 rerun_log <- tempfile("figureforge-iris-pca-", fileext = ".log")
@@ -300,11 +407,16 @@ generated_outputs <- c(
   "plot.pdf",
   "pca-variance.csv",
   "pca-scores.csv",
-  "pca-loadings.csv"
+  "pca-loadings.csv",
+  "index.html"
 )
 assert_true(
   all(file.exists(file.path(rerun_root, generated_outputs))),
   "The two-argument plot.R contract must generate every named output"
+)
+assert_true(
+  all(file.info(file.path(rerun_root, generated_outputs))$size > 0L),
+  "Every independently rerun output must be non-empty"
 )
 
 variance <- read.csv(
@@ -325,17 +437,36 @@ loadings <- read.csv(
 assert_true(
   identical(
     names(variance),
-    c("component", "variance_percent", "cumulative_percent")
+    c(
+      "component",
+      "eigenvalue",
+      "explained_percent",
+      "cumulative_percent"
+    )
   ),
   "pca-variance.csv has an unexpected schema"
 )
 assert_true(
-  identical(names(scores), c("PC1", "PC2", "Species")),
+  identical(
+    names(scores),
+    c("sample_id", "Species", paste0("PC", 1:4))
+  ),
   "pca-scores.csv has an unexpected schema"
 )
 assert_true(
-  identical(names(loadings), c("variable", "PC1", "PC2")),
+  identical(names(loadings), c("variable", paste0("PC", 1:4))),
   "pca-loadings.csv has an unexpected schema"
+)
+assert_true(nrow(variance) == 4L, "pca-variance.csv must contain all four PCs")
+assert_true(
+  nrow(scores) == nrow(iris_data) &&
+    length(unique(scores$sample_id)) == nrow(scores) &&
+    all(nzchar(scores$sample_id)),
+  "pca-scores.csv must contain one unique, non-empty sample_id per input row"
+)
+assert_true(
+  nrow(loadings) == length(measure_columns),
+  "pca-loadings.csv must contain one row per measure"
 )
 
 pca <- prcomp(
@@ -346,20 +477,20 @@ pca <- prcomp(
 variance_percent <- 100 * pca$sdev^2 / sum(pca$sdev^2)
 expected_variance <- data.frame(
   component = paste0("PC", seq_along(variance_percent)),
-  variance_percent = variance_percent,
+  eigenvalue = pca$sdev^2,
+  explained_percent = variance_percent,
   cumulative_percent = cumsum(variance_percent),
   check.names = FALSE
 )
 expected_scores <- data.frame(
-  PC1 = pca$x[, "PC1"],
-  PC2 = pca$x[, "PC2"],
+  sample_id = scores$sample_id,
   Species = iris_data$Species,
+  pca$x[, paste0("PC", 1:4), drop = FALSE],
   check.names = FALSE
 )
 expected_loadings <- data.frame(
   variable = measure_columns,
-  PC1 = pca$rotation[measure_columns, "PC1"],
-  PC2 = pca$rotation[measure_columns, "PC2"],
+  pca$rotation[measure_columns, paste0("PC", 1:4), drop = FALSE],
   check.names = FALSE
 )
 assert_true(
@@ -367,8 +498,10 @@ assert_true(
   "pca-variance.csv must identify PC1 through PC4"
 )
 assert_numeric_equal(
-  variance[c("variance_percent", "cumulative_percent")],
-  expected_variance[c("variance_percent", "cumulative_percent")],
+  variance[c("eigenvalue", "explained_percent", "cumulative_percent")],
+  expected_variance[
+    c("eigenvalue", "explained_percent", "cumulative_percent")
+  ],
   "pca-variance.csv"
 )
 assert_true(
@@ -376,8 +509,8 @@ assert_true(
   "pca-scores.csv Species values must preserve iris.csv row order"
 )
 assert_numeric_equal(
-  scores[c("PC1", "PC2")],
-  expected_scores[c("PC1", "PC2")],
+  scores[paste0("PC", 1:4)],
+  expected_scores[paste0("PC", 1:4)],
   "pca-scores.csv"
 )
 assert_true(
@@ -385,8 +518,8 @@ assert_true(
   "pca-loadings.csv variables must preserve measure-column order"
 )
 assert_numeric_equal(
-  loadings[c("PC1", "PC2")],
-  expected_loadings[c("PC1", "PC2")],
+  loadings[paste0("PC", 1:4)],
+  expected_loadings[paste0("PC", 1:4)],
   "pca-loadings.csv"
 )
 
@@ -411,126 +544,286 @@ for (filename in c(
   )
 }
 
-png_size <- decoded_png_dimensions(file.path(demo_root, "plot.png"))
-assert_true(
-  png_size[["width"]] > 0 && png_size[["height"]] > 0,
-  "Decoded plot.png dimensions must be positive"
-)
-
 pdfinfo <- Sys.which("pdfinfo")
 pdftoppm <- Sys.which("pdftoppm")
 assert_true(nzchar(pdfinfo), "pdfinfo is required to validate plot.pdf")
 assert_true(nzchar(pdftoppm), "pdftoppm is required to render plot.pdf")
-pdf_info <- system2(
-  pdfinfo,
-  shQuote(file.path(demo_root, "plot.pdf")),
-  stdout = TRUE,
-  stderr = TRUE
-)
-assert_true(
-  is.null(attr(pdf_info, "status")),
-  "plot.pdf must be readable by pdfinfo"
-)
-page_line <- grep("^Pages:[[:space:]]+", pdf_info, value = TRUE)
-page_count <- if (length(page_line) == 1L) {
-  as.integer(sub("^Pages:[[:space:]]+", "", page_line))
-} else {
-  NA_integer_
-}
-assert_true(
-  !is.na(page_count) && page_count >= 1L,
-  "plot.pdf must contain at least one page"
-)
-render_prefix <- tempfile("figureforge-iris-pca-pdf-")
-render_log <- tempfile("figureforge-iris-pca-pdf-", fileext = ".log")
-render_status <- system2(
-  pdftoppm,
-  c(
-    "-f", "1",
-    "-l", "1",
-    "-singlefile",
-    "-png",
-    shQuote(file.path(demo_root, "plot.pdf")),
-    shQuote(render_prefix)
-  ),
-  stdout = render_log,
-  stderr = render_log
-)
-assert_true(
-  identical(as.integer(render_status), 0L) &&
-    file.exists(paste0(render_prefix, ".png")) &&
-    file.info(paste0(render_prefix, ".png"))$size > 0L,
-  "plot.pdf must render successfully as a one-page image"
-)
 
-html <- read_text(file.path(demo_root, "index.html"))
-assert_true(
-  grepl(
-    "<meta[^>]+name=[\"']viewport[\"'][^>]+content=[\"'][^\"']*width=device-width",
-    html,
-    ignore.case = TRUE,
-    perl = TRUE
-  ),
-  "index.html must declare a responsive viewport"
-)
-assert_true(
-  grepl("FigureForge", html, ignore.case = TRUE, fixed = TRUE) &&
-    grepl("request", html, ignore.case = TRUE, fixed = TRUE) &&
-    grepl("Iris", html, ignore.case = TRUE, fixed = TRUE) &&
-    grepl("PCA", html, ignore.case = TRUE, fixed = TRUE),
-  "index.html must identify FigureForge and state the Iris PCA request"
-)
-assert_true(
-  contains_all(html, c("PC1", "PC2")),
-  "index.html must explain the PC1-PC2 result"
-)
-assert_true(
-  grepl(
-    "<img[^>]+src=[\"'](?:\\./)?plot\\.png[\"']",
-    html,
-    ignore.case = TRUE,
-    perl = TRUE
-  ),
-  "index.html must display plot.png"
-)
-assert_true(
-  contains_all(html, c(required_files[required_files != "index.html"])),
-  "index.html must name the input, script, figures, CSV results, and README"
-)
-linked_results <- setdiff(
-  required_files,
-  c("index.html", "plot.png")
-)
-for (filename in linked_results) {
-  relative_hrefs <- c(
+assert_rendered_artifacts <- function(root, label) {
+  png_path <- file.path(root, "plot.png")
+  png_size <- decoded_png_dimensions(png_path)
+  assert_true(
+    png_size[["width"]] > 0 && png_size[["height"]] > 0,
+    paste(label, "plot.png must decode with positive dimensions")
+  )
+
+  pdf_path <- file.path(root, "plot.pdf")
+  pdf_info <- system2(
+    pdfinfo,
+    shQuote(pdf_path),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  assert_true(
+    is.null(attr(pdf_info, "status")),
+    paste(label, "plot.pdf must be readable by pdfinfo")
+  )
+  page_line <- grep("^Pages:[[:space:]]+", pdf_info, value = TRUE)
+  page_count <- if (length(page_line) == 1L) {
+    as.integer(sub("^Pages:[[:space:]]+", "", page_line))
+  } else {
+    NA_integer_
+  }
+  assert_true(
+    !is.na(page_count) && page_count >= 1L,
+    paste(label, "plot.pdf must contain at least one page")
+  )
+  render_prefix <- tempfile("figureforge-iris-pca-pdf-")
+  render_log <- tempfile("figureforge-iris-pca-pdf-", fileext = ".log")
+  render_status <- system2(
+    pdftoppm,
+    c(
+      "-f", "1",
+      "-l", "1",
+      "-singlefile",
+      "-png",
+      shQuote(pdf_path),
+      shQuote(render_prefix)
+    ),
+    stdout = render_log,
+    stderr = render_log
+  )
+  rendered_png <- paste0(render_prefix, ".png")
+  assert_true(
+    identical(as.integer(render_status), 0L) &&
+      file.exists(rendered_png) &&
+      file.info(rendered_png)$size > 0L,
+    paste(label, "plot.pdf must render its first page successfully")
+  )
+  rendered_size <- decoded_png_dimensions(rendered_png)
+  assert_true(
+    rendered_size[["width"]] > 0 && rendered_size[["height"]] > 0,
+    paste(label, "rendered PDF preview must decode successfully")
+  )
+}
+
+has_relative_href <- function(document, filename) {
+  candidates <- c(
     paste0("href=\"", filename, "\""),
     paste0("href='", filename, "'"),
     paste0("href=\"./", filename, "\""),
     paste0("href='./", filename, "'")
   )
-  assert_true(
-    any(vapply(
-      relative_hrefs,
-      grepl,
-      logical(1),
-      x = html,
-      ignore.case = TRUE,
-      fixed = TRUE
-    )),
-    paste("index.html must link", filename)
-  )
+  any(vapply(
+    candidates,
+    grepl,
+    logical(1),
+    x = document,
+    ignore.case = TRUE,
+    fixed = TRUE
+  ))
 }
-assert_true(
-  grepl(
-    "Rscript[[:space:]]+plot\\.R[[:space:]]+iris\\.csv[[:space:]]+\\.",
+
+assert_live_html <- function(
+    html_path,
+    live_input,
+    live_variance,
+    live_loadings,
+    label,
+    extra_links = character()) {
+  html <- read_text(html_path)
+  assert_true(
+    grepl(
+      "<meta[^>]+name=[\"']viewport[\"'][^>]+content=[\"'][^\"']*width=device-width",
+      html,
+      ignore.case = TRUE,
+      perl = TRUE
+    ),
+    paste(label, "index.html must declare a responsive viewport")
+  )
+  assert_true(
+    grepl("FigureForge", html, ignore.case = TRUE, fixed = TRUE) &&
+      grepl("request", html, ignore.case = TRUE, fixed = TRUE) &&
+      grepl("Iris", html, ignore.case = TRUE, fixed = TRUE) &&
+      grepl("PCA", html, ignore.case = TRUE, fixed = TRUE),
+    paste(label, "index.html must identify FigureForge and the Iris PCA request")
+  )
+  assert_true(
+    contains_all(html, c("PC1", "PC2")),
+    paste(label, "index.html must explain the PC1-PC2 result")
+  )
+  dimension_pattern <- paste0(
+    "(?:",
+    nrow(live_input),
+    "[[:space:]]*(?:rows|observations).{0,80}",
+    ncol(live_input),
+    "[[:space:]]*columns|",
+    nrow(live_input),
+    "[[:space:]]*[x×][[:space:]]*",
+    ncol(live_input),
+    ")"
+  )
+  assert_true(
+    grepl(
+      dimension_pattern,
+      html,
+      ignore.case = TRUE,
+      perl = TRUE
+    ),
+    paste(label, "index.html must show the live input dimensions")
+  )
+  assert_true(
+    grepl("prcomp", html, ignore.case = TRUE, fixed = TRUE) &&
+      grepl("center", html, ignore.case = TRUE, fixed = TRUE) &&
+      grepl("scal", html, ignore.case = TRUE, fixed = TRUE) &&
+      grepl("adapt", html, ignore.case = TRUE, fixed = TRUE),
+    paste(label, "index.html must explain the PCA method and adaptation")
+  )
+  assert_true(
+    grepl(
+      "<img[^>]+src=[\"'](?:\\./)?plot\\.png[\"']",
+      html,
+      ignore.case = TRUE,
+      perl = TRUE
+    ),
+    paste(label, "index.html must display plot.png")
+  )
+
+  result_links <- c(
+    "plot.png",
+    "plot.pdf",
+    "pca-variance.csv",
+    "pca-scores.csv",
+    "pca-loadings.csv",
+    extra_links
+  )
+  for (filename in result_links) {
+    assert_true(
+      has_relative_href(html, filename),
+      paste(label, "index.html must link", filename)
+    )
+  }
+
+  assert_true(
+    grepl(
+      "Rscript[[:space:]]+plot\\.R[[:space:]]+iris\\.csv[[:space:]]+\\.",
+      html,
+      perl = TRUE
+    ),
+    paste(label, "index.html must show the portable rerun command")
+  )
+  assert_true(
+    !contains_absolute_local_path(html),
+    paste(label, "index.html must not contain an absolute local path")
+  )
+
+  variance_cells <- c(
+    live_variance$component,
+    formatC(live_variance$eigenvalue, format = "f", digits = 4L),
+    paste0(formatC(
+      live_variance$explained_percent,
+      format = "f",
+      digits = 2L
+    ), "%"),
+    paste0(formatC(
+      live_variance$cumulative_percent,
+      format = "f",
+      digits = 2L
+    ), "%")
+  )
+  loading_cells <- c(
+    live_loadings$variable,
+    unlist(lapply(
+      live_loadings[paste0("PC", 1:4)],
+      formatC,
+      format = "f",
+      digits = 4L
+    ), use.names = FALSE)
+  )
+  table_markup <- regmatches(
     html,
+    gregexpr(
+      "(?s)<t[dh][^>]*>.*?</t[dh]>",
+      html,
+      ignore.case = TRUE,
+      perl = TRUE
+    )
+  )[[1L]]
+  table_cells <- trimws(gsub(
+    "<[^>]+>",
+    "",
+    table_markup,
     perl = TRUE
-  ),
-  "index.html must show the portable rerun command"
+  ))
+  for (cell in c(variance_cells, loading_cells)) {
+    assert_true(
+      cell %in% table_cells,
+      paste(label, "index.html must contain live table cell", shQuote(cell))
+    )
+  }
+  table_rows <- regmatches(
+    html,
+    gregexpr(
+      "(?s)<tr[^>]*>.*?</tr>",
+      html,
+      ignore.case = TRUE,
+      perl = TRUE
+    )
+  )[[1L]]
+  for (component in c("PC1", "PC2")) {
+    explained <- live_variance$explained_percent[
+      live_variance$component == component
+    ]
+    explained_cell <- paste0(
+      formatC(explained, format = "f", digits = 2L),
+      "%"
+    )
+    assert_true(
+      length(explained) == 1L &&
+        any(vapply(
+          table_rows,
+          function(row) {
+            grepl(component, row, fixed = TRUE) &&
+              grepl(explained_cell, row, fixed = TRUE)
+          },
+          logical(1)
+        )),
+      paste(
+        label,
+        "index.html must show the exact live",
+        component,
+        "explained variance"
+      )
+    )
+  }
+}
+
+rerun_variance <- read.csv(
+  file.path(rerun_root, "pca-variance.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
 )
-assert_true(
-  !contains_absolute_local_path(html),
-  "index.html must not contain an absolute local path"
+rerun_loadings <- read.csv(
+  file.path(rerun_root, "pca-loadings.csv"),
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+assert_rendered_artifacts(demo_root, "Committed")
+assert_rendered_artifacts(rerun_root, "Independent rerun")
+assert_live_html(
+  file.path(demo_root, "index.html"),
+  iris_data,
+  variance,
+  loadings,
+  "Committed",
+  extra_links = c("iris.csv", "plot.R", "README.md")
+)
+assert_live_html(
+  file.path(rerun_root, "index.html"),
+  iris_data,
+  rerun_variance,
+  rerun_loadings,
+  "Independent rerun"
 )
 
 english <- read_text(file.path(repo_root, "README.md"))

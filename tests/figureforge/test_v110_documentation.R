@@ -85,14 +85,31 @@ extract_h2_sections <- function(document) {
   lines <- strsplit(document, "\n", fixed = TRUE)[[1L]]
   lines[grepl("^## [^#]", lines)]
 }
-stopifnot(identical(
-  extract_h2_sections(english),
-  expected_readme_sections$english
-))
-stopifnot(identical(
-  extract_h2_sections(chinese),
-  expected_readme_sections$chinese
-))
+assert_readme_sections <- function(document, expected, label) {
+  actual <- extract_h2_sections(document)
+  if (!identical(actual, expected)) {
+    stop(
+      paste0(
+        label,
+        " README H2 sections differ.\nExpected:\n",
+        paste(expected, collapse = "\n"),
+        "\nActual:\n",
+        paste(actual, collapse = "\n")
+      ),
+      call. = FALSE
+    )
+  }
+}
+assert_readme_sections(
+  english,
+  expected_readme_sections$english,
+  "English"
+)
+assert_readme_sections(
+  chinese,
+  expected_readme_sections$chinese,
+  "Chinese"
+)
 
 old_maintainer_walkthrough_headings <- c(
   "## Maintainer workflow",
