@@ -85,11 +85,12 @@ writeLines(
 script_path <- file.path(output_dir, "plot.R")
 generated_script_lines <- c(
   "library(ggplot2)",
-  "ggplot(input, aes(predictor, response)) + geom_point()",
-  "# preserve nonlinear smooth",
-  "# alpha mapped to confidence",
-  "# treatment group panels",
-  "# lower and upper bounds"
+  "point_layer <- ggplot2::geom_point()",
+  "smooth_method <- stats::loess",
+  "facet_group_layout <- ggplot2::facet_wrap(~ treatment)",
+  "confidence_alpha_mapping <- ggplot2::aes(alpha = confidence)",
+  "lower_upper_bounds <- range(input$response, na.rm = TRUE)",
+  "ggplot(input, aes(predictor, response)) + point_layer"
 )
 writeLines(
   generated_script_lines,
@@ -125,8 +126,8 @@ case_based_fields <- function(case_directory = case_dir) {
     plot_r_sha256 = figureforge_sha256(file.path(case_directory, "plot.R")),
     schema_mapping = "predictor -> x | response -> y",
     adopted_patterns = paste(
-      "case.md#overall composition => plot.R#geom_point",
-      "plot.R#geom_point => plot.R#alpha mapped to confidence",
+      "case.md#overall composition => plot.R#ggplot2::geom_point",
+      "plot.R#geom_point => plot.R#confidence_alpha_mapping",
       sep = " | "
     ),
     departures = "renamed source columns"
@@ -385,15 +386,18 @@ empty_patterns$adopted_patterns <- ""
 expect_invalid(empty_patterns, "auditable adopted pattern format")
 
 auditable_pattern_examples <- c(
-  "plot.R#geom_point => plot.R#alpha mapped to confidence",
-  "case.md#overall composition => plot.R#geom_point",
-  "qa.md#confidence ribbon => plot.R#lower and upper bounds",
-  "plot.R#FACET_WRAP => plot.R#treatment group panels",
+  "plot.R#geom_point => plot.R#confidence_alpha_mapping",
+  "case.md#overall composition => plot.R#ggplot2::geom_point",
+  "qa.md#confidence ribbon => plot.R#lower_upper_bounds",
+  "plot.R#FACET_WRAP => plot.R#facet_group_layout",
   paste(
     "case.md#generalized additive model",
-    "plot.R#preserve nonlinear smooth",
+    "plot.R#stats::loess",
     sep = " => "
-  )
+  ),
+  "case.md#分面布局 => plot.R#facet_group_layout",
+  "case.md#颜色映射区分处理组 => plot.R#confidence_alpha_mapping",
+  "qa.md#lower and upper bounds => plot.R#range("
 )
 auditable_patterns <- case_based_fields()
 auditable_patterns$adopted_patterns <- paste(
@@ -415,22 +419,24 @@ stopifnot(all(vapply(
 )))
 
 invalid_pattern_examples <- c(
-  "overall composition => plot.R#preserve nonlinear smooth",
-  "data.csv#overall composition => plot.R#preserve nonlinear smooth",
-  "case.md# => plot.R#preserve nonlinear smooth",
-  "case.md#made plot => plot.R#preserve nonlinear smooth",
-  "case.md#drew chart => plot.R#preserve nonlinear smooth",
-  "case.md#made figure => plot.R#preserve nonlinear smooth",
-  "case.md#colors => plot.R#preserve nonlinear smooth",
-  "case.md#plot => plot.R#preserve nonlinear smooth",
-  "case.md#overall composition => case.md#preserve nonlinear smooth",
-  "case.md#overall composition => data.csv#preserve nonlinear smooth",
+  "overall composition => plot.R#stats::loess",
+  "data.csv#overall composition => plot.R#stats::loess",
+  "case.md# => plot.R#stats::loess",
+  "case.md#made plot => plot.R#stats::loess",
+  "case.md#drew chart => plot.R#stats::loess",
+  "case.md#made figure => plot.R#stats::loess",
+  "case.md#colors => plot.R#stats::loess",
+  "case.md#plot => plot.R#stats::loess",
+  "case.md#分面布 => plot.R#facet_group_layout",
+  "case.md#overall composition => case.md#stats::loess",
+  "case.md#overall composition => data.csv#stats::loess",
   "case.md#overall composition => plot.R#plot",
-  "case.md#/private/case => plot.R#preserve nonlinear smooth",
+  "case.md#overall composition => plot.R#twelve letters",
+  "case.md#/private/case => plot.R#stats::loess",
   "plot.R#geom_point => plot.R#C:\\private\\decision",
   "plot.R#geom_point => plot.R#decision => extra",
-  "plot.R#geom_point => plot.R#alpha mapped to confidence |",
-  "| plot.R#geom_point => plot.R#alpha mapped to confidence"
+  "plot.R#geom_point => plot.R#confidence_alpha_mapping |",
+  "| plot.R#geom_point => plot.R#confidence_alpha_mapping"
 )
 for (invalid_pattern in invalid_pattern_examples) {
   invalid_adopted_pattern <- case_based_fields()
@@ -445,7 +451,7 @@ for (invalid_pattern in invalid_pattern_examples) {
 mixed_auditable_and_invalid <- case_based_fields()
 mixed_auditable_and_invalid$adopted_patterns <- paste(
   auditable_pattern_examples[[1L]],
-  "case.md#made plot => plot.R#preserve nonlinear smooth",
+  "case.md#made plot => plot.R#stats::loess",
   sep = " | "
 )
 expect_invalid(
@@ -455,7 +461,7 @@ expect_invalid(
 
 nonexistent_source_anchor <- case_based_fields()
 nonexistent_source_anchor$adopted_patterns <-
-  "plot.R#nonexistent source anchor => plot.R#alpha mapped to confidence"
+  "plot.R#nonexistent source anchor => plot.R#confidence_alpha_mapping"
 write_trace(nonexistent_source_anchor)
 nonexistent_source_structural <- validate_case_trace(trace_path)
 expect_result_shape(nonexistent_source_structural)
@@ -490,7 +496,7 @@ stopifnot(
 
 nonexistent_generated_anchor <- case_based_fields()
 nonexistent_generated_anchor$adopted_patterns <-
-  "case.md#overall composition => plot.R#nonexistent generated anchor"
+  "case.md#overall composition => plot.R#nonexistent_generated_anchor"
 write_trace(nonexistent_generated_anchor)
 nonexistent_generated_structural <- validate_case_trace(trace_path)
 expect_result_shape(nonexistent_generated_structural)
@@ -523,13 +529,80 @@ stopifnot(
     nonexistent_generated_strict$failed_checks
 )
 
+comment_only_lines <- c(
+  generated_script_lines,
+  "# comment_only_anchor"
+)
+writeLines(comment_only_lines, script_path, useBytes = TRUE)
+comment_only_fields <- case_based_fields()
+comment_only_fields$adopted_patterns <-
+  "case.md#overall composition => plot.R#comment_only_anchor"
+write_trace(comment_only_fields)
+comment_only_result <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(comment_only_result)
+stopifnot(!isTRUE(comment_only_result$ok))
+stopifnot(
+  "generated anchors match script" %in%
+    comment_only_result$failed_checks
+)
+writeLines(generated_script_lines, script_path, useBytes = TRUE)
+
+writeLines(
+  "invalid_parse_anchor <- function(",
+  script_path,
+  useBytes = TRUE
+)
+invalid_parse_fields <- case_based_fields()
+invalid_parse_fields$adopted_patterns <-
+  "case.md#overall composition => plot.R#invalid_parse_anchor"
+write_trace(invalid_parse_fields)
+invalid_parse_result <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(invalid_parse_result)
+stopifnot(!isTRUE(invalid_parse_result$ok))
+stopifnot(
+  "generated anchors match script" %in%
+    invalid_parse_result$failed_checks
+)
+writeLines(generated_script_lines, script_path, useBytes = TRUE)
+
+wrong_script_path <- file.path(output_dir, "not-plot.R")
+writeLines(generated_script_lines, wrong_script_path, useBytes = TRUE)
+write_trace(case_based_fields())
+wrong_script_name_partial <- validate_case_trace(
+  trace_path,
+  script_path = wrong_script_path
+)
+expect_result_shape(wrong_script_name_partial)
+stopifnot(!isTRUE(wrong_script_name_partial$ok))
+stopifnot(
+  "generated anchors match script" %in%
+    wrong_script_name_partial$failed_checks
+)
+wrong_script_name_result <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = wrong_script_path
+)
+expect_result_shape(wrong_script_name_result)
+stopifnot(!isTRUE(wrong_script_name_result$ok))
+stopifnot(
+  "generated anchors match script" %in%
+    wrong_script_name_result$failed_checks
+)
+
 qa_missing_reference <- case_based_fields()
 qa_missing_reference <- qa_missing_reference[
   !names(qa_missing_reference) %in% c("qa_md_file", "qa_md_sha256")
 ]
 qa_missing_reference$qa_status <- "missing"
 qa_missing_reference$adopted_patterns <-
-  "qa.md#confidence ribbon => plot.R#lower and upper bounds"
+  "qa.md#confidence ribbon => plot.R#lower_upper_bounds"
 write_trace(qa_missing_reference)
 qa_missing_structural <- validate_case_trace(trace_path)
 expect_result_shape(qa_missing_structural)

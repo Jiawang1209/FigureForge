@@ -133,10 +133,41 @@ parse_adopted_pattern <- function(pattern) {
   )
 }
 
-adopted_anchor_is_substantive <- function(anchor) {
+source_anchor_is_substantive <- function(anchor) {
   anchor <- trimws(anchor)
-  minimum_length <- if (grepl("::|_|\\(", anchor, perl = TRUE)) 4L else 12L
+  code_points <- tryCatch(
+    utf8ToInt(enc2utf8(anchor)),
+    error = function(error) integer(0)
+  )
+  cjk_count <- sum(
+    (code_points >= 0x3400L & code_points <= 0x4DBFL) |
+      (code_points >= 0x4E00L & code_points <= 0x9FFFL) |
+      (code_points >= 0xF900L & code_points <= 0xFAFFL)
+  )
+  if (cjk_count > 0L) {
+    return(cjk_count >= 4L)
+  }
+  minimum_length <- if (grepl("::|_|\\(", anchor, perl = TRUE)) {
+    4L
+  } else {
+    12L
+  }
   nzchar(anchor) && nchar(anchor, type = "chars") >= minimum_length
+}
+
+generated_anchor_is_substantive <- function(anchor) {
+  anchor <- gsub("\\s+", "", trimws(anchor), perl = TRUE)
+  identifier <- "[A-Za-z.][A-Za-z0-9._]*"
+  namespace_identifier <- sprintf("^%s::%s$", identifier, identifier)
+  underscored_identifier <- sprintf("^%s$", identifier)
+  function_call <- sprintf("^%s\\($", identifier)
+
+  nchar(anchor, type = "chars") >= 4L && (
+    grepl(namespace_identifier, anchor, perl = TRUE) ||
+      (grepl("_", anchor, fixed = TRUE) &&
+        grepl(underscored_identifier, anchor, perl = TRUE)) ||
+      grepl(function_call, anchor, perl = TRUE)
+  )
 }
 
 adopted_pattern_is_auditable <- function(pattern, qa_available = TRUE) {
@@ -148,8 +179,8 @@ adopted_pattern_is_auditable <- function(pattern, qa_available = TRUE) {
     !parsed$source_file %in% c("case.md", "plot.R", "qa.md") ||
       (!qa_available && identical(parsed$source_file, "qa.md")) ||
       !identical(parsed$generated_file, "plot.R") ||
-      !adopted_anchor_is_substantive(parsed$source_anchor) ||
-      !adopted_anchor_is_substantive(parsed$generated_anchor)
+      !source_anchor_is_substantive(parsed$source_anchor) ||
+      !generated_anchor_is_substantive(parsed$generated_anchor)
   ) {
     return(FALSE)
   }
@@ -229,15 +260,85 @@ case_trace_source_anchors_match <- function(value, case_dir) {
 
 case_trace_generated_anchors_match <- function(value, script_path) {
   patterns <- case_trace_adopted_pattern_items(value)
+  if (
+    length(patterns) < 1L ||
+      !case_trace_regular_nonempty_file(script_path)
+  ) {
+    return(FALSE)
+  }
+  parsed_script <- suppressWarnings(
+    tryCatch(
+      parse(file = script_path, keep.source = TRUE),
+      error = function(error) NULL
+    )
+  )
+  if (is.null(parsed_script)) {
+    return(FALSE)
+  }
+  parse_data <- tryCatch(
+    getParseData(parsed_script),
+    error = function(error) NULL
+  )
+  if (is.null(parse_data) || nrow(parse_data) < 1L) {
+    return(FALSE)
+  }
+  parse_data <- parse_data[order(
+    parse_data$line1,
+    parse_data$col1,
+    parse_data$id
+  ), , drop = FALSE]
+  code_tokens <- parse_data[
+    parse_data$terminal %in% TRUE,
+    c("token", "text"),
+    drop = FALSE
+  ]
+  code_tokens <- code_tokens[
+    code_tokens$token != "COMMENT",
+    ,
+    drop = FALSE
+  ]
+  normalized_tokens <- tolower(gsub(
+    "\\s+",
+    "",
+    code_tokens$text,
+    perl = TRUE
+  ))
+
+  anchor_in_code <- function(anchor) {
+    normalized_anchor <- tolower(gsub(
+      "\\s+",
+      "",
+      trimws(anchor),
+      perl = TRUE
+    ))
+    token_width <- if (grepl("::", normalized_anchor, fixed = TRUE)) {
+      3L
+    } else if (grepl("\\($", normalized_anchor, perl = TRUE)) {
+      2L
+    } else {
+      1L
+    }
+    if (length(normalized_tokens) < token_width) {
+      return(FALSE)
+    }
+    candidates <- vapply(
+      seq_len(length(normalized_tokens) - token_width + 1L),
+      function(index) paste0(
+        normalized_tokens[index:(index + token_width - 1L)],
+        collapse = ""
+      ),
+      character(1L)
+    )
+    normalized_anchor %in% candidates
+  }
+
   length(patterns) > 0L && all(vapply(
     patterns,
     function(pattern) {
       parsed <- parse_adopted_pattern(pattern)
       !is.null(parsed) &&
-        case_trace_file_contains_anchor(
-          script_path,
-          parsed$generated_anchor
-        )
+        identical(basename(script_path), parsed$generated_file) &&
+        anchor_in_code(parsed$generated_anchor)
     },
     logical(1L)
   ))
