@@ -33,10 +33,23 @@ live_mode_shell_words <- function(command) {
 
 live_mode_unwrap_shell <- function(command) {
   words <- live_mode_shell_words(trimws(command))
-  if (length(words) >= 3L &&
-      basename(words[[1L]]) %in% c("bash", "sh", "zsh") &&
-      words[[2L]] %in% c("-c", "-lc")) {
-    return(paste(words[3L:length(words)], collapse = " "))
+  if (length(words) == 3L &&
+      words[[1L]] %in% c(
+        "/bin/bash",
+        "/bin/sh",
+        "/bin/zsh",
+        "/usr/bin/bash",
+        "/usr/bin/sh",
+        "/usr/bin/zsh"
+      ) &&
+      identical(words[[2L]], "-lc")) {
+    return(words[[3L]])
+  }
+  if (
+    length(words) > 0L &&
+      basename(words[[1L]]) %in% c("bash", "sh", "zsh")
+  ) {
+    return(NA_character_)
   }
   trimws(command)
 }
@@ -72,46 +85,43 @@ live_mode_successful_commands <- function(transcript_path) {
 }
 
 live_mode_command_reads <- function(command, workspace_root, target_path) {
-  read_commands <- c("awk", "cat", "head", "less", "more", "sed", "tail")
   inner <- live_mode_unwrap_shell(command)
-  segments <- strsplit(
-    inner,
-    "[[:space:]]*(?:&&|\\|\\||;)[[:space:]]*",
-    perl = TRUE
-  )[[1L]]
+  if (
+    length(inner) != 1L ||
+      is.na(inner) ||
+      grepl("[;&|<>()`\\r\\n]", inner, perl = TRUE) ||
+      grepl("\\$\\(", inner, perl = TRUE)
+  ) {
+    return(FALSE)
+  }
+  words <- live_mode_shell_words(inner)
+  if (length(words) < 2L) return(FALSE)
+  executable <- basename(words[[1L]])
+  candidate <- ""
+  if (identical(executable, "cat") && length(words) == 2L) {
+    candidate <- words[[2L]]
+  } else if (
+    identical(executable, "sed") &&
+      length(words) == 4L &&
+      identical(words[[2L]], "-n") &&
+      grepl("^[0-9]+(?:,[0-9]+)?p$", words[[3L]], perl = TRUE)
+  ) {
+    candidate <- words[[4L]]
+  } else {
+    return(FALSE)
+  }
+  if (!nzchar(candidate) || startsWith(candidate, "-")) {
+    return(FALSE)
+  }
   current_dir <- normalizePath(workspace_root, mustWork = TRUE)
   expected <- normalizePath(target_path, mustWork = TRUE)
-  for (segment in segments) {
-    words <- live_mode_shell_words(segment)
-    if (length(words) == 0L) next
-    executable <- basename(words[[1L]])
-    if (identical(executable, "cd") && length(words) >= 2L) {
-      candidate <- if (startsWith(words[[2L]], "/")) {
-        words[[2L]]
-      } else {
-        file.path(current_dir, words[[2L]])
-      }
-      if (dir.exists(candidate)) {
-        current_dir <- normalizePath(candidate, mustWork = TRUE)
-      }
-      next
-    }
-    if (!executable %in% read_commands || length(words) < 2L) next
-    candidates <- words[-1L]
-    for (candidate in candidates) {
-      if (!nzchar(candidate) || startsWith(candidate, "-")) next
-      resolved <- if (startsWith(candidate, "/")) {
-        candidate
-      } else {
-        file.path(current_dir, candidate)
-      }
-      if (file.exists(resolved) &&
-          identical(normalizePath(resolved, mustWork = TRUE), expected)) {
-        return(TRUE)
-      }
-    }
+  resolved <- if (startsWith(candidate, "/")) {
+    candidate
+  } else {
+    file.path(current_dir, candidate)
   }
-  FALSE
+  file.exists(resolved) &&
+    identical(normalizePath(resolved, mustWork = TRUE), expected)
 }
 
 live_mode_transcript_reads <- function(
@@ -136,6 +146,187 @@ live_mode_regular_nonempty <- function(path) {
     isTRUE(info$isdir == FALSE) &&
     !is.na(info$size) &&
     info$size > 0
+}
+
+live_mode_path_is_within <- function(path, root) {
+  normalized_path <- tryCatch(
+    normalizePath(path, mustWork = TRUE),
+    error = function(error) ""
+  )
+  normalized_root <- tryCatch(
+    normalizePath(root, mustWork = TRUE),
+    error = function(error) ""
+  )
+  nzchar(normalized_path) &&
+    nzchar(normalized_root) &&
+    (
+      identical(normalized_path, normalized_root) ||
+        startsWith(
+          normalized_path,
+          paste0(normalized_root, .Platform$file.sep)
+        )
+    )
+}
+
+live_mode_sha256 <- function(path) {
+  if (!live_mode_regular_nonempty(path)) {
+    stop("Cannot hash a missing, linked, or empty file")
+  }
+  tools <- c("sha256sum", "shasum")
+  available <- unname(Sys.which(tools))
+  output <- if (nzchar(available[[1L]])) {
+    system2(
+      available[[1L]],
+      shQuote(path),
+      stdout = TRUE,
+      stderr = TRUE
+    )
+  } else if (nzchar(available[[2L]])) {
+    system2(
+      available[[2L]],
+      c("-a", "256", shQuote(path)),
+      stdout = TRUE,
+      stderr = TRUE
+    )
+  } else {
+    stop("No SHA-256 implementation is available")
+  }
+  status <- attr(output, "status")
+  if (!is.null(status) && status != 0L) {
+    stop("Unable to calculate SHA-256")
+  }
+  hash <- tolower(strsplit(
+    output[[1L]],
+    "\\s+",
+    perl = TRUE
+  )[[1L]][[1L]])
+  if (!grepl("^[0-9a-f]{64}$", hash, perl = TRUE)) {
+    stop("Invalid SHA-256 output")
+  }
+  hash
+}
+
+live_mode_installed_skill_integrity <- function(
+  installed_skill_root,
+  manifest_path,
+  workspace_root
+) {
+  tryCatch({
+    if (
+      !dir.exists(installed_skill_root) ||
+        !identical(Sys.readlink(installed_skill_root), "") ||
+        live_mode_path_is_within(installed_skill_root, workspace_root) ||
+        !live_mode_regular_nonempty(manifest_path) ||
+        live_mode_path_is_within(manifest_path, workspace_root)
+    ) {
+      return(FALSE)
+    }
+    manifest <- read.csv(
+      manifest_path,
+      stringsAsFactors = FALSE,
+      check.names = FALSE,
+      na.strings = character(0)
+    )
+    required <- c("source_path", "package_path", "sha256", "bytes")
+    if (
+      !identical(names(manifest), required) ||
+        nrow(manifest) < 1L ||
+        anyDuplicated(manifest$package_path) ||
+        any(!startsWith(manifest$package_path, "figureforge/")) ||
+        any(!grepl("^[0-9a-f]{64}$", manifest$sha256, perl = TRUE))
+    ) {
+      return(FALSE)
+    }
+    expected_relative <- sub(
+      "^figureforge/",
+      "",
+      gsub("\\\\", "/", manifest$package_path)
+    )
+    components <- strsplit(expected_relative, "/", fixed = TRUE)
+    if (any(vapply(
+      components,
+      function(parts) any(parts %in% c("", ".", "..")),
+      logical(1L)
+    ))) {
+      return(FALSE)
+    }
+    entries <- list.files(
+      installed_skill_root,
+      recursive = TRUE,
+      all.files = TRUE,
+      no.. = TRUE,
+      include.dirs = TRUE,
+      full.names = TRUE
+    )
+    link_targets <- Sys.readlink(entries)
+    if (any(!is.na(link_targets) & nzchar(link_targets))) {
+      return(FALSE)
+    }
+    actual_files <- entries[vapply(
+      entries,
+      function(path) isTRUE(file_test("-f", path)),
+      logical(1L)
+    )]
+    prefix_length <- nchar(normalizePath(
+      installed_skill_root,
+      mustWork = TRUE
+    )) + 2L
+    actual_relative <- gsub(
+      "\\\\",
+      "/",
+      substring(
+        normalizePath(actual_files, mustWork = TRUE),
+        prefix_length
+      )
+    )
+    if (!setequal(actual_relative, expected_relative)) {
+      return(FALSE)
+    }
+    order_index <- match(expected_relative, actual_relative)
+    ordered_files <- actual_files[order_index]
+    actual_bytes <- as.numeric(file.info(ordered_files)$size)
+    actual_hashes <- vapply(
+      ordered_files,
+      live_mode_sha256,
+      character(1L)
+    )
+    identical(actual_bytes, as.numeric(manifest$bytes)) &&
+      identical(unname(actual_hashes), as.character(manifest$sha256))
+  }, error = function(error) FALSE)
+}
+
+live_mode_trusted_case_evidence <- function(
+  installed_skill_root,
+  primary_case_id
+) {
+  if (
+    length(primary_case_id) != 1L ||
+      primary_case_id %in% c(".", "..") ||
+      !grepl("^[A-Za-z0-9._-]+$", primary_case_id)
+  ) {
+    return(FALSE)
+  }
+  case_dir <- file.path(
+    installed_skill_root,
+    "public-cases",
+    primary_case_id
+  )
+  evidence <- file.path(case_dir, c("case.md", "plot.R", "qa.md"))
+  if (
+    !dir.exists(case_dir) ||
+      !identical(Sys.readlink(case_dir), "") ||
+      !live_mode_path_is_within(case_dir, installed_skill_root) ||
+      !all(vapply(evidence, live_mode_regular_nonempty, logical(1L))) ||
+      !all(vapply(
+        evidence,
+        live_mode_path_is_within,
+        logical(1L),
+        root = installed_skill_root
+      ))
+  ) {
+    return(FALSE)
+  }
+  TRUE
 }
 
 live_mode_schema_bound_receipt <- function(metadata, trace_dir) {
@@ -213,6 +404,7 @@ evaluate_live_mode_probe <- function(
   expected_mode,
   workspace_root,
   installed_skill_root,
+  manifest_path,
   transcript_path,
   validator_log,
   validator_status
@@ -248,19 +440,33 @@ evaluate_live_mode_probe <- function(
     any(grepl("Verification level: strict", validator_lines, fixed = TRUE)) &&
     any(grepl("Case trace validation OK:", validator_lines, fixed = TRUE))
   schema_bound_receipt <- live_mode_schema_bound_receipt(metadata, trace_dir)
+  installed_skill_integrity <- live_mode_installed_skill_integrity(
+    installed_skill_root,
+    manifest_path,
+    workspace_root
+  )
 
   case_md_read <- FALSE
   plot_r_read <- FALSE
   qa_md_read <- FALSE
+  trusted_case_evidence <- identical(
+    expected_mode,
+    "general_fallback"
+  )
   if (identical(expected_mode, "case_based") &&
       "primary_case_id" %in% names(metadata) &&
+      !metadata$primary_case_id %in% c(".", "..") &&
       grepl("^[A-Za-z0-9._-]+$", metadata$primary_case_id)) {
     case_dir <- file.path(
       installed_skill_root,
       "public-cases",
       metadata$primary_case_id
     )
-    if (dir.exists(case_dir)) {
+    trusted_case_evidence <- live_mode_trusted_case_evidence(
+      installed_skill_root,
+      metadata$primary_case_id
+    )
+    if (installed_skill_integrity && trusted_case_evidence) {
       case_md_read <- live_mode_transcript_reads(
         transcript_path,
         workspace_root,
@@ -288,6 +494,8 @@ evaluate_live_mode_probe <- function(
     identical(claim, expected_claim) &&
     schema_bound_receipt &&
     strict_validation &&
+    installed_skill_integrity &&
+    trusted_case_evidence &&
     artifacts_present &&
     evidence_read
 
@@ -297,6 +505,8 @@ evaluate_live_mode_probe <- function(
     claim = claim,
     schema_bound_receipt = schema_bound_receipt,
     strict_validation = strict_validation,
+    installed_skill_integrity = installed_skill_integrity,
+    trusted_case_evidence = trusted_case_evidence,
     artifacts_present = artifacts_present,
     case_md_read = case_md_read,
     plot_r_read = plot_r_read,

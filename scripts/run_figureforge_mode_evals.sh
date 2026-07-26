@@ -68,6 +68,7 @@ MANIFEST="$OUTPUT_DIR/release-manifest.csv"
   --archive "$ARCHIVE" \
   --manifest "$MANIFEST" \
   >"$OUTPUT_DIR/package.log" 2>&1
+chmod a-w "$ARCHIVE" "$MANIFEST" "$ARCHIVE.sha256"
 
 run_probe() {
   expected_mode=$1
@@ -76,10 +77,18 @@ run_probe() {
   prompt=$4
   probe_dir="$OUTPUT_DIR/$expected_mode"
   workspace=$(mktemp -d "/tmp/figureforge-${expected_mode}-eval.XXXXXX")
-  installed_skill="$workspace/.agents/skills/figureforge"
+  trusted_extract="$probe_dir/trusted-install"
+  installed_skill="$trusted_extract/figureforge"
   mkdir -p "$workspace/.agents/skills" "$probe_dir"
-  tar -xzf "$ARCHIVE" -C "$workspace/.agents/skills"
+  "$RSCRIPT" \
+    "$REPO_ROOT/skills/figureforge/scripts/verify_release.R" \
+    --archive "$ARCHIVE" \
+    --manifest "$MANIFEST" \
+    --extract-dir "$trusted_extract" \
+    >"$probe_dir/trusted-install.log" 2>&1
   test -s "$installed_skill/SKILL.md"
+  chmod -R a-w "$trusted_extract"
+  ln -s "$installed_skill" "$workspace/.agents/skills/figureforge"
   cp "$input_source" "$workspace/$input_name"
   printf '%s\n' "$workspace" >"$probe_dir/workspace-root.txt"
 
@@ -168,6 +177,7 @@ run_probe() {
     --expected-mode "$expected_mode" \
     --workspace "$workspace" \
     --installed-skill "$installed_skill" \
+    --manifest "$MANIFEST" \
     --transcript "$transcript" \
     --validator-log "$validator_log" \
     --validator-status "$validator_status" \

@@ -402,6 +402,11 @@ case_trace_regular_nonempty_file <- function(path) {
   is.finite(size) && size > 0
 }
 
+case_trace_unlinked_regular_nonempty_file <- function(path) {
+  identical(Sys.readlink(path), "") &&
+    case_trace_regular_nonempty_file(path)
+}
+
 case_trace_file_contains_anchor <- function(path, anchor) {
   if (!case_trace_regular_nonempty_file(path)) {
     return(FALSE)
@@ -803,12 +808,14 @@ validate_case_trace <- function(
     generated_anchors_match <- FALSE
     if (!is.null(case_dir)) {
       directory_ok <- dir.exists(case_dir) &&
+        identical(Sys.readlink(case_dir), "") &&
+        !primary_case_id %in% c(".", "..") &&
         identical(basename(normalizePath(case_dir)), primary_case_id)
       case_md_path <- file.path(case_dir, "case.md")
       plot_r_path <- file.path(case_dir, "plot.R")
       evidence_hashes_match <- directory_ok &&
-        case_trace_regular_nonempty_file(case_md_path) &&
-        case_trace_regular_nonempty_file(plot_r_path) &&
+        case_trace_unlinked_regular_nonempty_file(case_md_path) &&
+        case_trace_unlinked_regular_nonempty_file(plot_r_path) &&
         identical(
           suppressWarnings(
             tryCatch(
@@ -835,7 +842,7 @@ validate_case_trace <- function(
         )
 
       qa_path <- file.path(case_dir, "qa.md")
-      if (case_trace_regular_nonempty_file(qa_path)) {
+      if (case_trace_unlinked_regular_nonempty_file(qa_path)) {
         qa_lines <- tryCatch(
           trimws(readLines(
             qa_path,

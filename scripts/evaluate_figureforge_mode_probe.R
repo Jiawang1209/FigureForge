@@ -30,6 +30,7 @@ parse_args <- function(args) {
     "expected-mode",
     "workspace",
     "installed-skill",
+    "manifest",
     "transcript",
     "validator-log",
     "validator-status",
@@ -47,6 +48,7 @@ result <- evaluate_live_mode_probe(
   expected_mode = options[["expected-mode"]],
   workspace_root = options[["workspace"]],
   installed_skill_root = options[["installed-skill"]],
+  manifest_path = options[["manifest"]],
   transcript_path = options[["transcript"]],
   validator_log = options[["validator-log"]],
   validator_status = as.integer(options[["validator-status"]])

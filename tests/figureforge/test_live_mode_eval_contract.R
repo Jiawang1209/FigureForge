@@ -53,6 +53,9 @@ stopifnot(any(grepl(
   harness,
   fixed = TRUE
 )))
+stopifnot(any(grepl("trusted-install", harness, fixed = TRUE)))
+stopifnot(any(grepl("--manifest", harness, fixed = TRUE)))
+stopifnot(any(grepl("chmod -R a-w", harness, fixed = TRUE)))
 stopifnot(any(grepl("run_figureforge_mode_evals[.]sh", verifier)))
 
 live_start <- which(verifier == 'if [ "$RUN_LIVE" = "1" ]; then')
@@ -66,9 +69,8 @@ source(evaluator_path)
 fixture_root <- tempfile("figureforge-live-mode-eval-")
 workspace <- file.path(fixture_root, "workspace")
 skill_root <- file.path(
-  workspace,
-  ".agents",
-  "skills",
+  fixture_root,
+  "trusted-install",
   "figureforge"
 )
 output_dir <- file.path(workspace, "figureforge-output")
@@ -86,6 +88,38 @@ writeLines("Status: review_required", file.path(case_dir, "qa.md"))
 writeLines("script", file.path(output_dir, "plot.R"))
 writeBin(as.raw(c(137, 80, 78, 71, 1)), file.path(output_dir, "plot.png"))
 writeBin(charToRaw("%PDF-1.4\n"), file.path(output_dir, "plot.pdf"))
+
+manifest_path <- file.path(fixture_root, "release-manifest.csv")
+write_fixture_manifest <- function() {
+  installed_files <- list.files(
+    skill_root,
+    recursive = TRUE,
+    all.files = TRUE,
+    no.. = TRUE,
+    include.dirs = FALSE,
+    full.names = TRUE
+  )
+  relative_files <- substring(
+    installed_files,
+    nchar(skill_root) + 2L
+  )
+  write.csv(
+    data.frame(
+      source_path = paste0("fixture/", relative_files),
+      package_path = paste0("figureforge/", relative_files),
+      sha256 = vapply(
+        installed_files,
+        live_mode_sha256,
+        character(1L)
+      ),
+      bytes = as.numeric(file.info(installed_files)$size),
+      stringsAsFactors = FALSE
+    ),
+    manifest_path,
+    row.names = FALSE
+  )
+}
+write_fixture_manifest()
 
 receipt <- data.frame(
   receipt_schema_version = "2",
@@ -155,17 +189,8 @@ writeLines(
       ))
     )),
     json_command(paste(
-      "cd",
-      shQuote(workspace),
-      "&& sed -n '1,240p'",
-      shQuote(file.path(
-        ".agents",
-        "skills",
-        "figureforge",
-        "public-cases",
-        "public-scatter-fit",
-        "plot.R"
-      ))
+      "sed -n '1,240p'",
+      shQuote(file.path(case_dir, "plot.R"))
     )),
     json_command(paste("cat", shQuote(file.path(case_dir, "qa.md"))))
   ),
@@ -176,6 +201,7 @@ result <- evaluate_live_mode_probe(
   expected_mode = "case_based",
   workspace_root = workspace,
   installed_skill_root = skill_root,
+  manifest_path = manifest_path,
   transcript_path = transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -184,6 +210,8 @@ stopifnot(identical(result$generation_mode[[1L]], "case_based"))
 stopifnot(identical(result$claim[[1L]], "case_grounded"))
 stopifnot(isTRUE(result$schema_bound_receipt[[1L]]))
 stopifnot(isTRUE(result$strict_validation[[1L]]))
+stopifnot(isTRUE(result$installed_skill_integrity[[1L]]))
+stopifnot(isTRUE(result$trusted_case_evidence[[1L]]))
 stopifnot(isTRUE(result$case_md_read[[1L]]))
 stopifnot(isTRUE(result$plot_r_read[[1L]]))
 stopifnot(isTRUE(result$qa_md_read[[1L]]))
@@ -202,6 +230,7 @@ failed_result <- evaluate_live_mode_probe(
   expected_mode = "case_based",
   workspace_root = workspace,
   installed_skill_root = skill_root,
+  manifest_path = manifest_path,
   transcript_path = failed_transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -210,6 +239,105 @@ stopifnot(!isTRUE(failed_result$case_md_read[[1L]]))
 stopifnot(!isTRUE(failed_result$plot_r_read[[1L]]))
 stopifnot(!isTRUE(failed_result$qa_md_read[[1L]]))
 stopifnot(!isTRUE(failed_result$passed[[1L]]))
+
+original_plot_r <- readLines(
+  file.path(case_dir, "plot.R"),
+  warn = FALSE
+)
+writeLines("mutated by agent", file.path(case_dir, "plot.R"))
+mutated_install <- evaluate_live_mode_probe(
+  expected_mode = "case_based",
+  workspace_root = workspace,
+  installed_skill_root = skill_root,
+  manifest_path = manifest_path,
+  transcript_path = transcript,
+  validator_log = validation_log,
+  validator_status = 0L
+)
+stopifnot(!isTRUE(mutated_install$installed_skill_integrity[[1L]]))
+stopifnot(!isTRUE(mutated_install$passed[[1L]]))
+writeLines(original_plot_r, file.path(case_dir, "plot.R"))
+
+original_case_md <- readLines(
+  file.path(case_dir, "case.md"),
+  warn = FALSE
+)
+escaped_case_md <- file.path(fixture_root, "escaped-case.md")
+writeLines(original_case_md, escaped_case_md)
+unlink(file.path(case_dir, "case.md"))
+stopifnot(file.symlink(escaped_case_md, file.path(case_dir, "case.md")))
+symlink_escape <- evaluate_live_mode_probe(
+  expected_mode = "case_based",
+  workspace_root = workspace,
+  installed_skill_root = skill_root,
+  manifest_path = manifest_path,
+  transcript_path = transcript,
+  validator_log = validation_log,
+  validator_status = 0L
+)
+stopifnot(!isTRUE(symlink_escape$installed_skill_integrity[[1L]]))
+stopifnot(!isTRUE(symlink_escape$trusted_case_evidence[[1L]]))
+stopifnot(!isTRUE(symlink_escape$passed[[1L]]))
+unlink(file.path(case_dir, "case.md"))
+writeLines(original_case_md, file.path(case_dir, "case.md"))
+
+adversarial_commands <- c(
+  paste(
+    "true || cat",
+    shQuote(file.path(case_dir, "case.md")),
+    "> marker"
+  ),
+  paste(
+    "false && cat",
+    shQuote(file.path(case_dir, "case.md")),
+    "|| true"
+  ),
+  paste(
+    "cat",
+    shQuote(file.path(case_dir, "case.md")),
+    "> marker"
+  ),
+  paste(
+    "cat <",
+    shQuote(file.path(case_dir, "case.md"))
+  ),
+  paste0(
+    "(cat ",
+    shQuote(file.path(case_dir, "case.md")),
+    ")"
+  ),
+  paste0(
+    "sh -c ",
+    shQuote(paste("cat", shQuote(file.path(case_dir, "case.md"))))
+  ),
+  sprintf(
+    "/bin/zsh -lc %s",
+    shQuote(paste(
+      "true || cat",
+      shQuote(file.path(case_dir, "case.md")),
+      "> marker"
+    ))
+  ),
+  sprintf(
+    "/tmp/fake/zsh -lc %s",
+    shQuote(paste(
+      "cat",
+      shQuote(file.path(case_dir, "case.md"))
+    ))
+  )
+)
+for (adversarial_command in adversarial_commands) {
+  adversarial_transcript <- tempfile(
+    "figureforge-adversarial-transcript-",
+    fileext = ".jsonl"
+  )
+  writeLines(json_command(adversarial_command), adversarial_transcript)
+  stopifnot(!live_mode_transcript_reads(
+    adversarial_transcript,
+    workspace,
+    file.path(case_dir, "case.md")
+  ))
+}
 
 writeLines(
   c(
@@ -237,6 +365,7 @@ fallback_result <- evaluate_live_mode_probe(
   expected_mode = "general_fallback",
   workspace_root = workspace,
   installed_skill_root = skill_root,
+  manifest_path = manifest_path,
   transcript_path = failed_transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -263,6 +392,7 @@ wrong_claim <- evaluate_live_mode_probe(
   expected_mode = "general_fallback",
   workspace_root = workspace,
   installed_skill_root = skill_root,
+  manifest_path = manifest_path,
   transcript_path = failed_transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -280,6 +410,7 @@ unbound <- evaluate_live_mode_probe(
   expected_mode = "general_fallback",
   workspace_root = workspace,
   installed_skill_root = skill_root,
+  manifest_path = manifest_path,
   transcript_path = failed_transcript,
   validator_log = validation_log,
   validator_status = 0L
@@ -311,6 +442,7 @@ cli_result <- system2(
     "--expected-mode", "general_fallback",
     "--workspace", shQuote(workspace),
     "--installed-skill", shQuote(skill_root),
+    "--manifest", shQuote(manifest_path),
     "--transcript", shQuote(failed_transcript),
     "--validator-log", shQuote(validation_log),
     "--validator-status", "0",

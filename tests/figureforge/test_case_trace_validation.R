@@ -883,6 +883,57 @@ writeLines(
   useBytes = TRUE
 )
 
+for (linked_evidence in c("case.md", "plot.R", "qa.md")) {
+  evidence_path <- file.path(case_dir, linked_evidence)
+  evidence_bytes <- readBin(
+    evidence_path,
+    "raw",
+    n = file.info(evidence_path)$size
+  )
+  external_evidence <- file.path(
+    fixture_root,
+    paste0("external-", linked_evidence)
+  )
+  writeBin(evidence_bytes, external_evidence)
+  linked_fields <- case_based_fields()
+  write_trace(linked_fields)
+  unlink(evidence_path)
+  stopifnot(file.symlink(external_evidence, evidence_path))
+  linked_result <- validate_case_trace(
+    trace_path,
+    case_dir = case_dir,
+    script_path = script_path,
+    schema_path = schema_path
+  )
+  expect_result_shape(linked_result)
+  stopifnot(!isTRUE(linked_result$ok))
+  expected_failure <- if (identical(linked_evidence, "qa.md")) {
+    "QA evidence matches case"
+  } else {
+    "case evidence hashes match"
+  }
+  stopifnot(expected_failure %in% linked_result$failed_checks)
+  unlink(evidence_path)
+  writeBin(evidence_bytes, evidence_path)
+}
+
+linked_case_parent <- file.path(fixture_root, "linked-cases")
+dir.create(linked_case_parent)
+linked_case_dir <- file.path(linked_case_parent, "verified-scatter")
+stopifnot(file.symlink(case_dir, linked_case_dir))
+write_trace(case_based_fields())
+linked_case_result <- validate_case_trace(
+  trace_path,
+  case_dir = linked_case_dir,
+  script_path = script_path,
+  schema_path = schema_path
+)
+expect_result_shape(linked_case_result)
+stopifnot(!isTRUE(linked_case_result$ok))
+stopifnot(
+  "case evidence hashes match" %in% linked_case_result$failed_checks
+)
+
 unreadable_case_fields <- case_based_fields()
 write_trace(unreadable_case_fields)
 Sys.chmod(file.path(case_dir, "case.md"), mode = "0000")

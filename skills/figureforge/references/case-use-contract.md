@@ -49,7 +49,8 @@ generation mode. A generation trace must bind the actual input file SHA-256.
 Use this mode only when one primary case is sufficiently relevant and readable.
 Actually read its `case.md` and `plot.R`; also read `qa.md` when it exists.
 Secondary cases may inform local patterns, but the trace and claim bind to the
-primary case.
+primary case. Strict validation accepts only a real primary case directory and
+regular, non-symlink `case.md`, `plot.R`, and `qa.md` evidence files.
 
 Before claiming case-grounded use:
 
