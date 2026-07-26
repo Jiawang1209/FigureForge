@@ -458,10 +458,45 @@ assert_true(
 )
 
 private_case_dir <- Sys.getenv("FIGUREFORGE_PCA_CASE_DIR", unset = "")
-if (dir.exists(private_case_dir)) {
+require_private_trace <- identical(
+  Sys.getenv("FIGUREFORGE_REQUIRE_PRIVATE_PCA_TRACE", unset = "0"),
+  "1"
+)
+probe_only <- "--figureforge-pca-trace-probe-only" %in%
+  commandArgs(trailingOnly = TRUE)
+
+validate_private_pca_trace_gate <- function(case_dir, required) {
+  if (nzchar(case_dir) && !dir.exists(case_dir)) {
+    stop(
+      paste0(
+        "FIGUREFORGE_PCA_CASE_DIR is configured but is not a directory: ",
+        case_dir
+      ),
+      call. = FALSE
+    )
+  }
+  if (!nzchar(case_dir)) {
+    if (required) {
+      stop(
+        paste(
+          "FIGUREFORGE_REQUIRE_PRIVATE_PCA_TRACE=1 requires",
+          "a valid FIGUREFORGE_PCA_CASE_DIR"
+        ),
+        call. = FALSE
+      )
+    }
+    message(
+      paste(
+        "Iris PCA provenance: private strict skipped;",
+        "structural validation PASS only"
+      )
+    )
+    return(invisible(structural_trace))
+  }
+
   strict_trace <- validate_case_trace(
     trace_path,
-    case_dir = private_case_dir,
+    case_dir = case_dir,
     script_path = file.path(demo_root, "plot.R")
   )
   assert_true(
@@ -476,6 +511,17 @@ if (dir.exists(private_case_dir)) {
       paste(strict_trace$failed_checks, collapse = ", ")
     )
   )
+  message("Verification level: strict")
+  message("Iris PCA private provenance: strict PASS")
+  invisible(strict_trace)
+}
+
+private_trace_result <- validate_private_pca_trace_gate(
+  private_case_dir,
+  require_private_trace
+)
+if (probe_only) {
+  quit(save = "no", status = 0L, runLast = FALSE)
 }
 
 iris_data <- read.csv(
