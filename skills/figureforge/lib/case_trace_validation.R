@@ -38,33 +38,129 @@ case_trace_sha256 <- function(value) {
 
 case_trace_has_absolute_path <- function(value) {
   grepl(
-    "(^|[[:space:]\"'(=])/(?!/)|(^|[[:space:]\"'(=])[A-Za-z]:[\\\\/]",
+    paste(
+      "(^|[[:space:]\"'(=])/(?!/)",
+      "(^|[[:space:]\"'(=])[A-Za-z]:[\\\\/]",
+      "(^|[[:space:]\"'(=])\\\\\\\\[^\\\\/]+[\\\\/]",
+      sep = "|"
+    ),
     value,
     perl = TRUE
   )
 }
 
-case_trace_patterns_are_concrete <- function(value) {
-  patterns <- trimws(strsplit(value, "|", fixed = TRUE)[[1L]])
-  generic <- grepl(
-    paste(
-      "^used colou?rs?$",
-      "^made (a )?scientific plot$",
-      "^made (a )?plot$",
-      "^created (a )?plot$",
-      "^generated (a )?plot$",
-      "^adapted (a )?plot$",
-      "^nice plot$",
-      "^good plot$",
-      sep = "|"
+case_trace_concrete_pattern_terms <- function() {
+  list(
+    english = c(
+      "aesthetic",
+      "aesthetics",
+      "aes",
+      "annotation",
+      "annotations",
+      "axis",
+      "axes",
+      "bar",
+      "bars",
+      "boxplot",
+      "boxplots",
+      "confidence interval",
+      "coordinate",
+      "coordinates",
+      "density",
+      "errorbar",
+      "errorbars",
+      "facet",
+      "facets",
+      "histogram",
+      "histograms",
+      "jitter",
+      "label",
+      "labels",
+      "layer",
+      "layered",
+      "layers",
+      "legend",
+      "legends",
+      "line",
+      "lines",
+      "loess",
+      "mapping",
+      "point",
+      "points",
+      "regression",
+      "ribbon",
+      "ribbons",
+      "scale",
+      "scales",
+      "smoothing",
+      "stack",
+      "transformation",
+      "transformations",
+      "violin",
+      "violins"
     ),
-    tolower(patterns),
+    chinese = c(
+      "坐标轴",
+      "图例",
+      "图层",
+      "尺度",
+      "映射",
+      "标注",
+      "标签",
+      "散点",
+      "折线",
+      "柱形",
+      "箱线",
+      "小提琴",
+      "直方",
+      "密度",
+      "误差线",
+      "回归",
+      "拟合",
+      "置信区间",
+      "分面",
+      "变换"
+    )
+  )
+}
+
+case_trace_pattern_has_technical_signal <- function(pattern) {
+  terms <- case_trace_concrete_pattern_terms()
+  normalized <- tolower(pattern)
+  english_signal <- any(vapply(
+    terms$english,
+    function(term) grepl(
+      paste0("\\b", term, "\\b"),
+      normalized,
+      perl = TRUE
+    ),
+    logical(1L)
+  ))
+  identifier_signal <- grepl(
+    "\\b(?:geom|stat|scale|coord|facet|theme)_[a-z0-9_]+\\b",
+    normalized,
     perl = TRUE
   )
+  chinese_signal <- any(vapply(
+    terms$chinese,
+    grepl,
+    logical(1L),
+    x = pattern,
+    fixed = TRUE
+  ))
+  english_signal || identifier_signal || chinese_signal
+}
+
+case_trace_patterns_are_concrete <- function(value) {
+  patterns <- trimws(strsplit(value, "|", fixed = TRUE)[[1L]])
   length(patterns) > 0L &&
     all(nzchar(patterns)) &&
     all(nchar(patterns) >= 5L) &&
-    !any(generic)
+    all(vapply(
+      patterns,
+      case_trace_pattern_has_technical_signal,
+      logical(1L)
+    ))
 }
 
 case_trace_result <- function(checks, messages, evidence) {
@@ -150,7 +246,7 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       (identical(mode, "case_based") &&
         identical(claim, "case_grounded")) ||
         (identical(mode, "general_fallback") &&
-          claim %in% c("general_generation", "general_method"))
+          identical(claim, "general_method"))
     ),
     "generated script hash matches" = script_hash_ok,
     "no absolute paths" = path_ok,

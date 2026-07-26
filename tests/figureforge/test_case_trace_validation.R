@@ -250,6 +250,22 @@ generic_patterns <- case_based_fields()
 generic_patterns$adopted_patterns <- "used colors | made a scientific plot"
 expect_invalid(generic_patterns, "concrete adopted patterns")
 
+generic_pattern_variant <- case_based_fields()
+generic_pattern_variant$adopted_patterns <- "used nice colors"
+expect_invalid(generic_pattern_variant, "concrete adopted patterns")
+
+generic_pattern_chinese <- case_based_fields()
+generic_pattern_chinese$adopted_patterns <- "使用漂亮颜色"
+expect_invalid(generic_pattern_chinese, "concrete adopted patterns")
+
+mixed_concrete_and_generic_patterns <- case_based_fields()
+mixed_concrete_and_generic_patterns$adopted_patterns <-
+  "validated geom_point implementation | used nice colors"
+expect_invalid(
+  mixed_concrete_and_generic_patterns,
+  "concrete adopted patterns"
+)
+
 missing_qa <- case_based_fields()
 missing_qa <- missing_qa[
   !names(missing_qa) %in% c("qa_md_file", "qa_md_sha256")
@@ -280,7 +296,7 @@ fallback_fields <- list(
   generation_mode = "general_fallback",
   figureforge_version = "1.1.0",
   generated_script_sha256 = figureforge_sha256(script_path),
-  claim = "general_generation",
+  claim = "general_method",
   fallback_reason = "No case matched the requested schema and figure type."
 )
 write_trace(fallback_fields)
@@ -330,6 +346,14 @@ expect_invalid(
   case_directory = NULL
 )
 
+legacy_fallback_claim <- fallback_fields
+legacy_fallback_claim$claim <- "general_generation"
+expect_invalid(
+  legacy_fallback_claim,
+  "claim matches generation mode",
+  case_directory = NULL
+)
+
 unix_absolute_path <- case_based_fields()
 unix_absolute_path$departures <- "/private/cases/verified-scatter/data.csv"
 expect_invalid(unix_absolute_path, "no absolute paths")
@@ -339,6 +363,15 @@ windows_absolute_path$fallback_reason <-
   "No usable case under C:\\private\\figureforge\\cases"
 expect_invalid(
   windows_absolute_path,
+  "no absolute paths",
+  case_directory = NULL
+)
+
+unc_absolute_path <- fallback_fields
+unc_absolute_path$fallback_reason <-
+  "No usable case under \\\\server\\share\\case.md"
+expect_invalid(
+  unc_absolute_path,
   "no absolute paths",
   case_directory = NULL
 )
