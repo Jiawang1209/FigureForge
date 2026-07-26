@@ -15,6 +15,7 @@ repo_root <- normalizePath(
   mustWork = TRUE
 )
 source(file.path(repo_root, "skills", "figureforge", "lib", "case_audit.R"))
+source(file.path(repo_root, "skills", "figureforge", "lib", "checksums.R"))
 source(file.path(
   repo_root,
   "skills",
@@ -178,21 +179,82 @@ tryCatch(
         "case_path"
       )
     }
-    display <- results[, display_columns, drop = FALSE]
+    display <- results[
+      ,
+      intersect(display_columns, names(results)),
+      drop = FALSE
+    ]
     if (!is.null(options$output)) {
+      result_count <- max(1L, nrow(results))
+      result_case_ids <- if (nrow(results) > 0L) {
+        as.character(results$case_id)
+      } else {
+        character(0)
+      }
+      result_scores <- if (nrow(results) > 0L) {
+        score_column <- if (options$public) "score_total" else "score"
+        as.numeric(results[[score_column]])
+      } else {
+        numeric(0)
+      }
+      receipt <- data.frame(
+        receipt_schema_version = rep("1", result_count),
+        receipt_generator = rep(
+          "figureforge-search_cases",
+          result_count
+        ),
+        search_query = rep(options$query, result_count),
+        search_scope = rep(
+          if (options$public) "public" else "private",
+          result_count
+        ),
+        schema_sha256 = rep(
+          if (is.null(options$schema)) {
+            "none"
+          } else {
+            figureforge_sha256(options$schema)
+          },
+          result_count
+        ),
+        search_limit = rep(options$limit, result_count),
+        completed_only = rep(options$completed_only, result_count),
+        explain_scores = rep(options$explain_scores, result_count),
+        result_rank = if (nrow(results) > 0L) {
+          seq_len(nrow(results))
+        } else {
+          NA_integer_
+        },
+        case_id_sha256 = if (nrow(results) > 0L) {
+          vapply(
+            result_case_ids,
+            figureforge_sha256_text,
+            character(1L)
+          )
+        } else {
+          ""
+        },
+        score = if (nrow(results) > 0L) {
+          result_scores
+        } else {
+          NA_real_
+        },
+        stringsAsFactors = FALSE
+      )
       dir.create(
         dirname(options$output),
         recursive = TRUE,
         showWarnings = FALSE
       )
       write.csv(
-        display,
+        receipt,
         options$output,
         row.names = FALSE,
-        fileEncoding = "UTF-8"
+        fileEncoding = "UTF-8",
+        na = ""
       )
-      message("Wrote search results: ", options$output)
-    } else if (nrow(display) == 0) {
+      message("Wrote search receipt: ", options$output)
+    }
+    if (nrow(display) == 0) {
       message("No matching cases.")
     } else {
       write.table(

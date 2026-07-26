@@ -176,23 +176,25 @@ stopifnot(search$ok)
 
 installed_trace <- file.path(output_root, "case-trace.yml")
 installed_search_receipt <- file.path(output_root, "case-search.csv")
-write.csv(
-  data.frame(
-    case_id = character(0),
-    score_total = numeric(0),
-    stringsAsFactors = FALSE
-  ),
-  installed_search_receipt,
-  row.names = FALSE,
-  fileEncoding = "UTF-8"
+installed_search_query <- "unmatched installation smoke plot"
+installed_receipt_search <- run_installed_r(
+  "search_cases.R",
+  c(
+    "--public",
+    "--query", installed_search_query,
+    "--limit", "1",
+    "--output", installed_search_receipt
+  )
 )
+stopifnot(installed_receipt_search$ok)
+stopifnot(file.exists(installed_search_receipt))
 writeLines(c(
   "schema_version: 1",
   "generation_mode: general_fallback",
   "figureforge_version: 1.1.0",
   paste0("generated_script_sha256: ", paste(rep("0", 64L), collapse = "")),
   "claim: general_method",
-  "search_query: unmatched installation smoke plot",
+  paste0("search_query: ", installed_search_query),
   "search_receipt_file: case-search.csv",
   paste0(
     "search_receipt_sha256: ",

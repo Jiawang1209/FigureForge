@@ -398,8 +398,10 @@ search_receipt <- read.csv(
   check.names = FALSE
 )
 assert_true(
-  "case_id" %in% names(search_receipt) &&
-    trace_metadata$primary_case_id %in% search_receipt$case_id,
+  "case_id_sha256" %in% names(search_receipt) &&
+    figureforge_sha256_text(trace_metadata$primary_case_id) %in%
+      search_receipt$case_id_sha256 &&
+    !any(c("case_id", "title", "case_path") %in% names(search_receipt)),
   "The canonical search receipt must contain the selected primary PCA case"
 )
 assert_true(

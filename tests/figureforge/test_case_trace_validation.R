@@ -130,17 +130,34 @@ search_receipt_path <- file.path(trace_dir, "case-search.csv")
 
 write_search_receipt <- function(
   case_ids = c("verified-scatter", "other-case"),
-  path = search_receipt_path
+  path = search_receipt_path,
+  query = "verified grouped scatter treatment",
+  scope = "public"
 ) {
+  result_count <- max(1L, length(case_ids))
   write.csv(
     data.frame(
-      case_id = case_ids,
-      score_total = seq_along(case_ids),
+      receipt_schema_version = rep("1", result_count),
+      receipt_generator = rep("figureforge-search_cases", result_count),
+      search_query = rep(query, result_count),
+      search_scope = rep(scope, result_count),
+      schema_sha256 = rep("none", result_count),
+      search_limit = rep(5L, result_count),
+      completed_only = rep(FALSE, result_count),
+      explain_scores = rep(TRUE, result_count),
+      result_rank = if (length(case_ids)) seq_along(case_ids) else NA_integer_,
+      case_id_sha256 = if (length(case_ids)) {
+        vapply(case_ids, figureforge_sha256_text, character(1L))
+      } else {
+        ""
+      },
+      score = if (length(case_ids)) seq_along(case_ids) else NA_real_,
       stringsAsFactors = FALSE
     ),
     path,
     row.names = FALSE,
-    fileEncoding = "UTF-8"
+    fileEncoding = "UTF-8",
+    na = ""
   )
   invisible(path)
 }
@@ -338,6 +355,46 @@ expect_invalid(
   mismatched_search_receipt_hash,
   "search receipt hash matches"
 )
+
+stale_query_receipt <- case_based_fields()
+write_search_receipt(query = "a different stale query")
+stale_query_receipt$search_receipt_sha256 <-
+  figureforge_sha256(search_receipt_path)
+expect_invalid(
+  stale_query_receipt,
+  "search receipt matches recorded query"
+)
+write_search_receipt()
+
+minimal_handmade_receipt <- case_based_fields()
+write.csv(
+  data.frame(case_id = "verified-scatter"),
+  search_receipt_path,
+  row.names = FALSE
+)
+minimal_handmade_receipt$search_receipt_sha256 <-
+  figureforge_sha256(search_receipt_path)
+expect_invalid(
+  minimal_handmade_receipt,
+  "search receipt schema is supported"
+)
+write_search_receipt()
+
+unsafe_content_receipt <- case_based_fields()
+unsafe_receipt <- read.csv(
+  search_receipt_path,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+unsafe_receipt$case_path <- "/private/cases/verified-scatter"
+write.csv(unsafe_receipt, search_receipt_path, row.names = FALSE)
+unsafe_content_receipt$search_receipt_sha256 <-
+  figureforge_sha256(search_receipt_path)
+expect_invalid(
+  unsafe_content_receipt,
+  "search receipt content is privacy-safe"
+)
+write_search_receipt()
 
 case_absent_from_search_receipt <- case_based_fields()
 write_search_receipt("other-case")
@@ -1159,13 +1216,15 @@ expect_invalid(
   "no fallback-only evidence"
 )
 
+fallback_query <- "PCA biplot with loading arrows"
+write_search_receipt(character(0), query = fallback_query)
 fallback_fields <- list(
   schema_version = "1",
   generation_mode = "general_fallback",
   figureforge_version = "1.1.0",
   generated_script_sha256 = figureforge_sha256(script_path),
   claim = "general_method",
-  search_query = "PCA biplot with loading arrows",
+  search_query = fallback_query,
   search_receipt_file = "case-search.csv",
   search_receipt_sha256 = figureforge_sha256(search_receipt_path),
   fallback_reason = "No case matched the requested schema and figure type."
@@ -1190,7 +1249,7 @@ expect_invalid(
   "search receipt matches generation mode",
   case_directory = NULL
 )
-write_search_receipt()
+write_search_receipt(character(0), query = fallback_query)
 fallback_fields$search_receipt_sha256 <-
   figureforge_sha256(search_receipt_path)
 
@@ -1339,6 +1398,7 @@ valid_https_url <- validate_case_trace(
 expect_result_shape(valid_https_url)
 stopifnot(isTRUE(valid_https_url$ok))
 
+write_search_receipt()
 role_mapping_text <- case_based_fields()
 role_mapping_text$departures <- "role -> column"
 write_trace(role_mapping_text)

@@ -57,7 +57,9 @@ Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
 Run `search_cases.R` with `--output` before choosing the generation mode.
 Keep the nonempty CSV beside `case-trace.yml`, then record the exact
 `search_query`, `search_receipt_file`, and `search_receipt_sha256` in the
-trace. A console-only search is not a valid search receipt.
+trace. The command still prints candidates for selection, while the persisted
+versioned receipt binds the exact query and search context and stores only
+hashed candidate IDs. A console-only search is not a valid search receipt.
 
 Choose exactly one generation mode after search:
 

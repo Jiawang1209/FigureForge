@@ -26,6 +26,13 @@ source(file.path(
   "skills",
   "figureforge",
   "lib",
+  "checksums.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
   "metadata.R"
 ))
 source(file.path(
@@ -194,6 +201,7 @@ search_status <- system2(
     search_cli,
     "--public",
     "--query", "相关性热图",
+    "--schema", input_path,
     "--explain-scores",
     "--output", search_output
   )),
@@ -204,12 +212,71 @@ stopifnot(identical(as.integer(search_status), 0L))
 search_results <- read.csv(
   search_output,
   stringsAsFactors = FALSE,
-  check.names = FALSE
+  check.names = FALSE,
+  na.strings = character(0)
 )
-stopifnot(identical(
-  search_results$case_id[[1L]],
-  "public-correlation-heatmap"
+expected_receipt_columns <- c(
+  "receipt_schema_version",
+  "receipt_generator",
+  "search_query",
+  "search_scope",
+  "schema_sha256",
+  "search_limit",
+  "completed_only",
+  "explain_scores",
+  "result_rank",
+  "case_id_sha256",
+  "score"
+)
+stopifnot(identical(names(search_results), expected_receipt_columns))
+stopifnot(all(search_results$receipt_schema_version == 1L))
+stopifnot(all(search_results$receipt_generator == "figureforge-search_cases"))
+stopifnot(all(search_results$search_query == "相关性热图"))
+stopifnot(all(search_results$search_scope == "public"))
+stopifnot(all(
+  search_results$schema_sha256 == figureforge_sha256(input_path)
 ))
-stopifnot(all(score_columns %in% names(search_results)))
+stopifnot(all(search_results$search_limit == 10L))
+stopifnot(all(!search_results$completed_only))
+stopifnot(all(search_results$explain_scores))
+stopifnot(identical(
+  search_results$case_id_sha256[[1L]],
+  figureforge_sha256_text("public-correlation-heatmap")
+))
+stopifnot(!any(c(
+  "case_id",
+  "title_en",
+  "title_zh",
+  "case_path"
+) %in% names(search_results)))
+stopifnot(!any(vapply(
+  unlist(search_results, use.names = FALSE),
+  function(value) grepl(
+    "(^/|file://|^[A-Za-z]:[\\\\/])",
+    as.character(value),
+    perl = TRUE,
+    ignore.case = TRUE
+  ),
+  logical(1L)
+)))
+search_log_text <- paste(
+  readLines(search_log, warn = FALSE, encoding = "UTF-8"),
+  collapse = "\n"
+)
+stopifnot(grepl(
+  "public-correlation-heatmap",
+  search_log_text,
+  fixed = TRUE
+))
+stopifnot(grepl(
+  "Wrote search receipt:",
+  search_log_text,
+  fixed = TRUE
+))
+stopifnot(!grepl(
+  "Wrote search results:",
+  search_log_text,
+  fixed = TRUE
+))
 
 message("schema matching tests: PASS")

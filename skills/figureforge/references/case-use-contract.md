@@ -24,10 +24,17 @@ Both modes must record the nonempty `search_query`, the trace-relative
 `search_receipt_file: case-search.csv`, and its
 `search_receipt_sha256`. The receipt filename must be a safe CSV basename and
 the file must remain beside `case-trace.yml`. Validation checks that it is a
-regular nonempty readable CSV and that its SHA-256 matches. For `case_based`,
-the selected `primary_case_id` must occur in the receipt's `case_id` column.
-A console-only search or an invented fallback explanation does not satisfy the
-contract.
+regular nonempty readable CSV and that its SHA-256 matches.
+
+`search_cases.R` writes receipt schema version 1. It binds the exact query,
+public/private scope, optional input-schema SHA-256, limit, filtering flags,
+result ranks, and scores. Candidate identifiers are persisted only as SHA-256
+values; titles, corpus metadata, and case paths are forbidden. The normal
+candidate table is still printed to the terminal so the agent can select and
+read a case without a second search. For `case_based`, the selected
+`primary_case_id` hash must occur in `case_id_sha256`. A stale-query receipt,
+one-column handmade CSV, console-only search, or invented fallback explanation
+does not satisfy the contract.
 
 ## `case_based`
 

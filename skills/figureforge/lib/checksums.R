@@ -38,3 +38,17 @@ figureforge_sha256 <- function(path) {
   }
   hash
 }
+
+figureforge_sha256_text <- function(value) {
+  if (
+    length(value) != 1L ||
+      is.na(value) ||
+      !is.character(value)
+  ) {
+    stop("value must be one non-missing character string")
+  }
+  path <- tempfile("figureforge-sha256-text-")
+  on.exit(unlink(path, force = TRUE), add = TRUE)
+  writeBin(charToRaw(enc2utf8(value)), path)
+  figureforge_sha256(path)
+}
