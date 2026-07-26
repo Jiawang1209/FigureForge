@@ -276,6 +276,8 @@ figureforge_manifest_identical <- function(left, right) {
   right <- right[, fields, drop = FALSE]
   left$bytes <- as.numeric(left$bytes)
   right$bytes <- as.numeric(right$bytes)
+  rownames(left) <- NULL
+  rownames(right) <- NULL
   identical(left, right)
 }
 

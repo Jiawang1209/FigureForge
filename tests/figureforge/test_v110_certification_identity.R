@@ -142,6 +142,24 @@ fixture_manifest <- data.frame(
   ))$size,
   stringsAsFactors = FALSE
 )
+manifest_with_source_rows <- fixture_manifest
+rownames(manifest_with_source_rows) <- manifest_with_source_rows$source_path
+manifest_roundtrip_path <- file.path(fixture_root, "release-manifest.csv")
+write.csv(
+  manifest_with_source_rows,
+  manifest_roundtrip_path,
+  row.names = FALSE,
+  quote = TRUE
+)
+manifest_after_roundtrip <- read.csv(
+  manifest_roundtrip_path,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+stopifnot(figureforge_manifest_identical(
+  manifest_with_source_rows,
+  manifest_after_roundtrip
+))
 fixture_digest <- figureforge_release_source_sha256(
   fixture_root,
   fixture_manifest,
