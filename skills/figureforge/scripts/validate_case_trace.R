@@ -14,18 +14,26 @@ skill_root <- normalizePath(
   file.path(dirname(launcher_path), ".."),
   mustWork = TRUE
 )
-repo_root <- normalizePath(
-  file.path(skill_root, "..", ".."),
-  mustWork = TRUE
-)
-repo_skill_root <- file.path(repo_root, "skills", "figureforge")
-if (dir.exists(repo_skill_root)) {
-  skill_root <- normalizePath(repo_skill_root, mustWork = TRUE)
+
+report_cli_failure <- function(error) {
+  detail <- conditionMessage(error)
+  message(detail)
+  message("Verification level: unavailable")
+  message(
+    "Case trace validation failed: ",
+    strsplit(detail, "\n", fixed = TRUE)[[1L]][[1L]]
+  )
+  quit(status = 1L)
 }
 
-source(file.path(skill_root, "lib", "distribution_validation.R"))
-source(file.path(skill_root, "lib", "checksums.R"))
-source(file.path(skill_root, "lib", "case_trace_validation.R"))
+tryCatch(
+  {
+    source(file.path(skill_root, "lib", "distribution_validation.R"))
+    source(file.path(skill_root, "lib", "checksums.R"))
+    source(file.path(skill_root, "lib", "case_trace_validation.R"))
+  },
+  error = report_cli_failure
+)
 
 usage <- function() {
   paste(
@@ -97,14 +105,5 @@ tryCatch(
     }
     message("Case trace validation OK: ", options$trace_path)
   },
-  error = function(error) {
-    detail <- conditionMessage(error)
-    message(detail)
-    message("Verification level: unavailable")
-    message(
-      "Case trace validation failed: ",
-      strsplit(detail, "\n", fixed = TRUE)[[1L]][[1L]]
-    )
-    quit(status = 1L)
-  }
+  error = report_cli_failure
 )

@@ -259,9 +259,13 @@ case_trace_cli <- file.path(
 stopifnot(file.exists(case_trace_cli))
 
 run_case_trace_cli <- function(arguments) {
+  run_case_trace_cli_at(case_trace_cli, arguments)
+}
+
+run_case_trace_cli_at <- function(cli_path, arguments) {
   output <- suppressWarnings(system2(
     "/usr/local/bin/Rscript",
-    c(shQuote(case_trace_cli), shQuote(arguments)),
+    c(shQuote(cli_path), shQuote(arguments)),
     stdout = TRUE,
     stderr = TRUE
   ))
@@ -270,6 +274,80 @@ run_case_trace_cli <- function(arguments) {
     output = paste(output, collapse = "\n")
   )
 }
+
+vendor_project <- file.path(fixture_root, "vendor-layout-project")
+vendor_skill_root <- file.path(vendor_project, "vendor", "figureforge")
+vendor_script_dir <- file.path(vendor_skill_root, "scripts")
+vendor_lib_dir <- file.path(vendor_skill_root, "lib")
+poison_lib_dir <- file.path(
+  vendor_project,
+  "skills",
+  "figureforge",
+  "lib"
+)
+dir.create(vendor_script_dir, recursive = TRUE)
+dir.create(vendor_lib_dir, recursive = TRUE)
+dir.create(poison_lib_dir, recursive = TRUE)
+file.copy(case_trace_cli, vendor_script_dir, overwrite = TRUE)
+for (library_file in c(
+  "distribution_validation.R",
+  "checksums.R",
+  "case_trace_validation.R"
+)) {
+  file.copy(
+    file.path(
+      repo_root,
+      "skills",
+      "figureforge",
+      "lib",
+      library_file
+    ),
+    vendor_lib_dir,
+    overwrite = TRUE
+  )
+}
+writeLines(
+  'stop("poison sibling skill root loaded")',
+  file.path(poison_lib_dir, "distribution_validation.R"),
+  useBytes = TRUE
+)
+vendor_cli <- run_case_trace_cli_at(
+  file.path(vendor_script_dir, "validate_case_trace.R"),
+  trace_path
+)
+stopifnot(is.null(vendor_cli$status))
+stopifnot(grepl(
+  "Verification level: structural",
+  vendor_cli$output,
+  fixed = TRUE
+))
+stopifnot(grepl(
+  paste0("Case trace validation OK: ", trace_path),
+  vendor_cli$output,
+  fixed = TRUE
+))
+stopifnot(!grepl("poison sibling", vendor_cli$output, fixed = TRUE))
+
+missing_lib_root <- file.path(fixture_root, "missing-lib-skill")
+missing_lib_script_dir <- file.path(missing_lib_root, "scripts")
+dir.create(missing_lib_script_dir, recursive = TRUE)
+file.copy(case_trace_cli, missing_lib_script_dir, overwrite = TRUE)
+missing_lib_cli <- run_case_trace_cli_at(
+  file.path(missing_lib_script_dir, "validate_case_trace.R"),
+  trace_path
+)
+stopifnot(!is.null(missing_lib_cli$status))
+stopifnot(identical(as.integer(missing_lib_cli$status), 1L))
+stopifnot(grepl(
+  "Verification level: unavailable",
+  missing_lib_cli$output,
+  fixed = TRUE
+))
+stopifnot(grepl(
+  "Case trace validation failed:",
+  missing_lib_cli$output,
+  fixed = TRUE
+))
 
 expect_cli_input_failure <- function(arguments, detail) {
   result <- run_case_trace_cli(arguments)
