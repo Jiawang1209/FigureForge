@@ -32,14 +32,13 @@ changelog <- read_document("CHANGELOG.md")
 
 shared_terms <- c(
   "1.0.1",
-  ".agents/skills/figureforge",
   "FIGUREFORGE_RSCRIPT",
   "--rscript",
   "verify_release.R",
   "evaluate_skill.R",
   "run_figureforge_live_evals.sh"
 )
-for (document in list(english, chinese, release)) {
+for (document in list(release)) {
   stopifnot(all(vapply(
     shared_terms,
     grepl,
@@ -51,9 +50,6 @@ for (document in list(english, chinese, release)) {
 
 english_terms <- c(
   "15 public cases",
-  "3 authentic open-data cases",
-  "12 synthetic demonstration cases",
-  "30 deterministic bilingual forward evaluations",
   "MCP is planned and unimplemented"
 )
 stopifnot(all(vapply(
@@ -66,9 +62,6 @@ stopifnot(all(vapply(
 
 chinese_terms <- c(
   "15 个公开案例",
-  "3 个真实开放数据案例",
-  "12 个合成演示案例",
-  "30 条确定性双语前向评测",
   "MCP 状态为 planned 且尚未实现"
 )
 stopifnot(all(vapply(

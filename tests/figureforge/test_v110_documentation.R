@@ -65,18 +65,18 @@ expected_readme_sections <- list(
   english = c(
     "## Install",
     "## Use",
-    "## Default outputs",
     "## Iris PCA demo",
-    "## Maintainer documentation",
+    "## Default outputs",
+    "## Documentation",
     "## Scope",
     "## License"
   ),
   chinese = c(
     "## 安装",
     "## 使用",
-    "## 默认输出",
     "## Iris PCA 演示",
-    "## 维护者文档",
+    "## 默认输出",
+    "## 文档",
     "## 范围",
     "## 许可"
   )
@@ -119,13 +119,15 @@ old_maintainer_walkthrough_headings <- c(
   "### Verify, evaluate, and upgrade",
   "### Case-system rationale",
   "### Maintained case workflow",
+  "### Case Readiness Audit",
   "## 维护者工作流",
   "### v1.0.1 历史兼容与发布证据",
   "### 安装与发现",
   "### R 运行时与公开工作流",
   "### 验证、评测与升级",
   "### 案例系统原理",
-  "### 维护中的案例工作流"
+  "### 维护中的案例工作流",
+  "### 案例就绪审计"
 )
 for (heading in old_maintainer_walkthrough_headings) {
   stopifnot(!grepl(heading, english, fixed = TRUE))

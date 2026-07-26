@@ -1807,10 +1807,10 @@ for (document in list(english, chinese)) {
     contains_all(
       document,
       c(
-        "git clone",
+        "git clone https://github.com/Jiawang1209/FigureForge.git",
         "mkdir -p .agents/skills",
-        "cp -R skills/figureforge",
-        ".agents/skills/figureforge",
+        "cp -R FigureForge/skills/figureforge .agents/skills/figureforge",
+        "test -s .agents/skills/figureforge/SKILL.md",
         "examples/iris-pca",
         "plot.R",
         "plot.png",
@@ -1820,6 +1820,19 @@ for (document in list(english, chinese)) {
     "Both root READMEs must cover installation, the Iris demo, and default outputs"
   )
 }
+assert_true(
+  grepl(
+    "Use data.csv with the FigureForge Skill to draw a scatter plot and give me the R script.",
+    english,
+    fixed = TRUE
+  ) &&
+    grepl(
+      "使用 data.csv 数据，基于 FigureForge Skill 帮我绘制一个散点图，并给我一份 R 脚本。",
+      chinese,
+      fixed = TRUE
+    ),
+  "Root READMEs must include the aligned primary plotting prompts"
+)
 assert_true(
   grepl("Rscript examples/iris-pca/plot\\.R", english, perl = TRUE) &&
     grepl("Rscript examples/iris-pca/plot\\.R", chinese, perl = TRUE),
