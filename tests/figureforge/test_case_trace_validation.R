@@ -36,7 +36,9 @@ source(file.path(
   "case_trace_validation.R"
 ))
 
+run_tests <- function() {
 fixture_root <- tempfile("figureforge-case-trace-")
+on.exit(unlink(fixture_root, recursive = TRUE, force = TRUE), add = TRUE)
 case_dir <- file.path(fixture_root, "cases", "verified-scatter")
 output_dir <- file.path(fixture_root, "figureforge-output")
 trace_dir <- file.path(output_dir, ".figureforge")
@@ -131,6 +133,16 @@ expect_result_shape <- function(result) {
   stopifnot(is.character(result$failed_checks))
   stopifnot(is.character(result$messages))
   stopifnot(is.list(result$evidence))
+  stopifnot(!anyNA(result$ok))
+  stopifnot(!anyNA(result$checks))
+  stopifnot(!anyNA(result$failed_checks))
+  stopifnot(!anyNA(result$messages))
+  stopifnot(!anyNA(result$evidence, recursive = TRUE))
+  stopifnot(identical(result$ok, all(result$checks)))
+  stopifnot(identical(
+    result$failed_checks,
+    names(result$checks)[!result$checks]
+  ))
   invisible(result)
 }
 
@@ -142,7 +154,7 @@ expect_invalid <- function(fields, failed_check, case_directory = case_dir) {
     script_path = script_path
   )
   expect_result_shape(result)
-  stopifnot(!isTRUE(result$ok))
+  stopifnot(identical(result$ok, FALSE))
   stopifnot(failed_check %in% result$failed_checks)
   result
 }
@@ -281,6 +293,26 @@ stopifnot(identical(
   "general_fallback"
 ))
 
+fallback_without_script_hash <- fallback_fields[
+  names(fallback_fields) != "generated_script_sha256"
+]
+expect_invalid(
+  fallback_without_script_hash,
+  "generated script hash matches",
+  case_directory = NULL
+)
+
+fallback_wrong_script_hash <- fallback_fields
+fallback_wrong_script_hash$generated_script_sha256 <- paste(
+  rep("0", 64L),
+  collapse = ""
+)
+expect_invalid(
+  fallback_wrong_script_hash,
+  "generated script hash matches",
+  case_directory = NULL
+)
+
 fallback_without_reason <- fallback_fields[
   names(fallback_fields) != "fallback_reason"
 ]
@@ -312,3 +344,6 @@ expect_invalid(
 )
 
 message("case trace validation tests: PASS")
+}
+
+run_tests()
