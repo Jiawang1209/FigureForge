@@ -342,8 +342,24 @@ generic_technical_noun_patterns <- c(
   "used lines",
   "used annotations",
   "used points",
+  "adopted axis labels",
+  "adopting points",
+  "applied bars",
+  "applying annotations",
+  "added lines",
+  "adding points",
+  "made lines",
+  "making annotations",
+  "created bars",
+  "creating labels",
   "使用坐标轴标签",
-  "使用散点"
+  "使用散点",
+  "采用图例",
+  "运用散点",
+  "添加标注",
+  "创建柱形",
+  "制作折线",
+  "用了散点"
 )
 for (generic_technical_noun in generic_technical_noun_patterns) {
   generic_technical_pattern <- case_based_fields()
@@ -591,6 +607,10 @@ embedded_absolute_paths <- c(
   "path:C:\\private\\x",
   "path:\\\\server\\share\\x",
   "file:///private/x",
+  "file://server/share/x",
+  "file://localhost/private/x",
+  "FILE://SERVER/share/x",
+  "FiLe://localhost/private/x",
   "//server/share/x"
 )
 for (absolute_path_token in embedded_absolute_paths) {

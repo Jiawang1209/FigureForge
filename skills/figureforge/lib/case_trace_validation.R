@@ -67,7 +67,7 @@ case_trace_has_absolute_path <- function(value) {
   network_boundary <- "(^|[^[:alnum:]_./:-])"
   grepl(
     paste(
-      "(^|[^[:alnum:]_])file:///",
+      "(^|[^[:alnum:]_])file://",
       paste0(network_boundary, "//[^/[:space:]]+(?:/|$)"),
       paste0(token_boundary, "/(?!/)"),
       paste0(token_boundary, "[A-Za-z]:[\\\\/]"),
@@ -92,9 +92,12 @@ case_trace_superficial_pattern_vocabulary <- function() {
       "scientific"
     ),
     generic_action_prefixes = c(
-      "use",
-      "used",
-      "using"
+      "us(?:e|ed|es|ing)",
+      "adopt(?:ed|s|ing)?",
+      "appl(?:y|ied|ies|ying)",
+      "add(?:ed|s|ing)?",
+      "ma(?:ke|de|kes|king)",
+      "creat(?:e|ed|es|ing)"
     ),
     chinese_subjective_modifiers = c(
       "漂亮",
@@ -105,7 +108,12 @@ case_trace_superficial_pattern_vocabulary <- function() {
     ),
     chinese_generic_action_prefixes = c(
       "使用",
-      "采用"
+      "采用",
+      "运用",
+      "添加",
+      "创建",
+      "制作",
+      "用了"
     )
   )
 }
