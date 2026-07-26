@@ -27,7 +27,7 @@ the file must remain beside `case-trace.yml`. Validation checks that it is a
 regular nonempty readable CSV and that its SHA-256 matches.
 
 `search_cases.R` writes receipt schema version 1. It binds the exact query,
-public/private scope, optional input-schema SHA-256, limit, filtering flags,
+public/private scope, input-schema SHA-256, limit, filtering flags,
 result ranks, and scores. Candidate identifiers are persisted only as SHA-256
 values; titles, corpus metadata, and case paths are forbidden. The normal
 candidate table is still printed to the terminal so the agent can select and
@@ -35,6 +35,10 @@ read a case without a second search. For `case_based`, the selected
 `primary_case_id` hash must occur in `case_id_sha256`. A stale-query receipt,
 one-column handmade CSV, console-only search, or invented fallback explanation
 does not satisfy the contract.
+
+The search CLI may omit `--schema` for standalone catalog browsing, but the
+resulting `schema_sha256: none` receipt cannot validate either plotting
+generation mode. A generation trace must bind the actual input file SHA-256.
 
 ## `case_based`
 

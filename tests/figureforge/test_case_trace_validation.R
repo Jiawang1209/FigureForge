@@ -132,7 +132,8 @@ write_search_receipt <- function(
   case_ids = c("verified-scatter", "other-case"),
   path = search_receipt_path,
   query = "verified grouped scatter treatment",
-  scope = "public"
+  scope = "public",
+  schema_hash = paste(rep("a", 64L), collapse = "")
 ) {
   result_count <- max(1L, length(case_ids))
   write.csv(
@@ -141,7 +142,7 @@ write_search_receipt <- function(
       receipt_generator = rep("figureforge-search_cases", result_count),
       search_query = rep(query, result_count),
       search_scope = rep(scope, result_count),
-      schema_sha256 = rep("none", result_count),
+      schema_sha256 = rep(schema_hash, result_count),
       search_limit = rep(5L, result_count),
       completed_only = rep(FALSE, result_count),
       explain_scores = rep(TRUE, result_count),
@@ -363,6 +364,16 @@ stale_query_receipt$search_receipt_sha256 <-
 expect_invalid(
   stale_query_receipt,
   "search receipt matches recorded query"
+)
+write_search_receipt()
+
+case_receipt_without_schema <- case_based_fields()
+write_search_receipt(schema_hash = "none")
+case_receipt_without_schema$search_receipt_sha256 <-
+  figureforge_sha256(search_receipt_path)
+expect_invalid(
+  case_receipt_without_schema,
+  "search receipt binds input schema"
 )
 write_search_receipt()
 
@@ -1239,6 +1250,23 @@ stopifnot(identical(
   fallback$evidence$generation_mode,
   "general_fallback"
 ))
+
+fallback_receipt_without_schema <- fallback_fields
+write_search_receipt(
+  character(0),
+  query = fallback_query,
+  schema_hash = "none"
+)
+fallback_receipt_without_schema$search_receipt_sha256 <-
+  figureforge_sha256(search_receipt_path)
+expect_invalid(
+  fallback_receipt_without_schema,
+  "search receipt binds input schema",
+  case_directory = NULL
+)
+write_search_receipt(character(0), query = fallback_query)
+fallback_fields$search_receipt_sha256 <-
+  figureforge_sha256(search_receipt_path)
 
 malformed_fallback_receipt <- fallback_fields
 writeLines("not_case_id,not_a_search_receipt", search_receipt_path)

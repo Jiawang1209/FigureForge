@@ -177,11 +177,22 @@ stopifnot(search$ok)
 installed_trace <- file.path(output_root, "case-trace.yml")
 installed_search_receipt <- file.path(output_root, "case-search.csv")
 installed_search_query <- "unmatched installation smoke plot"
+installed_search_schema <- file.path(output_root, "search-schema.csv")
+write.csv(
+  data.frame(
+    predictor = c(1, 2),
+    response = c(2, 3),
+    group = c("a", "b")
+  ),
+  installed_search_schema,
+  row.names = FALSE
+)
 installed_receipt_search <- run_installed_r(
   "search_cases.R",
   c(
     "--public",
     "--query", installed_search_query,
+    "--schema", installed_search_schema,
     "--limit", "1",
     "--output", installed_search_receipt
   )

@@ -149,10 +149,15 @@ INSTALLED_CASE_DIR="$INSTALLED/public-cases/public-correlation-heatmap"
 INSTALLED_CASE_WORKSPACE="$VERIFY_ROOT/installed-case-trace-workspace"
 INSTALLED_CASE_TRACE="$INSTALLED_CASE_WORKSPACE/.figureforge/case-trace.yml"
 INSTALLED_CASE_SEARCH="$INSTALLED_CASE_WORKSPACE/.figureforge/case-search.csv"
+INSTALLED_CASE_SEARCH_SCHEMA="$INSTALLED_CASE_WORKSPACE/search-schema.csv"
 INSTALLED_CASE_SCRIPT="$INSTALLED_CASE_WORKSPACE/plot.R"
 INSTALLED_CASE_TRACE_LOG="$VERIFY_ROOT/installed-case-trace.log"
 mkdir -p "$INSTALLED_CASE_WORKSPACE/.figureforge"
 cp "$INSTALLED_CASE_DIR/plot.R" "$INSTALLED_CASE_SCRIPT"
+{
+  echo "variable_x,variable_y,correlation"
+  echo "a,b,0.5"
+} >"$INSTALLED_CASE_SEARCH_SCHEMA"
 installed_sha256() {
   FIGUREFORGE_CHECKSUMS_R="$INSTALLED/lib/checksums.R" \
     FIGUREFORGE_HASH_FILE="$1" \
@@ -174,6 +179,7 @@ installed_qa_md_sha=$(
 "$RSCRIPT" "$INSTALLED/scripts/search_cases.R" \
   --public \
   --query "correlation heatmap" \
+  --schema "$INSTALLED_CASE_SEARCH_SCHEMA" \
   --limit 5 \
   --output "$INSTALLED_CASE_SEARCH"
 installed_search_sha=$(
