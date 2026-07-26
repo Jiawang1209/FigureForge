@@ -26,6 +26,10 @@ case_trace_fallback_keys <- function() {
   "fallback_reason"
 }
 
+case_trace_fallback_only_keys <- function() {
+  c("fallback_reason", "considered_cases")
+}
+
 case_trace_nonempty_keys <- function(metadata, keys) {
   all(keys %in% names(metadata)) &&
     all(nzchar(vapply(metadata[keys], as.character, character(1L))))
@@ -37,11 +41,12 @@ case_trace_sha256 <- function(value) {
 }
 
 case_trace_has_absolute_path <- function(value) {
+  token_boundary <- "(^|[^[:alnum:]_./-])"
   grepl(
     paste(
-      "(^|[[:space:]\"'(=])/(?!/)",
-      "(^|[[:space:]\"'(=])[A-Za-z]:[\\\\/]",
-      "(^|[[:space:]\"'(=])\\\\\\\\[^\\\\/]+[\\\\/]",
+      paste0(token_boundary, "/(?!/)"),
+      paste0(token_boundary, "[A-Za-z]:[\\\\/]"),
+      paste0(token_boundary, "\\\\\\\\[^\\\\/]+[\\\\/]"),
       sep = "|"
     ),
     value,
@@ -70,9 +75,11 @@ case_trace_superficial_pattern_vocabulary <- function() {
     ),
     broad_nouns = c(
       "aesthetics?",
+      "axis labels?",
       "axes",
       "axis",
       "colou?rs?",
+      "points?",
       "plots?",
       "charts?",
       "figures?",
@@ -98,8 +105,10 @@ case_trace_superficial_pattern_vocabulary <- function() {
     chinese_broad_nouns = c(
       "颜色",
       "美学",
+      "坐标轴标签",
       "坐标轴",
       "轴",
+      "散点",
       "图例",
       "主题",
       "设计",
@@ -168,6 +177,7 @@ case_trace_pattern_is_superficial <- function(pattern) {
 case_trace_concrete_pattern_vocabulary <- function() {
   list(
     design_category_phrases = c(
+      "group color and shape",
       "overall composition",
       "implementation technique"
     ),
@@ -299,6 +309,9 @@ case_trace_patterns_are_concrete <- function(value) {
 }
 
 case_trace_result <- function(checks, messages, evidence) {
+  check_names <- names(checks)
+  checks <- vapply(checks, isTRUE, logical(1L))
+  names(checks) <- check_names
   if (exists("make_validation_result", mode = "function", inherits = TRUE)) {
     return(make_validation_result(
       checks,
@@ -306,9 +319,6 @@ case_trace_result <- function(checks, messages, evidence) {
       evidence = evidence
     ))
   }
-  check_names <- names(checks)
-  checks <- as.logical(checks)
-  names(checks) <- check_names
   failed <- names(checks)[!checks]
   list(
     ok = length(failed) == 0L,
@@ -341,9 +351,17 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
     ""
   }
 
-  script_hash_ok <- case_trace_sha256(recorded_script_hash)
+  verification_level <- if (
+    is.null(case_dir) && is.null(script_path)
+  ) {
+    "structural"
+  } else {
+    "strict"
+  }
+  script_hash_format_ok <- case_trace_sha256(recorded_script_hash)
+  script_hash_matches <- FALSE
   if (!is.null(script_path)) {
-    script_hash_ok <- script_hash_ok &&
+    script_hash_matches <- script_hash_format_ok &&
       file.exists(script_path) &&
       identical(
         tryCatch(
@@ -383,10 +401,16 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
         (identical(mode, "general_fallback") &&
           identical(claim, "general_method"))
     ),
-    "generated script hash matches" = script_hash_ok,
+    "generated script hash format" = script_hash_format_ok,
     "no absolute paths" = path_ok,
     "no embedded newlines" = newline_ok
   )
+  if (!is.null(script_path)) {
+    checks <- c(
+      checks,
+      "generated script hash matches" = script_hash_matches
+    )
+  }
 
   primary_case_id <- ""
   qa_status <- ""
@@ -413,15 +437,25 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
     patterns_ok <- case_keys_ok &&
       case_trace_patterns_are_concrete(metadata$adopted_patterns)
     departures_ok <- case_keys_ok && nzchar(trimws(metadata$departures))
+    no_fallback_evidence <- !any(
+      case_trace_fallback_only_keys() %in% names(metadata)
+    )
 
-    evidence_hashes_ok <- case_md_ok && plot_r_ok
-    qa_ok <- qa_status %in% c("verified", "review_required", "missing")
+    qa_declared_ok <- if (qa_status %in% c("verified", "review_required")) {
+      identical(metadata$qa_md_file, "qa.md") &&
+        case_trace_sha256(metadata$qa_md_sha256)
+    } else {
+      identical(qa_status, "missing") &&
+        !any(c("qa_md_file", "qa_md_sha256") %in% names(metadata))
+    }
+    evidence_hashes_match <- FALSE
+    qa_matches <- FALSE
     if (!is.null(case_dir)) {
       directory_ok <- dir.exists(case_dir) &&
         identical(basename(normalizePath(case_dir)), primary_case_id)
       case_md_path <- file.path(case_dir, "case.md")
       plot_r_path <- file.path(case_dir, "plot.R")
-      evidence_hashes_ok <- directory_ok &&
+      evidence_hashes_match <- directory_ok &&
         file.exists(case_md_path) &&
         file.exists(plot_r_path) &&
         identical(
@@ -442,20 +476,19 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       qa_path <- file.path(case_dir, "qa.md")
       if (file.exists(qa_path)) {
         qa_lines <- trimws(readLines(qa_path, warn = FALSE))
-        actual_qa_status <- if (
-          any(tolower(qa_lines) == "status: verified")
-        ) {
-          "verified"
-        } else if (
-          any(tolower(qa_lines) == "status: review_required")
-        ) {
-          "review_required"
+        qa_markers <- unique(tolower(qa_lines)[
+          tolower(qa_lines) %in% c(
+            "status: verified",
+            "status: review_required"
+          )
+        ])
+        actual_qa_status <- if (length(qa_markers) == 1L) {
+          sub("^status:\\s*", "", qa_markers[[1L]], perl = TRUE)
         } else {
           ""
         }
-        qa_ok <- identical(qa_status, actual_qa_status) &&
-          identical(metadata$qa_md_file, "qa.md") &&
-          case_trace_sha256(metadata$qa_md_sha256) &&
+        qa_matches <- qa_declared_ok &&
+          identical(qa_status, actual_qa_status) &&
           identical(
             tryCatch(
               figureforge_sha256(qa_path),
@@ -464,28 +497,29 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
             metadata$qa_md_sha256
           )
       } else {
-        qa_ok <- identical(qa_status, "missing") &&
-          !any(c("qa_md_file", "qa_md_sha256") %in% names(metadata))
+        qa_matches <- qa_declared_ok &&
+          identical(qa_status, "missing")
       }
-    } else if (identical(qa_status, "missing")) {
-      qa_ok <- !any(c("qa_md_file", "qa_md_sha256") %in% names(metadata))
-    } else {
-      qa_ok <- qa_ok &&
-        identical(metadata$qa_md_file, "qa.md") &&
-        case_trace_sha256(metadata$qa_md_sha256)
     }
 
     checks <- c(
       checks,
       "required case-based metadata" = case_keys_ok,
-      "case.md evidence" = case_md_ok,
-      "plot.R evidence" = plot_r_ok,
+      "case.md evidence declared" = case_md_ok,
+      "plot.R evidence declared" = plot_r_ok,
       "non-empty schema mapping" = mapping_ok,
       "concrete adopted patterns" = patterns_ok,
       "non-empty departures" = departures_ok,
-      "evidence hashes match" = evidence_hashes_ok,
-      "QA evidence matches case" = qa_ok
+      "no fallback-only evidence" = no_fallback_evidence,
+      "QA evidence declared" = qa_declared_ok
     )
+    if (!is.null(case_dir)) {
+      checks <- c(
+        checks,
+        "case evidence hashes match" = evidence_hashes_match,
+        "QA evidence matches case" = qa_matches
+      )
+    }
   } else if (identical(mode, "general_fallback")) {
     fallback_ok <- case_trace_nonempty_keys(
       metadata,
@@ -517,7 +551,8 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       generation_mode = mode,
       primary_case_id = primary_case_id,
       generated_script_sha256 = recorded_script_hash,
-      qa_status = qa_status
+      qa_status = qa_status,
+      verification_level = verification_level
     )
   )
 }

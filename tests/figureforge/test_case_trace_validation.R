@@ -159,6 +159,25 @@ expect_invalid <- function(fields, failed_check, case_directory = case_dir) {
   result
 }
 
+normalized_checks <- case_trace_result(
+  list(
+    pass = TRUE,
+    missing = NA,
+    numeric_truthy = 1
+  ),
+  messages = character(0),
+  evidence = list()
+)
+expect_result_shape(normalized_checks)
+stopifnot(identical(
+  normalized_checks$checks,
+  c(
+    pass = TRUE,
+    missing = FALSE,
+    numeric_truthy = FALSE
+  )
+))
+
 valid_fields <- case_based_fields()
 write_trace(valid_fields)
 valid <- validate_case_trace(
@@ -175,16 +194,36 @@ stopifnot(identical(
   valid$evidence$generated_script_sha256,
   figureforge_sha256(script_path)
 ))
+stopifnot(identical(valid$evidence$verification_level, "strict"))
+stopifnot("generated script hash matches" %in% names(valid$checks))
+stopifnot("case evidence hashes match" %in% names(valid$checks))
+
+write_trace(valid_fields)
+structural <- validate_case_trace(trace_path)
+expect_result_shape(structural)
+stopifnot(isTRUE(structural$ok))
+stopifnot(identical(
+  structural$evidence$verification_level,
+  "structural"
+))
+stopifnot("generated script hash format" %in% names(structural$checks))
+stopifnot("case.md evidence declared" %in% names(structural$checks))
+stopifnot("plot.R evidence declared" %in% names(structural$checks))
+stopifnot(!any(c(
+  "generated script hash matches",
+  "case evidence hashes match",
+  "QA evidence matches case"
+) %in% names(structural$checks)))
 
 missing_case_md <- valid_fields[
   !names(valid_fields) %in% c("case_md_file", "case_md_sha256")
 ]
-expect_invalid(missing_case_md, "case.md evidence")
+expect_invalid(missing_case_md, "case.md evidence declared")
 
 missing_plot_r <- valid_fields[
   !names(valid_fields) %in% c("plot_r_file", "plot_r_sha256")
 ]
-expect_invalid(missing_plot_r, "plot.R evidence")
+expect_invalid(missing_plot_r, "plot.R evidence declared")
 
 write_trace(valid_fields)
 writeLines(
@@ -199,7 +238,7 @@ changed_evidence <- validate_case_trace(
 )
 expect_result_shape(changed_evidence)
 stopifnot(!isTRUE(changed_evidence$ok))
-stopifnot("evidence hashes match" %in% changed_evidence$failed_checks)
+stopifnot("case evidence hashes match" %in% changed_evidence$failed_checks)
 writeLines(
   c(
     "# Verified scatter",
@@ -273,6 +312,21 @@ expect_invalid(
   "concrete adopted patterns"
 )
 
+generic_technical_noun_patterns <- c(
+  "used axis labels",
+  "used points",
+  "使用坐标轴标签",
+  "使用散点"
+)
+for (generic_technical_noun in generic_technical_noun_patterns) {
+  generic_technical_pattern <- case_based_fields()
+  generic_technical_pattern$adopted_patterns <- generic_technical_noun
+  expect_invalid(
+    generic_technical_pattern,
+    "concrete adopted patterns"
+  )
+}
+
 mixed_concrete_and_generic_patterns <- case_based_fields()
 mixed_concrete_and_generic_patterns$adopted_patterns <-
   "validated geom_point implementation | used nice colors"
@@ -297,11 +351,48 @@ valid_design_categories <- validate_case_trace(
 expect_result_shape(valid_design_categories)
 stopifnot(isTRUE(valid_design_categories$ok))
 
+specific_adaptation_patterns <- case_based_fields()
+specific_adaptation_patterns$adopted_patterns <- paste(
+  "variance in axis labels",
+  "group color and shape",
+  "zero reference lines",
+  sep = " | "
+)
+write_trace(specific_adaptation_patterns)
+valid_specific_adaptations <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(valid_specific_adaptations)
+stopifnot(isTRUE(valid_specific_adaptations$ok))
+
 missing_qa <- case_based_fields()
 missing_qa <- missing_qa[
   !names(missing_qa) %in% c("qa_md_file", "qa_md_sha256")
 ]
 expect_invalid(missing_qa, "QA evidence matches case")
+
+writeLines(
+  c(
+    "# QA",
+    "",
+    "Status: verified",
+    "Status: review_required"
+  ),
+  file.path(case_dir, "qa.md"),
+  useBytes = TRUE
+)
+conflicting_qa_fields <- case_based_fields()
+expect_invalid(
+  conflicting_qa_fields,
+  "QA evidence matches case"
+)
+writeLines(
+  c("# QA", "", "Status: verified"),
+  file.path(case_dir, "qa.md"),
+  useBytes = TRUE
+)
 
 case_without_qa <- file.path(fixture_root, "cases", "unverified-scatter")
 dir.create(case_without_qa, recursive = TRUE)
@@ -321,6 +412,20 @@ valid_missing_qa <- validate_case_trace(
 expect_result_shape(valid_missing_qa)
 stopifnot(isTRUE(valid_missing_qa$ok))
 stopifnot(identical(valid_missing_qa$evidence$qa_status, "missing"))
+
+case_with_fallback_reason <- case_based_fields()
+case_with_fallback_reason$fallback_reason <- "A fallback was considered."
+expect_invalid(
+  case_with_fallback_reason,
+  "no fallback-only evidence"
+)
+
+case_with_considered_cases <- case_based_fields()
+case_with_considered_cases$considered_cases <- "other-case"
+expect_invalid(
+  case_with_considered_cases,
+  "no fallback-only evidence"
+)
 
 fallback_fields <- list(
   schema_version = "1",
@@ -406,6 +511,34 @@ expect_invalid(
   "no absolute paths",
   case_directory = NULL
 )
+
+embedded_absolute_paths <- c(
+  "path:/private/x",
+  "[/private/x]",
+  "x,/private/x",
+  "path:C:\\private\\x",
+  "path:\\\\server\\share\\x"
+)
+for (absolute_path_token in embedded_absolute_paths) {
+  embedded_absolute_path <- fallback_fields
+  embedded_absolute_path$fallback_reason <- absolute_path_token
+  expect_invalid(
+    embedded_absolute_path,
+    "no absolute paths",
+    case_directory = NULL
+  )
+}
+
+role_mapping_text <- case_based_fields()
+role_mapping_text$departures <- "role -> column"
+write_trace(role_mapping_text)
+valid_role_mapping_text <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(valid_role_mapping_text)
+stopifnot(isTRUE(valid_role_mapping_text$ok))
 
 message("case trace validation tests: PASS")
 }
