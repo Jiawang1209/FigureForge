@@ -215,6 +215,27 @@ stopifnot(!any(c(
   "QA evidence matches case"
 ) %in% names(structural$checks)))
 
+case_only <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir
+)
+expect_result_shape(case_only)
+stopifnot(isTRUE(case_only$ok))
+stopifnot(identical(case_only$evidence$verification_level, "partial"))
+stopifnot("case evidence hashes match" %in% names(case_only$checks))
+stopifnot(!"generated script hash matches" %in% names(case_only$checks))
+
+script_only <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(script_only)
+stopifnot(isTRUE(script_only$ok))
+stopifnot(identical(script_only$evidence$verification_level, "partial"))
+stopifnot("generated script hash matches" %in% names(script_only$checks))
+stopifnot(!"case evidence hashes match" %in% names(script_only$checks))
+stopifnot(!"QA evidence matches case" %in% names(script_only$checks))
+
 missing_case_md <- valid_fields[
   !names(valid_fields) %in% c("case_md_file", "case_md_sha256")
 ]
@@ -313,7 +334,13 @@ expect_invalid(
 )
 
 generic_technical_noun_patterns <- c(
+  "use labels",
+  "using labels",
   "used axis labels",
+  "used labels",
+  "used bars",
+  "used lines",
+  "used annotations",
   "used points",
   "使用坐标轴标签",
   "使用散点"
@@ -440,10 +467,55 @@ fallback <- validate_case_trace(trace_path, script_path = script_path)
 expect_result_shape(fallback)
 stopifnot(isTRUE(fallback$ok))
 stopifnot(length(fallback$failed_checks) == 0L)
+stopifnot(identical(fallback$evidence$verification_level, "strict"))
 stopifnot(identical(
   fallback$evidence$generation_mode,
   "general_fallback"
 ))
+
+write_trace(fallback_fields)
+fallback_structural <- validate_case_trace(trace_path)
+expect_result_shape(fallback_structural)
+stopifnot(isTRUE(fallback_structural$ok))
+stopifnot(identical(
+  fallback_structural$evidence$verification_level,
+  "structural"
+))
+stopifnot(
+  !"generated script hash matches" %in% names(fallback_structural$checks)
+)
+
+fallback_case_only <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir
+)
+expect_result_shape(fallback_case_only)
+stopifnot(isTRUE(fallback_case_only$ok))
+stopifnot(identical(
+  fallback_case_only$evidence$verification_level,
+  "structural"
+))
+stopifnot(
+  !"generated script hash matches" %in% names(fallback_case_only$checks)
+)
+
+fallback_both_paths <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(fallback_both_paths)
+stopifnot(isTRUE(fallback_both_paths$ok))
+stopifnot(identical(
+  fallback_both_paths$evidence$verification_level,
+  "strict"
+))
+stopifnot(
+  "generated script hash matches" %in% names(fallback_both_paths$checks)
+)
+stopifnot(
+  !"case evidence hashes match" %in% names(fallback_both_paths$checks)
+)
 
 fallback_without_script_hash <- fallback_fields[
   names(fallback_fields) != "generated_script_sha256"
@@ -517,7 +589,9 @@ embedded_absolute_paths <- c(
   "[/private/x]",
   "x,/private/x",
   "path:C:\\private\\x",
-  "path:\\\\server\\share\\x"
+  "path:\\\\server\\share\\x",
+  "file:///private/x",
+  "//server/share/x"
 )
 for (absolute_path_token in embedded_absolute_paths) {
   embedded_absolute_path <- fallback_fields
@@ -528,6 +602,17 @@ for (absolute_path_token in embedded_absolute_paths) {
     case_directory = NULL
   )
 }
+
+https_url <- fallback_fields
+https_url$fallback_reason <-
+  "No matching case; see https://example.com/x for the method."
+write_trace(https_url)
+valid_https_url <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(valid_https_url)
+stopifnot(isTRUE(valid_https_url$ok))
 
 role_mapping_text <- case_based_fields()
 role_mapping_text$departures <- "role -> column"

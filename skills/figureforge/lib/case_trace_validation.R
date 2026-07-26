@@ -40,17 +40,43 @@ case_trace_sha256 <- function(value) {
     grepl("^[0-9a-f]{64}$", value, perl = TRUE)
 }
 
+case_trace_verification_level <- function(
+  generation_mode,
+  case_dir,
+  script_path
+) {
+  has_case_dir <- !is.null(case_dir)
+  has_script_path <- !is.null(script_path)
+  if (identical(generation_mode, "case_based")) {
+    if (has_case_dir && has_script_path) {
+      return("strict")
+    }
+    if (has_case_dir || has_script_path) {
+      return("partial")
+    }
+    return("structural")
+  }
+  if (identical(generation_mode, "general_fallback")) {
+    return(if (has_script_path) "strict" else "structural")
+  }
+  "structural"
+}
+
 case_trace_has_absolute_path <- function(value) {
   token_boundary <- "(^|[^[:alnum:]_./-])"
+  network_boundary <- "(^|[^[:alnum:]_./:-])"
   grepl(
     paste(
+      "(^|[^[:alnum:]_])file:///",
+      paste0(network_boundary, "//[^/[:space:]]+(?:/|$)"),
       paste0(token_boundary, "/(?!/)"),
       paste0(token_boundary, "[A-Za-z]:[\\\\/]"),
       paste0(token_boundary, "\\\\\\\\[^\\\\/]+[\\\\/]"),
       sep = "|"
     ),
     value,
-    perl = TRUE
+    perl = TRUE,
+    ignore.case = TRUE
   )
 }
 
@@ -65,27 +91,10 @@ case_trace_superficial_pattern_vocabulary <- function() {
       "clear",
       "scientific"
     ),
-    generic_action_verbs = c(
-      "us(?:e|ed|es|ing)",
-      "adopt(?:ed|s|ing)?",
-      "appl(?:y|ied|ies|ying)",
-      "add(?:ed|s|ing)?",
-      "made",
-      "created"
-    ),
-    broad_nouns = c(
-      "aesthetics?",
-      "axis labels?",
-      "axes",
-      "axis",
-      "colou?rs?",
-      "points?",
-      "plots?",
-      "charts?",
-      "figures?",
-      "legends?",
-      "themes?",
-      "designs?"
+    generic_action_prefixes = c(
+      "use",
+      "used",
+      "using"
     ),
     chinese_subjective_modifiers = c(
       "漂亮",
@@ -94,27 +103,9 @@ case_trace_superficial_pattern_vocabulary <- function() {
       "科学",
       "清晰"
     ),
-    chinese_generic_actions = c(
+    chinese_generic_action_prefixes = c(
       "使用",
-      "采用",
-      "运用",
-      "添加",
-      "用了",
-      "采用了"
-    ),
-    chinese_broad_nouns = c(
-      "颜色",
-      "美学",
-      "坐标轴标签",
-      "坐标轴",
-      "轴",
-      "散点",
-      "图例",
-      "主题",
-      "设计",
-      "图表",
-      "图形",
-      "绘图"
+      "采用"
     )
   )
 }
@@ -129,24 +120,16 @@ case_trace_pattern_is_superficial <- function(pattern) {
     vocabulary$subjective_modifiers
   )
   actions <- case_trace_regex_alternation(
-    vocabulary$generic_action_verbs
+    vocabulary$generic_action_prefixes
   )
-  nouns <- case_trace_regex_alternation(vocabulary$broad_nouns)
   normalized <- tolower(trimws(pattern))
   english_subjective <- grepl(
-    paste0(
-      "^(?:(?:", subjective, ")\\s+)+",
-      "(?:", nouns, ")$"
-    ),
+    paste0("^(?:", subjective, ")\\b"),
     normalized,
     perl = TRUE
   )
   english_generic_action <- grepl(
-    paste0(
-      "^(?:", actions, ")\\s+",
-      "(?:(?:a|an|the|some|", subjective, ")\\s+)*",
-      "(?:", nouns, ")$"
-    ),
+    paste0("^(?:", actions, ")\\b"),
     normalized,
     perl = TRUE
   )
@@ -155,23 +138,23 @@ case_trace_pattern_is_superficial <- function(pattern) {
     vocabulary$chinese_subjective_modifiers
   )
   chinese_actions <- case_trace_regex_alternation(
-    vocabulary$chinese_generic_actions
+    vocabulary$chinese_generic_action_prefixes
   )
-  chinese_nouns <- case_trace_regex_alternation(
-    vocabulary$chinese_broad_nouns
+  chinese_subjective_pattern <- grepl(
+    paste0("^(?:", chinese_subjective, ")"),
+    pattern,
+    perl = TRUE
   )
-  chinese_superficial <- grepl(
-    paste0(
-      "^(?:(?:", chinese_actions, ")(?:了)?",
-      "(?:(?:一个|一种|的|", chinese_subjective, "))*)?",
-      "(?:", chinese_subjective, ")?(?:的)?",
-      "(?:", chinese_nouns, ")$"
-    ),
+  chinese_generic_action <- grepl(
+    paste0("^(?:", chinese_actions, ")"),
     pattern,
     perl = TRUE
   )
 
-  english_subjective || english_generic_action || chinese_superficial
+  english_subjective ||
+    english_generic_action ||
+    chinese_subjective_pattern ||
+    chinese_generic_action
 }
 
 case_trace_concrete_pattern_vocabulary <- function() {
@@ -351,13 +334,11 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
     ""
   }
 
-  verification_level <- if (
-    is.null(case_dir) && is.null(script_path)
-  ) {
-    "structural"
-  } else {
-    "strict"
-  }
+  verification_level <- case_trace_verification_level(
+    mode,
+    case_dir,
+    script_path
+  )
   script_hash_format_ok <- case_trace_sha256(recorded_script_hash)
   script_hash_matches <- FALSE
   if (!is.null(script_path)) {
