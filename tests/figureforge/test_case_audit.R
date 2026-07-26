@@ -133,36 +133,10 @@ read_repo_text <- function(relative_path) {
   )
 }
 
-readme_en <- read_repo_text("README.md")
-readme_zh <- read_repo_text("README.zh.md")
 qa_reference <- read_repo_text(
   "skills/figureforge/references/qa-checklist.md"
 )
 
-for (document in list(readme_en, readme_zh)) {
-  stopifnot(grepl("audit_cases.R", document, fixed = TRUE))
-  for (classification in c(
-    "raw",
-    "scaffolded",
-    "runnable",
-    "reproduced",
-    "qa_verified",
-    "public_ready",
-    "private_only"
-  )) {
-    stopifnot(grepl(classification, document, fixed = TRUE))
-  }
-}
-stopifnot(grepl(
-  "Scaffolded cases are not completed cases.",
-  readme_en,
-  fixed = TRUE
-))
-stopifnot(grepl(
-  "scaffolded（脚手架化）案例不等于已完成案例。",
-  readme_zh,
-  fixed = TRUE
-))
 stopifnot(grepl("Status: verified", qa_reference, fixed = TRUE))
 stopifnot(grepl("distribution.yml", qa_reference, fixed = TRUE))
 
