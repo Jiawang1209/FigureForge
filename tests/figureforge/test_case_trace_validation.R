@@ -348,6 +348,30 @@ stopifnot(grepl(
   missing_lib_cli$output,
   fixed = TRUE
 ))
+stopifnot(grepl(
+  "Required Skill library is unavailable: distribution_validation.R",
+  missing_lib_cli$output,
+  fixed = TRUE
+))
+stopifnot(!grepl("Warning message:", missing_lib_cli$output, fixed = TRUE))
+stopifnot(!grepl("Calls:", missing_lib_cli$output, fixed = TRUE))
+stopifnot(!grepl(
+  normalizePath(missing_lib_root, mustWork = TRUE),
+  missing_lib_cli$output,
+  fixed = TRUE
+))
+missing_lib_output_lines <- strsplit(
+  missing_lib_cli$output,
+  "\n",
+  fixed = TRUE
+)[[1L]]
+stopifnot(identical(
+  tail(missing_lib_output_lines, 1L),
+  paste(
+    "Case trace validation failed:",
+    "Required Skill library is unavailable: distribution_validation.R"
+  )
+))
 
 expect_cli_input_failure <- function(arguments, detail) {
   result <- run_case_trace_cli(arguments)

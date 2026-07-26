@@ -28,9 +28,30 @@ report_cli_failure <- function(error) {
 
 tryCatch(
   {
-    source(file.path(skill_root, "lib", "distribution_validation.R"))
-    source(file.path(skill_root, "lib", "checksums.R"))
-    source(file.path(skill_root, "lib", "case_trace_validation.R"))
+    for (library_file in c(
+      "distribution_validation.R",
+      "checksums.R",
+      "case_trace_validation.R"
+    )) {
+      library_path <- file.path(skill_root, "lib", library_file)
+      if (!file.exists(library_path)) {
+        stop(
+          "Required Skill library is unavailable: ",
+          library_file,
+          call. = FALSE
+        )
+      }
+      tryCatch(
+        suppressWarnings(source(library_path)),
+        error = function(error) {
+          stop(
+            "Required Skill library failed to load: ",
+            library_file,
+            call. = FALSE
+          )
+        }
+      )
+    }
   },
   error = report_cli_failure
 )
