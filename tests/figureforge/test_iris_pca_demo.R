@@ -117,6 +117,79 @@ contains_absolute_local_path <- function(document) {
   ))
 }
 
+contains_remote_resource_dependency <- function(document) {
+  resource_tags <- regmatches(
+    document,
+    gregexpr(
+      "(?is)<(?:script|link|img|source|iframe|video|audio)\\b[^>]*>",
+      document,
+      perl = TRUE
+    )
+  )[[1L]]
+  remote_url <- "^(?:(?:https?:)?//)"
+  for (tag in resource_tags) {
+    tag_name <- tolower(sub(
+      "^<[[:space:]]*([A-Za-z]+)[\\s\\S]*$",
+      "\\1",
+      tag,
+      perl = TRUE
+    ))
+    relevant_attributes <- switch(
+      tag_name,
+      script = "src",
+      link = "href",
+      img = "src",
+      source = "src",
+      iframe = "src",
+      video = c("src", "poster"),
+      audio = c("src", "poster"),
+      character()
+    )
+    if (length(relevant_attributes) == 0L) {
+      next
+    }
+    attribute_pattern <- paste0(
+      "(?:",
+      paste(relevant_attributes, collapse = "|"),
+      ")[[:space:]]*=[[:space:]]*",
+      "(?:\"[^\"]*\"|'[^']*'|[^[:space:]>]+)"
+    )
+    attribute_matches <- regmatches(
+      tag,
+      gregexpr(
+        attribute_pattern,
+        tag,
+        ignore.case = TRUE,
+        perl = TRUE
+      )
+    )[[1L]]
+    for (attribute in attribute_matches) {
+      value <- trimws(sub("^[^=]+=", "", attribute))
+      value <- sub(
+        "^[\"'](.*)[\"']$",
+        "\\1",
+        value,
+        perl = TRUE
+      )
+      if (grepl(
+        remote_url,
+        trimws(value),
+        ignore.case = TRUE,
+        perl = TRUE
+      )) {
+        return(TRUE)
+      }
+    }
+  }
+
+  grepl(
+    "url\\([[:space:]]*[\"']?[[:space:]]*(?:(?:https?:)?//)",
+    document,
+    ignore.case = TRUE,
+    perl = TRUE
+  )
+}
+
 unsafe_path_examples <- c(
   "<code>/opt/figureforge/demo</code>",
   "<a href='/var/tmp/plot.png'>plot</a>",
@@ -144,6 +217,39 @@ assert_true(
     logical(1)
   )),
   "Absolute-path detection must allow relative links and normal web URLs"
+)
+
+remote_resource_examples <- c(
+  "<script src='https://cdn.example.org/framework.js'></script>",
+  "<link rel='stylesheet' href='//cdn.example.org/theme.css'>",
+  "<img src=https://cdn.example.org/plot.png>",
+  "<style>.hero { background: url(https://cdn.example.org/bg.png); }</style>"
+)
+assert_true(
+  all(vapply(
+    remote_resource_examples,
+    contains_remote_resource_dependency,
+    logical(1)
+  )),
+  "Offline portability detection must reject remote CDN resources"
+)
+local_resource_examples <- c(
+  paste0(
+    "<script src='./assets/app.js'></script>",
+    "<link rel='stylesheet' href='styles.css'>",
+    "<img src='plot.png'>",
+    "<video src='movie.mp4' poster='poster.png'></video>",
+    "<audio src='data:audio/ogg;base64,T2dn'></audio>"
+  ),
+  "<a href='https://example.org/project'>External project page</a>"
+)
+assert_true(
+  !any(vapply(
+    local_resource_examples,
+    contains_remote_resource_dependency,
+    logical(1)
+  )),
+  "Offline portability detection must allow relative/data resources and external navigation anchors"
 )
 
 required_files <- c(
@@ -828,6 +934,13 @@ assert_live_html <- function(
   assert_true(
     !contains_absolute_local_path(html),
     paste(label, "index.html must not contain an absolute local path")
+  )
+  assert_true(
+    !contains_remote_resource_dependency(html),
+    paste(
+      label,
+      "index.html must be offline-portable without remote resource dependencies"
+    )
   )
 
   table_rows <- extract_html_table_rows(html)
