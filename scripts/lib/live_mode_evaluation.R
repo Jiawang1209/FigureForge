@@ -84,6 +84,37 @@ live_mode_successful_commands <- function(transcript_path) {
   commands[!is.na(commands)]
 }
 
+live_mode_fixed_reader_allowlist <- function(name) {
+  if (!name %in% c("cat", "sed")) return(character(0))
+  candidates <- file.path(c("/bin", "/usr/bin"), name)
+  candidates <- candidates[file.exists(candidates)]
+  normalized <- unique(vapply(
+    candidates,
+    normalizePath,
+    character(1L),
+    mustWork = TRUE,
+    USE.NAMES = FALSE
+  ))
+  normalized[vapply(normalized, function(path) {
+    isTRUE(file_test("-f", path)) &&
+      identical(Sys.readlink(path), "") &&
+      identical(basename(path), name) &&
+      identical(unname(file.access(path, mode = 1L)), 0L)
+  }, logical(1L))]
+}
+
+live_mode_fixed_reader_paths <- function() {
+  readers <- vapply(c("cat", "sed"), function(name) {
+    allowed <- live_mode_fixed_reader_allowlist(name)
+    if (length(allowed) < 1L) {
+      stop("Trusted system reader is unavailable: ", name)
+    }
+    allowed[[1L]]
+  }, character(1L))
+  names(readers) <- c("cat", "sed")
+  readers
+}
+
 live_mode_trusted_reader_paths <- function(paths) {
   if (
     !is.character(paths) ||
@@ -103,7 +134,8 @@ live_mode_trusted_reader_paths <- function(paths) {
         path
       ) &&
       identical(basename(path), expected_name) &&
-      identical(unname(file.access(path, mode = 1L)), 0L)
+      identical(unname(file.access(path, mode = 1L)), 0L) &&
+      path %in% live_mode_fixed_reader_allowlist(expected_name)
   }, logical(1L)))
 }
 

@@ -58,9 +58,23 @@ resolve_trusted_reader() {
   FIGUREFORGE_READER_NAME=$1 \
     "$RSCRIPT" --vanilla -e '
       name <- Sys.getenv("FIGUREFORGE_READER_NAME")
-      path <- unname(Sys.which(name))
-      if (!nzchar(path)) quit(status = 1L)
-      cat(normalizePath(path, mustWork = TRUE))
+      candidates <- file.path(c("/bin", "/usr/bin"), name)
+      candidates <- candidates[file.exists(candidates)]
+      targets <- unique(vapply(
+        candidates,
+        normalizePath,
+        character(1L),
+        mustWork = TRUE,
+        USE.NAMES = FALSE
+      ))
+      valid <- targets[vapply(targets, function(path) {
+        isTRUE(file_test("-f", path)) &&
+          identical(Sys.readlink(path), "") &&
+          identical(basename(path), name) &&
+          identical(unname(file.access(path, mode = 1L)), 0L)
+      }, logical(1L))]
+      if (length(valid) < 1L) quit(status = 1L)
+      cat(valid[[1L]])
     '
 }
 TRUSTED_CAT=$(resolve_trusted_reader cat)

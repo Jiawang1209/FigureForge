@@ -57,6 +57,8 @@ stopifnot(any(grepl("trusted-install", harness, fixed = TRUE)))
 stopifnot(any(grepl("--manifest", harness, fixed = TRUE)))
 stopifnot(any(grepl("--trusted-cat", harness, fixed = TRUE)))
 stopifnot(any(grepl("--trusted-sed", harness, fixed = TRUE)))
+stopifnot(!any(grepl("Sys.which", harness, fixed = TRUE)))
+stopifnot(any(grepl('"/bin", "/usr/bin"', harness, fixed = TRUE)))
 stopifnot(any(grepl("chmod -R a-w", harness, fixed = TRUE)))
 stopifnot(any(grepl("run_figureforge_mode_evals[.]sh", verifier)))
 
@@ -67,9 +69,40 @@ live_block <- verifier[live_start[[1L]]:live_end]
 stopifnot(any(grepl("run_figureforge_mode_evals[.]sh", live_block)))
 
 source(evaluator_path)
-trusted_cat <- normalizePath(Sys.which("cat"), mustWork = TRUE)
-trusted_sed <- normalizePath(Sys.which("sed"), mustWork = TRUE)
-trusted_reader_paths <- c(cat = trusted_cat, sed = trusted_sed)
+trusted_reader_paths <- live_mode_fixed_reader_paths()
+stopifnot(live_mode_trusted_reader_paths(trusted_reader_paths))
+trusted_cat <- trusted_reader_paths[["cat"]]
+trusted_sed <- trusted_reader_paths[["sed"]]
+
+startup_shadow_dir <- tempfile(
+  "figureforge-path-shadow-",
+  tmpdir = "/private/tmp"
+)
+dir.create(startup_shadow_dir)
+startup_fake_cat <- file.path(startup_shadow_dir, "cat")
+startup_fake_sed <- file.path(startup_shadow_dir, "sed")
+writeLines("#!/bin/sh\nexit 0", startup_fake_cat)
+writeLines("#!/bin/sh\nexit 0", startup_fake_sed)
+Sys.chmod(c(startup_fake_cat, startup_fake_sed), mode = "0755")
+original_path <- Sys.getenv("PATH")
+Sys.setenv(PATH = paste(startup_shadow_dir, original_path, sep = ":"))
+stopifnot(identical(
+  normalizePath(Sys.which("cat"), mustWork = TRUE),
+  normalizePath(startup_fake_cat, mustWork = TRUE)
+))
+stopifnot(identical(
+  normalizePath(Sys.which("sed"), mustWork = TRUE),
+  normalizePath(startup_fake_sed, mustWork = TRUE)
+))
+stopifnot(identical(
+  live_mode_fixed_reader_paths(),
+  trusted_reader_paths
+))
+stopifnot(!live_mode_trusted_reader_paths(c(
+  cat = normalizePath(startup_fake_cat, mustWork = TRUE),
+  sed = trusted_sed
+)))
+Sys.setenv(PATH = original_path)
 
 fixture_root <- tempfile("figureforge-live-mode-eval-")
 workspace <- file.path(fixture_root, "workspace")
