@@ -138,6 +138,7 @@ run_probe() {
               "$trace_path" \
               --case-dir "$case_dir" \
               --script "$script_path" \
+              --schema "$workspace/$input_name" \
               >"$validator_log" 2>&1; then
             validator_status=0
           else
@@ -149,6 +150,7 @@ run_probe() {
       if "$RSCRIPT" "$installed_skill/scripts/validate_case_trace.R" \
           "$trace_path" \
           --script "$script_path" \
+          --schema "$workspace/$input_name" \
           >"$validator_log" 2>&1; then
         validator_status=0
       else

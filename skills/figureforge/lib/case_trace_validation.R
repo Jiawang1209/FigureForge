@@ -5,7 +5,8 @@ case_trace_required_common_keys <- function() {
     "figureforge_version",
     "generated_script_sha256",
     "claim",
-    "search_query",
+    "search_query_sha256",
+    "search_intent",
     "search_receipt_file",
     "search_receipt_sha256"
   )
@@ -73,7 +74,8 @@ case_trace_search_receipt_columns <- function() {
   c(
     "receipt_schema_version",
     "receipt_generator",
-    "search_query",
+    "search_query_sha256",
+    "search_intent",
     "search_scope",
     "schema_sha256",
     "search_limit",
@@ -82,6 +84,21 @@ case_trace_search_receipt_columns <- function() {
     "result_rank",
     "case_id_sha256",
     "score"
+  )
+}
+
+case_trace_supported_search_intents <- function() {
+  c(
+    "relationship",
+    "comparison",
+    "distribution",
+    "composition",
+    "trend",
+    "ordination",
+    "network",
+    "spatial",
+    "uncertainty",
+    "other"
   )
 }
 
@@ -102,10 +119,13 @@ case_trace_search_receipt_schema_supported <- function(receipt) {
   limits <- suppressWarnings(as.integer(receipt$search_limit))
   schema_hashes <- as.character(receipt$schema_sha256)
   base_ok <-
-    all(as.character(receipt$receipt_schema_version) == "1") &&
+    all(as.character(receipt$receipt_schema_version) == "2") &&
     all(receipt$receipt_generator == "figureforge-search_cases") &&
-    length(unique(receipt$search_query)) == 1L &&
-    nzchar(trimws(receipt$search_query[[1L]])) &&
+    length(unique(receipt$search_query_sha256)) == 1L &&
+    case_trace_sha256(receipt$search_query_sha256[[1L]]) &&
+    length(unique(receipt$search_intent)) == 1L &&
+    receipt$search_intent[[1L]] %in%
+      case_trace_supported_search_intents() &&
     length(unique(receipt$search_scope)) == 1L &&
     receipt$search_scope[[1L]] %in% c("public", "private") &&
     length(unique(schema_hashes)) == 1L &&
@@ -157,11 +177,20 @@ case_trace_search_receipt_is_privacy_safe <- function(receipt) {
   ))
 }
 
-case_trace_search_receipt_matches_query <- function(receipt, query) {
+case_trace_search_receipt_matches_trace <- function(
+  receipt,
+  query_sha256,
+  search_intent
+) {
   case_trace_search_receipt_schema_supported(receipt) &&
-    length(query) == 1L &&
-    !is.na(query) &&
-    identical(receipt$search_query[[1L]], query)
+    case_trace_sha256(query_sha256) &&
+    identical(
+      receipt$search_query_sha256[[1L]],
+      query_sha256
+    ) &&
+    length(search_intent) == 1L &&
+    !is.na(search_intent) &&
+    identical(receipt$search_intent[[1L]], search_intent)
 }
 
 case_trace_search_receipt_matches_mode <- function(
@@ -188,21 +217,29 @@ case_trace_search_receipt_matches_mode <- function(
 case_trace_verification_level <- function(
   generation_mode,
   case_dir,
-  script_path
+  script_path,
+  schema_path
 ) {
   has_case_dir <- !is.null(case_dir)
   has_script_path <- !is.null(script_path)
+  has_schema_path <- !is.null(schema_path)
   if (identical(generation_mode, "case_based")) {
-    if (has_case_dir && has_script_path) {
+    if (has_case_dir && has_script_path && has_schema_path) {
       return("strict")
     }
-    if (has_case_dir || has_script_path) {
+    if (has_case_dir || has_script_path || has_schema_path) {
       return("partial")
     }
     return("structural")
   }
   if (identical(generation_mode, "general_fallback")) {
-    return(if (has_script_path) "strict" else "structural")
+    if (has_script_path && has_schema_path) {
+      return("strict")
+    }
+    if (has_script_path || has_schema_path) {
+      return("partial")
+    }
+    return("structural")
   }
   "structural"
 }
@@ -527,7 +564,12 @@ case_trace_result <- function(checks, messages, evidence) {
   )
 }
 
-validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL) {
+validate_case_trace <- function(
+  trace_path,
+  case_dir = NULL,
+  script_path = NULL,
+  schema_path = NULL
+) {
   metadata <- tryCatch(
     parse_simple_metadata(trace_path),
     error = function(error) structure(
@@ -555,10 +597,17 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
   } else {
     ""
   }
-  recorded_search_query <- if (
-    "search_query" %in% names(metadata)
+  recorded_search_query_hash <- if (
+    "search_query_sha256" %in% names(metadata)
   ) {
-    metadata$search_query
+    metadata$search_query_sha256
+  } else {
+    ""
+  }
+  recorded_search_intent <- if (
+    "search_intent" %in% names(metadata)
+  ) {
+    metadata$search_intent
   } else {
     ""
   }
@@ -601,7 +650,8 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
   verification_level <- case_trace_verification_level(
     mode,
     case_dir,
-    script_path
+    script_path,
+    schema_path
   )
   script_hash_format_ok <- case_trace_sha256(recorded_script_hash)
   script_hash_matches <- FALSE
@@ -616,6 +666,22 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
           )
         ),
         recorded_script_hash
+      )
+  }
+  schema_regular <- FALSE
+  schema_hash_matches <- FALSE
+  if (!is.null(schema_path)) {
+    schema_regular <- case_trace_regular_nonempty_file(schema_path)
+    schema_hash_matches <- schema_regular &&
+      case_trace_search_receipt_schema_supported(search_receipt) &&
+      identical(
+        suppressWarnings(
+          tryCatch(
+            figureforge_sha256(schema_path),
+            error = function(error) ""
+          )
+        ),
+        search_receipt$schema_sha256[[1L]]
       )
   }
 
@@ -649,15 +715,23 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
           identical(claim, "general_method"))
     ),
     "generated script hash format" = script_hash_format_ok,
+    "search query hash format" =
+      case_trace_sha256(recorded_search_query_hash),
+    "controlled search intent" =
+      recorded_search_intent %in%
+        case_trace_supported_search_intents(),
+    "raw search query is not persisted" =
+      !"search_query" %in% names(metadata),
     "search receipt filename is safe" = search_receipt_file_safe,
     "search receipt is regular non-empty CSV" =
       search_receipt_regular && !is.null(search_receipt),
     "search receipt schema is supported" =
       case_trace_search_receipt_schema_supported(search_receipt),
-    "search receipt matches recorded query" =
-      case_trace_search_receipt_matches_query(
+    "search receipt matches recorded query hash" =
+      case_trace_search_receipt_matches_trace(
         search_receipt,
-        recorded_search_query
+        recorded_search_query_hash,
+        recorded_search_intent
       ),
     "search receipt binds input schema" =
       case_trace_search_receipt_schema_supported(search_receipt) &&
@@ -673,6 +747,14 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
     checks <- c(
       checks,
       "generated script hash matches" = script_hash_matches
+    )
+  }
+  if (!is.null(schema_path)) {
+    checks <- c(
+      checks,
+      "input schema is regular non-empty" = schema_regular,
+      "input schema hash matches search receipt" =
+        schema_hash_matches
     )
   }
 
@@ -866,7 +948,8 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       generation_mode = mode,
       primary_case_id = primary_case_id,
       generated_script_sha256 = recorded_script_hash,
-      search_query = recorded_search_query,
+      search_query_sha256 = recorded_search_query_hash,
+      search_intent = recorded_search_intent,
       search_receipt_file = search_receipt_file,
       search_receipt_sha256 = recorded_search_receipt_hash,
       qa_status = qa_status,

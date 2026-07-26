@@ -88,9 +88,10 @@ writeBin(as.raw(c(137, 80, 78, 71, 1)), file.path(output_dir, "plot.png"))
 writeBin(charToRaw("%PDF-1.4\n"), file.path(output_dir, "plot.pdf"))
 
 receipt <- data.frame(
-  receipt_schema_version = "1",
+  receipt_schema_version = "2",
   receipt_generator = "figureforge-search_cases",
-  search_query = "grouped scatter with fitted trend",
+  search_query_sha256 = paste(rep("a", 64L), collapse = ""),
+  search_intent = "relationship",
   search_scope = "public",
   schema_sha256 = paste(rep("a", 64L), collapse = ""),
   search_limit = "5",
@@ -113,7 +114,8 @@ writeLines(
     "figureforge_version: 1.1.0",
     paste0("generated_script_sha256: ", paste(rep("c", 64L), collapse = "")),
     "claim: case_grounded",
-    "search_query: grouped scatter with fitted trend",
+    paste0("search_query_sha256: ", paste(rep("a", 64L), collapse = "")),
+    "search_intent: relationship",
     "search_receipt_file: case-search.csv",
     paste0("search_receipt_sha256: ", paste(rep("d", 64L), collapse = "")),
     "primary_case_id: public-scatter-fit"
@@ -216,14 +218,16 @@ writeLines(
     "figureforge_version: 1.1.0",
     paste0("generated_script_sha256: ", paste(rep("c", 64L), collapse = "")),
     "claim: general_method",
-    "search_query: PCA biplot with loading arrows",
+    paste0("search_query_sha256: ", paste(rep("f", 64L), collapse = "")),
+    "search_intent: ordination",
     "search_receipt_file: case-search.csv",
     paste0("search_receipt_sha256: ", paste(rep("d", 64L), collapse = "")),
     "fallback_reason: no sufficiently relevant public case"
   ),
   file.path(trace_dir, "case-trace.yml")
 )
-receipt$search_query <- "PCA biplot with loading arrows"
+receipt$search_query_sha256 <- paste(rep("f", 64L), collapse = "")
+receipt$search_intent <- "ordination"
 write.csv(
   receipt,
   file.path(trace_dir, "case-search.csv"),

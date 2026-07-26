@@ -1,5 +1,12 @@
 # FigureForge Skill 1.1.0 Release Evidence
 
+> Historical certification snapshot: this document and its portable evidence
+> bind the source and package identities recorded below. The current
+> FigureForge source has since changed and is pending recertification. Follow
+> the [current-source recertification procedure](figureforge-skill-v1.1.0-recertification.md)
+> and require the identity checker to report `CURRENT` before presenting this
+> evidence as certification of the current source.
+
 Date: 2026-07-26
 
 Branch: `codex/figureforge-v110`
@@ -37,7 +44,7 @@ was not exposed by the retained CLI JSONL, so no model name is guessed.
 
 ## Product Definition and Artifact Contract
 
-FigureForge Skill 1.1.0 is the current locally certified release of the
+This historically certified FigureForge Skill 1.1.0 source snapshot is a
 case-enhanced R scientific plotting capability. It accepts a natural-language
 plotting request plus real data, uses one primary public case and optional
 secondary cases as experience, and delivers exactly the reusable artifact

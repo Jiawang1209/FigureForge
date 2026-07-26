@@ -89,7 +89,7 @@ Skill 会检查真实数据、迁移经过验证的绘图方法、渲染结果�
 案例生成只有实际使用案例证据并通过严格的追踪验证，才可以声称使用了 FigureForge 案例知识。
 通用回退仍可完成绘图，但必须使用 `claim: general_method`，且不得声称由案例支撑。
 案例检索、证据读取以及隐藏追踪的创建和校验均由 Skill 在后台完成；普通用户无需操作案例库。
-无论采用哪种模式，Skill 都必须在模式选择前记录检索词和带哈希的 CSV 检索回执。
+无论采用哪种模式，Skill 都只在模式选择前记录检索词的 SHA-256、受控的抽象检索意图和带哈希的 CSV 检索回执；原始检索词不会被持久化。
 默认可见输出仍是 `plot.R`、`plot.png` 和 `plot.pdf`；隐藏的案例追踪与检索回执仅用于审计。
 
 ## Iris PCA 演示
@@ -128,8 +128,9 @@ Rscript plot.R <input-file> <output-directory>
 - [Skill 入口](skills/figureforge/SKILL.md)
 - [绘图工作流](skills/figureforge/references/plotting-workflow.md)
 - [维护者工作流](skills/figureforge/references/maintainer-workflow.md)
-- [FigureForge Skill 1.1.0 发布证据](docs/figureforge-skill-v1.1.0-release.md)
-- [可移植的 v1.1.0 认证证据](docs/figureforge-skill-v1.1.0-evidence/README.md)
+- [FigureForge Skill 1.1.0 历史认证快照](docs/figureforge-skill-v1.1.0-release.md)
+- [该历史快照的可移植证据](docs/figureforge-skill-v1.1.0-evidence/README.md)
+- [当前源码重新认证流程](docs/figureforge-skill-v1.1.0-recertification.md)
 - [当前状态](docs/figureforge-skill-mvp-status.md)
 - [历史 v1.0.1 发布证据](docs/figureforge-skill-v1.0.1-release.md)
 
@@ -137,7 +138,8 @@ Rscript plot.R <input-file> <output-directory>
 
 FigureForge 默认使用 R 和 ggplot2；科研图形确有需要时，再引入专业 R 包。
 
-FigureForge Skill 1.1.0 是当前完成本地认证的发布版本。
+FigureForge Skill 1.1.0 是当前实现版本。链接的认证证据绑定的是较早的
+v1.1.0 源码与包身份，因此已变更的当前源码仍待重新认证。
 FigureForge Skill 1.0.1 是此前已认证的历史发布版本。随包提供 15 个公开案例。
 
 本地 `skills/figureforge/cases/` 私有案例库和受限来源材料不会公开分发；

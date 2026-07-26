@@ -175,7 +175,7 @@ stopifnot(contains_all(
     "Case-based generation may claim FigureForge case knowledge only when it uses actual case evidence and passes strict trace validation.",
     "General fallback can still complete the plot with `claim: general_method`, but it is not case-grounded.",
     "The Skill handles case search, evidence reading, and hidden trace creation and validation in the background; users do not need to operate the case library.",
-    "Every mode records the search query and a hashed CSV search receipt before the mode decision.",
+    "Every mode records only a search-query SHA-256, a controlled abstract intent, and a hashed CSV search receipt before the mode decision; raw queries are not persisted.",
     "The default visible outputs remain `plot.R`, `plot.png`, and `plot.pdf`; the hidden case trace and search receipt are audit state."
   )
 ))
@@ -185,7 +185,7 @@ stopifnot(contains_all(
     "案例生成只有实际使用案例证据并通过严格的追踪验证，才可以声称使用了 FigureForge 案例知识。",
     "通用回退仍可完成绘图，但必须使用 `claim: general_method`，且不得声称由案例支撑。",
     "案例检索、证据读取以及隐藏追踪的创建和校验均由 Skill 在后台完成；普通用户无需操作案例库。",
-    "无论采用哪种模式，Skill 都必须在模式选择前记录检索词和带哈希的 CSV 检索回执。",
+    "无论采用哪种模式，Skill 都只在模式选择前记录检索词的 SHA-256、受控的抽象检索意图和带哈希的 CSV 检索回执；原始检索词不会被持久化。",
     "默认可见输出仍是 `plot.R`、`plot.png` 和 `plot.pdf`；隐藏的案例追踪与检索回执仅用于审计。"
   )
 ))
@@ -666,7 +666,7 @@ stopifnot(contains_all(
   )
 ))
 stopifnot(grepl(
-  "[portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)",
+  "[portable historical certification evidence](figureforge-skill-v1.1.0-evidence/README.md)",
   status,
   fixed = TRUE
 ))
@@ -755,21 +755,23 @@ stopifnot(contains_all(
 stopifnot(contains_all(
   english,
   c(
-    "FigureForge Skill 1.1.0 is the current locally certified release",
+    "FigureForge Skill 1.1.0 is the current implemented version",
+    "the changed current source is pending recertification",
     "FigureForge Skill 1.0.1 is the prior certified historical release"
   )
 ))
 stopifnot(contains_all(
   chinese,
   c(
-    "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
+    "FigureForge Skill 1.1.0 是当前实现版本",
+    "已变更的当前源码仍待重新认证",
     "FigureForge Skill 1.0.1 是此前已认证的历史发布版本"
   )
 ))
 stopifnot(contains_all(
   status,
   c(
-    "locally certified",
+    "pending recertification",
     "Explicit 1/1; implicit 10/10",
     "/tmp/figureforge-v110-live.740e78",
     "/tmp/figureforge-v110.RMisRW"
@@ -783,6 +785,16 @@ for (document in list(release, status)) {
   ))
 }
 for (document in list(english, chinese, status)) {
+  stopifnot(!grepl(
+    "FigureForge Skill 1.1.0 is the current locally certified release",
+    document,
+    fixed = TRUE
+  ))
+  stopifnot(!grepl(
+    "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
+    document,
+    fixed = TRUE
+  ))
   stopifnot(!grepl(
     "v1.1.0 live-model and release certification is pending",
     document,

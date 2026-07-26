@@ -192,6 +192,7 @@ installed_receipt_search <- run_installed_r(
   c(
     "--public",
     "--query", installed_search_query,
+    "--search-intent", "other",
     "--schema", installed_search_schema,
     "--limit", "1",
     "--output", installed_search_receipt
@@ -205,7 +206,11 @@ writeLines(c(
   "figureforge_version: 1.1.0",
   paste0("generated_script_sha256: ", paste(rep("0", 64L), collapse = "")),
   "claim: general_method",
-  paste0("search_query: ", installed_search_query),
+  paste0(
+    "search_query_sha256: ",
+    figureforge_sha256_text(installed_search_query)
+  ),
+  "search_intent: other",
   "search_receipt_file: case-search.csv",
   paste0(
     "search_receipt_sha256: ",
@@ -215,11 +220,11 @@ writeLines(c(
 ), installed_trace, useBytes = TRUE)
 installed_trace_validation <- run_installed_r(
   "validate_case_trace.R",
-  installed_trace
+  c(installed_trace, "--schema", installed_search_schema)
 )
 stopifnot(installed_trace_validation$ok)
 stopifnot(grepl(
-  "Verification level: structural",
+  "Verification level: partial",
   installed_trace_validation$output,
   fixed = TRUE
 ))

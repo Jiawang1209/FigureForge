@@ -140,7 +140,8 @@ live_mode_regular_nonempty <- function(path) {
 
 live_mode_schema_bound_receipt <- function(metadata, trace_dir) {
   required <- c(
-    "search_query",
+    "search_query_sha256",
+    "search_intent",
     "search_receipt_file",
     "search_receipt_sha256"
   )
@@ -166,7 +167,8 @@ live_mode_schema_bound_receipt <- function(metadata, trace_dir) {
   required_columns <- c(
     "receipt_schema_version",
     "receipt_generator",
-    "search_query",
+    "search_query_sha256",
+    "search_intent",
     "search_scope",
     "schema_sha256",
     "search_limit",
@@ -179,9 +181,30 @@ live_mode_schema_bound_receipt <- function(metadata, trace_dir) {
   !is.null(receipt) &&
     nrow(receipt) >= 1L &&
     identical(names(receipt), required_columns) &&
-    all(receipt$receipt_schema_version == "1") &&
+    all(receipt$receipt_schema_version == "2") &&
     all(receipt$receipt_generator == "figureforge-search_cases") &&
-    all(receipt$search_query == metadata$search_query) &&
+    all(
+      receipt$search_query_sha256 ==
+        metadata$search_query_sha256
+    ) &&
+    grepl(
+      "^[0-9a-f]{64}$",
+      metadata$search_query_sha256,
+      perl = TRUE
+    ) &&
+    all(receipt$search_intent == metadata$search_intent) &&
+    metadata$search_intent %in% c(
+      "relationship",
+      "comparison",
+      "distribution",
+      "composition",
+      "trend",
+      "ordination",
+      "network",
+      "spatial",
+      "uncertainty",
+      "other"
+    ) &&
     length(unique(receipt$schema_sha256)) == 1L &&
     grepl("^[0-9a-f]{64}$", receipt$schema_sha256[[1L]], perl = TRUE)
 }

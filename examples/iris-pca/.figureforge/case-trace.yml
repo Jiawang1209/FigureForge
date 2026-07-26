@@ -3,9 +3,10 @@ generation_mode: case_based
 figureforge_version: 1.1.0
 generated_script_sha256: d209992fa1111ade686883df3447649715d70ff51c4244980ea19815744e6264
 claim: case_grounded
-search_query: PCA ordination biplot loading arrows variance explained
+search_query_sha256: c32be37566702cc72ed3fceafe05a7ba8d420938bcd5f8561b9cee16706f226c
+search_intent: ordination
 search_receipt_file: case-search.csv
-search_receipt_sha256: 55c1a0c4f82bcf2fa0038485cb5e1ef874f2ac2be572a9a50740c1aa7a529088
+search_receipt_sha256: 103b2d36de83cd8bc727cfda07c941110101ec51aa0ef85569e9a57f5c939560
 primary_case_id: 20230925_PCA
 case_md_file: case.md
 case_md_sha256: 69d53255deccf012bee4c628f201a289d622189384eef5f1bbf929cf6f0a5065

@@ -201,6 +201,7 @@ search_status <- system2(
     search_cli,
     "--public",
     "--query", "相关性热图",
+    "--search-intent", "relationship",
     "--schema", input_path,
     "--explain-scores",
     "--output", search_output
@@ -218,7 +219,8 @@ search_results <- read.csv(
 expected_receipt_columns <- c(
   "receipt_schema_version",
   "receipt_generator",
-  "search_query",
+  "search_query_sha256",
+  "search_intent",
   "search_scope",
   "schema_sha256",
   "search_limit",
@@ -229,9 +231,13 @@ expected_receipt_columns <- c(
   "score"
 )
 stopifnot(identical(names(search_results), expected_receipt_columns))
-stopifnot(all(search_results$receipt_schema_version == 1L))
+stopifnot(all(search_results$receipt_schema_version == 2L))
 stopifnot(all(search_results$receipt_generator == "figureforge-search_cases"))
-stopifnot(all(search_results$search_query == "相关性热图"))
+stopifnot(all(
+  search_results$search_query_sha256 ==
+    figureforge_sha256_text("相关性热图")
+))
+stopifnot(all(search_results$search_intent == "relationship"))
 stopifnot(all(search_results$search_scope == "public"))
 stopifnot(all(
   search_results$schema_sha256 == figureforge_sha256(input_path)
@@ -277,6 +283,153 @@ stopifnot(!grepl(
   "Wrote search results:",
   search_log_text,
   fixed = TRUE
+))
+
+run_search <- function(arguments, output = tempfile(fileext = ".log")) {
+  result <- suppressWarnings(system2(
+    "/usr/local/bin/Rscript",
+    c(shQuote(search_cli), shQuote(arguments)),
+    stdout = output,
+    stderr = output
+  ))
+  list(
+    status = if (is.null(attr(result, "status"))) {
+      as.integer(result)
+    } else {
+      as.integer(attr(result, "status"))
+    },
+    text = paste(readLines(output, warn = FALSE), collapse = "\n")
+  )
+}
+
+sensitive_query <- paste(
+  "SSN 123-45-6789",
+  "password=super-secret",
+  "source(user_identifier, api_key)",
+  sep = "\n"
+)
+privacy_receipt <- tempfile("figureforge-private-query-", fileext = ".csv")
+privacy_search <- run_search(c(
+  "--public",
+  "--query", sensitive_query,
+  "--search-intent", "relationship",
+  "--schema", input_path,
+  "--output", privacy_receipt
+))
+stopifnot(identical(privacy_search$status, 0L))
+privacy_bytes <- paste(
+  readLines(privacy_receipt, warn = FALSE, encoding = "UTF-8"),
+  collapse = "\n"
+)
+stopifnot(!grepl("123-45-6789", privacy_bytes, fixed = TRUE))
+stopifnot(!grepl("super-secret", privacy_bytes, fixed = TRUE))
+stopifnot(!grepl("user_identifier", privacy_bytes, fixed = TRUE))
+privacy_data <- read.csv(
+  privacy_receipt,
+  stringsAsFactors = FALSE,
+  check.names = FALSE,
+  na.strings = character(0)
+)
+stopifnot(all(
+  privacy_data$search_query_sha256 ==
+    figureforge_sha256_text(sensitive_query)
+))
+stopifnot(all(privacy_data$search_intent == "relationship"))
+
+invalid_intent_receipt <- tempfile(
+  "figureforge-invalid-intent-",
+  fileext = ".csv"
+)
+invalid_intent <- run_search(c(
+  "--public",
+  "--query", "group comparison",
+  "--search-intent", "patient-123 password=secret",
+  "--schema", input_path,
+  "--output", invalid_intent_receipt
+))
+stopifnot(identical(as.integer(invalid_intent$status), 1L))
+stopifnot(!file.exists(invalid_intent_receipt))
+
+schema_before <- readBin(input_path, "raw", n = file.info(input_path)$size)
+schema_collision <- run_search(c(
+  "--public",
+  "--query", "relationship",
+  "--search-intent", "relationship",
+  "--schema", input_path,
+  "--output", input_path
+))
+stopifnot(identical(as.integer(schema_collision$status), 1L))
+stopifnot(identical(
+  readBin(input_path, "raw", n = file.info(input_path)$size),
+  schema_before
+))
+
+schema_alias <- tempfile("figureforge-schema-alias-", fileext = ".csv")
+stopifnot(file.symlink(input_path, schema_alias))
+schema_alias_collision <- run_search(c(
+  "--public",
+  "--query", "relationship",
+  "--search-intent", "relationship",
+  "--schema", input_path,
+  "--output", schema_alias
+))
+stopifnot(identical(as.integer(schema_alias_collision$status), 1L))
+stopifnot(Sys.readlink(schema_alias) != "")
+stopifnot(identical(
+  readBin(input_path, "raw", n = file.info(input_path)$size),
+  schema_before
+))
+
+case_evidence <- file.path(
+  public_cases_dir,
+  "public-correlation-heatmap",
+  "case.md"
+)
+case_evidence_before <- readBin(
+  case_evidence,
+  "raw",
+  n = file.info(case_evidence)$size
+)
+evidence_collision <- run_search(c(
+  "--public",
+  "--query", "correlation heatmap",
+  "--search-intent", "relationship",
+  "--schema", input_path,
+  "--output", case_evidence
+))
+stopifnot(identical(as.integer(evidence_collision$status), 1L))
+stopifnot(identical(
+  readBin(case_evidence, "raw", n = file.info(case_evidence)$size),
+  case_evidence_before
+))
+
+symlink_target <- tempfile("figureforge-receipt-target-", fileext = ".csv")
+writeLines("preserve this target", symlink_target)
+symlink_output <- tempfile("figureforge-receipt-link-", fileext = ".csv")
+stopifnot(file.symlink(symlink_target, symlink_output))
+symlink_collision <- run_search(c(
+  "--public",
+  "--query", "relationship",
+  "--search-intent", "relationship",
+  "--schema", input_path,
+  "--output", symlink_output
+))
+stopifnot(identical(as.integer(symlink_collision$status), 1L))
+stopifnot(identical(readLines(symlink_target), "preserve this target"))
+
+rollback_receipt <- tempfile("figureforge-rollback-", fileext = ".csv")
+writeLines("existing receipt remains", rollback_receipt)
+failed_search <- run_search(c(
+  "--cases-dir", file.path(tempdir(), "missing-cases"),
+  "--query", "relationship",
+  "--search-intent", "relationship",
+  "--schema", input_path,
+  "--output", rollback_receipt
+))
+stopifnot(identical(as.integer(failed_search$status), 1L))
+stopifnot(identical(
+  readLines(rollback_receipt),
+  "existing receipt remains"
 ))
 
 message("schema matching tests: PASS")

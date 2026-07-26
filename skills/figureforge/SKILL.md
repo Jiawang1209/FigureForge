@@ -48,6 +48,7 @@ Search public cases using the user's scientific intent and the real schema:
 Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
   --public \
   --query "<scientific intent, relationship, or chart family>" \
+  --search-intent "<controlled intent>" \
   --schema "<input-file>" \
   --explain-scores \
   --limit 5 \
@@ -55,11 +56,12 @@ Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
 ```
 
 Run `search_cases.R` with `--output` before choosing the generation mode.
-Keep the nonempty CSV beside `case-trace.yml`, then record the exact
-`search_query`, `search_receipt_file`, and `search_receipt_sha256` in the
-trace. The command still prints candidates for selection, while the persisted
-versioned receipt binds the exact query and search context and stores only
-hashed candidate IDs. A console-only search is not a valid search receipt.
+Keep the nonempty CSV beside `case-trace.yml`, then record its
+`search_query_sha256`, controlled `search_intent`, `search_receipt_file`, and
+`search_receipt_sha256` in the trace. Never copy the raw query into the trace
+or receipt. The command still prints candidates for selection, while the
+persisted versioned receipt binds the query hash and search context and stores
+only hashed candidate IDs. A console-only search is not a valid search receipt.
 
 Choose exactly one generation mode after search:
 
@@ -71,8 +73,10 @@ Choose exactly one generation mode after search:
   evidence cannot be read. Record the reason and proceed with a general R
   method.
 
-For `case_based`, run `validate_case_trace.R` with the primary case directory
-and generated script. Only a successful strict validation authorizes a case-grounded claim.
+For `case_based`, run `validate_case_trace.R` with the primary case directory,
+generated script, and real input schema. For `general_fallback`, pass the
+generated script and real input schema.
+Only a successful strict validation authorizes a case-grounded claim.
 Structural or partial validation never authorizes that claim.
 Never describe `general_fallback` output as case-grounded; its claim is
 `general_method`.

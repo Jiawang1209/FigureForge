@@ -127,20 +127,35 @@ writeLines(
 )
 trace_path <- file.path(trace_dir, "case-trace.yml")
 search_receipt_path <- file.path(trace_dir, "case-search.csv")
+schema_path <- file.path(output_dir, "input.csv")
+write.csv(
+  data.frame(
+    predictor = c(1, 2),
+    response = c(3, 4),
+    treatment = c("A", "B")
+  ),
+  schema_path,
+  row.names = FALSE
+)
 
 write_search_receipt <- function(
   case_ids = c("verified-scatter", "other-case"),
   path = search_receipt_path,
   query = "verified grouped scatter treatment",
+  search_intent = "relationship",
   scope = "public",
-  schema_hash = paste(rep("a", 64L), collapse = "")
+  schema_hash = figureforge_sha256(schema_path)
 ) {
   result_count <- max(1L, length(case_ids))
   write.csv(
     data.frame(
-      receipt_schema_version = rep("1", result_count),
+      receipt_schema_version = rep("2", result_count),
       receipt_generator = rep("figureforge-search_cases", result_count),
-      search_query = rep(query, result_count),
+      search_query_sha256 = rep(
+        figureforge_sha256_text(query),
+        result_count
+      ),
+      search_intent = rep(search_intent, result_count),
       search_scope = rep(scope, result_count),
       schema_sha256 = rep(schema_hash, result_count),
       search_limit = rep(5L, result_count),
@@ -184,7 +199,10 @@ case_based_fields <- function(case_directory = case_dir) {
     figureforge_version = "1.1.0",
     generated_script_sha256 = figureforge_sha256(script_path),
     claim = "case_grounded",
-    search_query = "verified grouped scatter treatment",
+    search_query_sha256 = figureforge_sha256_text(
+      "verified grouped scatter treatment"
+    ),
+    search_intent = "relationship",
     search_receipt_file = "case-search.csv",
     search_receipt_sha256 = figureforge_sha256(search_receipt_path),
     primary_case_id = "verified-scatter",
@@ -240,7 +258,8 @@ expect_invalid <- function(fields, failed_check, case_directory = case_dir) {
   result <- validate_case_trace(
     trace_path,
     case_dir = case_directory,
-    script_path = script_path
+    script_path = script_path,
+    schema_path = schema_path
   )
   expect_result_shape(result)
   stopifnot(identical(result$ok, FALSE))
@@ -272,20 +291,30 @@ write_trace(valid_fields)
 valid <- validate_case_trace(
   trace_path,
   case_dir = case_dir,
-  script_path = script_path
+  script_path = script_path,
+  schema_path = schema_path
 )
 expect_result_shape(valid)
 stopifnot(isTRUE(valid$ok))
 stopifnot(length(valid$failed_checks) == 0L)
 stopifnot(identical(valid$evidence$generation_mode, "case_based"))
 
-missing_search_query <- case_based_fields()
-missing_search_query$search_query <- NULL
-expect_invalid(missing_search_query, "required common metadata")
+missing_search_query_hash <- case_based_fields()
+missing_search_query_hash$search_query_sha256 <- NULL
+expect_invalid(missing_search_query_hash, "required common metadata")
 
-empty_search_query <- case_based_fields()
-empty_search_query$search_query <- " "
-expect_invalid(empty_search_query, "required common metadata")
+invalid_search_query_hash <- case_based_fields()
+invalid_search_query_hash$search_query_sha256 <- "not-a-hash"
+expect_invalid(invalid_search_query_hash, "search query hash format")
+
+invalid_search_intent <- case_based_fields()
+invalid_search_intent$search_intent <- "SSN 123-45-6789 password=secret"
+expect_invalid(invalid_search_intent, "controlled search intent")
+
+legacy_raw_query <- case_based_fields()
+legacy_raw_query$search_query <-
+  "source(user_identifier) password=secret SSN 123-45-6789"
+expect_invalid(legacy_raw_query, "raw search query is not persisted")
 
 missing_search_receipt_file <- case_based_fields()
 missing_search_receipt_file$search_receipt_file <- NULL
@@ -363,7 +392,7 @@ stale_query_receipt$search_receipt_sha256 <-
   figureforge_sha256(search_receipt_path)
 expect_invalid(
   stale_query_receipt,
-  "search receipt matches recorded query"
+  "search receipt matches recorded query hash"
 )
 write_search_receipt()
 
@@ -427,6 +456,22 @@ stopifnot("generated script hash matches" %in% names(valid$checks))
 stopifnot("case evidence hashes match" %in% names(valid$checks))
 stopifnot("source anchors match case evidence" %in% names(valid$checks))
 stopifnot("generated anchors match script" %in% names(valid$checks))
+stopifnot("input schema hash matches search receipt" %in% names(valid$checks))
+
+other_schema_path <- file.path(output_dir, "other-input.csv")
+write.csv(data.frame(other = 1), other_schema_path, row.names = FALSE)
+wrong_schema <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path,
+  schema_path = other_schema_path
+)
+expect_result_shape(wrong_schema)
+stopifnot(!isTRUE(wrong_schema$ok))
+stopifnot(
+  "input schema hash matches search receipt" %in%
+    wrong_schema$failed_checks
+)
 
 case_trace_cli <- file.path(
   repo_root,
@@ -557,7 +602,9 @@ writeLines(
       "--case-dir",
       shell_quote(case_dir),
       "--script",
-      shell_quote(script_path)
+      shell_quote(script_path),
+      "--schema",
+      shell_quote(schema_path)
     )
   ),
   spaced_install_runner,
@@ -659,7 +706,8 @@ expect_cli_input_failure(
 strict_cli <- run_case_trace_cli(c(
   trace_path,
   "--case-dir", case_dir,
-  "--script", script_path
+  "--script", script_path,
+  "--schema", schema_path
 ))
 stopifnot(is.null(strict_cli$status))
 stopifnot(grepl(
@@ -686,6 +734,18 @@ stopifnot(is.null(partial_cli$status))
 stopifnot(grepl(
   "Verification level: partial",
   partial_cli$output,
+  fixed = TRUE
+))
+
+case_and_script_without_schema_cli <- run_case_trace_cli(c(
+  trace_path,
+  "--case-dir", case_dir,
+  "--script", script_path
+))
+stopifnot(is.null(case_and_script_without_schema_cli$status))
+stopifnot(grepl(
+  "Verification level: partial",
+  case_and_script_without_schema_cli$output,
   fixed = TRUE
 ))
 
@@ -758,6 +818,18 @@ stopifnot(!"case evidence hashes match" %in% names(script_only$checks))
 stopifnot(!"QA evidence matches case" %in% names(script_only$checks))
 stopifnot(!"source anchors match case evidence" %in% names(script_only$checks))
 stopifnot("generated anchors match script" %in% names(script_only$checks))
+
+case_and_script_without_schema <- validate_case_trace(
+  trace_path,
+  case_dir = case_dir,
+  script_path = script_path
+)
+expect_result_shape(case_and_script_without_schema)
+stopifnot(isTRUE(case_and_script_without_schema$ok))
+stopifnot(identical(
+  case_and_script_without_schema$evidence$verification_level,
+  "partial"
+))
 
 missing_case_md <- valid_fields[
   !names(valid_fields) %in% c("case_md_file", "case_md_sha256")
@@ -902,7 +974,8 @@ write_trace(auditable_patterns)
 valid_auditable_patterns <- validate_case_trace(
   trace_path,
   case_dir = case_dir,
-  script_path = script_path
+  script_path = script_path,
+  schema_path = schema_path
 )
 expect_result_shape(valid_auditable_patterns)
 stopifnot(isTRUE(valid_auditable_patterns$ok))
@@ -979,7 +1052,8 @@ stopifnot(
 nonexistent_source_strict <- validate_case_trace(
   trace_path,
   case_dir = case_dir,
-  script_path = script_path
+  script_path = script_path,
+  schema_path = schema_path
 )
 expect_result_shape(nonexistent_source_strict)
 stopifnot(!isTRUE(nonexistent_source_strict$ok))
@@ -1043,7 +1117,8 @@ stopifnot(
 nonexistent_generated_strict <- validate_case_trace(
   trace_path,
   case_dir = case_dir,
-  script_path = script_path
+  script_path = script_path,
+  schema_path = schema_path
 )
 expect_result_shape(nonexistent_generated_strict)
 stopifnot(!isTRUE(nonexistent_generated_strict$ok))
@@ -1134,7 +1209,8 @@ stopifnot(
 wrong_script_name_result <- validate_case_trace(
   trace_path,
   case_dir = case_dir,
-  script_path = wrong_script_path
+  script_path = wrong_script_path,
+  schema_path = schema_path
 )
 expect_result_shape(wrong_script_name_result)
 stopifnot(!isTRUE(wrong_script_name_result$ok))
@@ -1206,7 +1282,8 @@ write_trace(missing_qa_fields)
 valid_missing_qa <- validate_case_trace(
   trace_path,
   case_dir = case_without_qa,
-  script_path = script_path
+  script_path = script_path,
+  schema_path = schema_path
 )
 expect_result_shape(valid_missing_qa)
 stopifnot(isTRUE(valid_missing_qa$ok))
@@ -1228,20 +1305,29 @@ expect_invalid(
 )
 
 fallback_query <- "PCA biplot with loading arrows"
-write_search_receipt(character(0), query = fallback_query)
+write_search_receipt(
+  character(0),
+  query = fallback_query,
+  search_intent = "ordination"
+)
 fallback_fields <- list(
   schema_version = "1",
   generation_mode = "general_fallback",
   figureforge_version = "1.1.0",
   generated_script_sha256 = figureforge_sha256(script_path),
   claim = "general_method",
-  search_query = fallback_query,
+  search_query_sha256 = figureforge_sha256_text(fallback_query),
+  search_intent = "ordination",
   search_receipt_file = "case-search.csv",
   search_receipt_sha256 = figureforge_sha256(search_receipt_path),
   fallback_reason = "No case matched the requested schema and figure type."
 )
 write_trace(fallback_fields)
-fallback <- validate_case_trace(trace_path, script_path = script_path)
+fallback <- validate_case_trace(
+  trace_path,
+  script_path = script_path,
+  schema_path = schema_path
+)
 expect_result_shape(fallback)
 stopifnot(isTRUE(fallback$ok))
 stopifnot(length(fallback$failed_checks) == 0L)
@@ -1251,10 +1337,22 @@ stopifnot(identical(
   "general_fallback"
 ))
 
+fallback_without_schema_path <- validate_case_trace(
+  trace_path,
+  script_path = script_path
+)
+expect_result_shape(fallback_without_schema_path)
+stopifnot(isTRUE(fallback_without_schema_path$ok))
+stopifnot(identical(
+  fallback_without_schema_path$evidence$verification_level,
+  "partial"
+))
+
 fallback_receipt_without_schema <- fallback_fields
 write_search_receipt(
   character(0),
   query = fallback_query,
+  search_intent = "ordination",
   schema_hash = "none"
 )
 fallback_receipt_without_schema$search_receipt_sha256 <-
@@ -1264,7 +1362,11 @@ expect_invalid(
   "search receipt binds input schema",
   case_directory = NULL
 )
-write_search_receipt(character(0), query = fallback_query)
+write_search_receipt(
+  character(0),
+  query = fallback_query,
+  search_intent = "ordination"
+)
 fallback_fields$search_receipt_sha256 <-
   figureforge_sha256(search_receipt_path)
 
@@ -1277,7 +1379,11 @@ expect_invalid(
   "search receipt matches generation mode",
   case_directory = NULL
 )
-write_search_receipt(character(0), query = fallback_query)
+write_search_receipt(
+  character(0),
+  query = fallback_query,
+  search_intent = "ordination"
+)
 fallback_fields$search_receipt_sha256 <-
   figureforge_sha256(search_receipt_path)
 
@@ -1310,7 +1416,8 @@ stopifnot(
 fallback_both_paths <- validate_case_trace(
   trace_path,
   case_dir = case_dir,
-  script_path = script_path
+  script_path = script_path,
+  schema_path = schema_path
 )
 expect_result_shape(fallback_both_paths)
 stopifnot(isTRUE(fallback_both_paths$ok))
@@ -1421,7 +1528,8 @@ https_url$fallback_reason <-
 write_trace(https_url)
 valid_https_url <- validate_case_trace(
   trace_path,
-  script_path = script_path
+  script_path = script_path,
+  schema_path = schema_path
 )
 expect_result_shape(valid_https_url)
 stopifnot(isTRUE(valid_https_url$ok))
@@ -1433,7 +1541,8 @@ write_trace(role_mapping_text)
 valid_role_mapping_text <- validate_case_trace(
   trace_path,
   case_dir = case_dir,
-  script_path = script_path
+  script_path = script_path,
+  schema_path = schema_path
 )
 expect_result_shape(valid_role_mapping_text)
 stopifnot(isTRUE(valid_role_mapping_text$ok))

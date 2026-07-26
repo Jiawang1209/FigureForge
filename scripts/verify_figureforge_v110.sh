@@ -164,6 +164,12 @@ installed_sha256() {
     "$RSCRIPT" -e \
     'source(Sys.getenv("FIGUREFORGE_CHECKSUMS_R")); cat(figureforge_sha256(Sys.getenv("FIGUREFORGE_HASH_FILE")))'
 }
+installed_sha256_text() {
+  FIGUREFORGE_CHECKSUMS_R="$INSTALLED/lib/checksums.R" \
+    FIGUREFORGE_HASH_TEXT="$1" \
+    "$RSCRIPT" -e \
+    'source(Sys.getenv("FIGUREFORGE_CHECKSUMS_R")); cat(figureforge_sha256_text(Sys.getenv("FIGUREFORGE_HASH_TEXT")))'
+}
 installed_generated_sha=$(
   installed_sha256 "$INSTALLED_CASE_SCRIPT"
 )
@@ -179,11 +185,15 @@ installed_qa_md_sha=$(
 "$RSCRIPT" "$INSTALLED/scripts/search_cases.R" \
   --public \
   --query "correlation heatmap" \
+  --search-intent relationship \
   --schema "$INSTALLED_CASE_SEARCH_SCHEMA" \
   --limit 5 \
   --output "$INSTALLED_CASE_SEARCH"
 installed_search_sha=$(
   installed_sha256 "$INSTALLED_CASE_SEARCH"
+)
+installed_search_query_sha=$(
+  installed_sha256_text "correlation heatmap"
 )
 {
   echo "schema_version: 1"
@@ -191,7 +201,8 @@ installed_search_sha=$(
   echo "figureforge_version: 1.1.0"
   echo "generated_script_sha256: $installed_generated_sha"
   echo "claim: case_grounded"
-  echo "search_query: correlation heatmap"
+  echo "search_query_sha256: $installed_search_query_sha"
+  echo "search_intent: relationship"
   echo "search_receipt_file: case-search.csv"
   echo "search_receipt_sha256: $installed_search_sha"
   echo "primary_case_id: public-correlation-heatmap"
@@ -210,6 +221,7 @@ installed_search_sha=$(
   "$INSTALLED_CASE_TRACE" \
   --case-dir "$INSTALLED_CASE_DIR" \
   --script "$INSTALLED_CASE_SCRIPT" \
+  --schema "$INSTALLED_CASE_SEARCH_SCHEMA" \
   >"$INSTALLED_CASE_TRACE_LOG" 2>&1
 grep -F "Verification level: strict" "$INSTALLED_CASE_TRACE_LOG"
 grep -F "Case trace validation OK:" "$INSTALLED_CASE_TRACE_LOG"
@@ -219,12 +231,13 @@ grep -F "Case trace validation OK:" "$INSTALLED_CASE_TRACE_LOG"
 "$RSCRIPT" "$INSTALLED/scripts/search_cases.R" \
   --public \
   --query "相关性热图" \
+  --search-intent relationship \
   --limit 3 \
   --output "$VERIFY_ROOT/installed-search.csv"
 FIGUREFORGE_SEARCH_REPORT="$VERIFY_ROOT/installed-search.csv" \
   FIGUREFORGE_CHECKSUMS_R="$INSTALLED/lib/checksums.R" \
   "$RSCRIPT" -e \
-  'source(Sys.getenv("FIGUREFORGE_CHECKSUMS_R")); x<-read.csv(Sys.getenv("FIGUREFORGE_SEARCH_REPORT"),check.names=FALSE); stopifnot(x$receipt_generator[[1L]]=="figureforge-search_cases",x$search_query[[1L]]=="相关性热图",x$case_id_sha256[[1L]]==figureforge_sha256_text("public-correlation-heatmap"),!any(c("case_id","title_en","title_zh","case_path") %in% names(x)))'
+  'source(Sys.getenv("FIGUREFORGE_CHECKSUMS_R")); x<-read.csv(Sys.getenv("FIGUREFORGE_SEARCH_REPORT"),check.names=FALSE); stopifnot(x$receipt_schema_version[[1L]]==2L,x$receipt_generator[[1L]]=="figureforge-search_cases",x$search_query_sha256[[1L]]==figureforge_sha256_text("相关性热图"),x$search_intent[[1L]]=="relationship",x$case_id_sha256[[1L]]==figureforge_sha256_text("public-correlation-heatmap"),!any(c("search_query","case_id","title_en","title_zh","case_path") %in% names(x)))'
 sh "$INSTALLED/examples/public-demo/run_demo.sh" \
   "$VERIFY_ROOT/installed-demo"
 "$RSCRIPT" "$INSTALLED/scripts/validate_adaptation.R" \

@@ -42,8 +42,24 @@ usage <- function() {
     "[--completed-only]",
     "[--public]",
     "[--schema INPUT.csv]",
+    "[--search-intent INTENT]",
     "[--explain-scores]",
     "[--output PATH]"
+  )
+}
+
+supported_search_intents <- function() {
+  c(
+    "relationship",
+    "comparison",
+    "distribution",
+    "composition",
+    "trend",
+    "ordination",
+    "network",
+    "spatial",
+    "uncertainty",
+    "other"
   )
 }
 
@@ -55,6 +71,7 @@ parse_cli <- function(args) {
     completed_only = FALSE,
     public = FALSE,
     schema = NULL,
+    search_intent = NULL,
     explain_scores = FALSE,
     output = NULL
   )
@@ -81,6 +98,7 @@ parse_cli <- function(args) {
       "--cases-dir",
       "--limit",
       "--schema",
+      "--search-intent",
       "--output"
     )) {
       if (index == length(args)) {
@@ -91,6 +109,7 @@ parse_cli <- function(args) {
       if (argument == "--cases-dir") result$cases_dir <- value
       if (argument == "--limit") result$limit <- as.integer(value)
       if (argument == "--schema") result$schema <- value
+      if (argument == "--search-intent") result$search_intent <- value
       if (argument == "--output") result$output <- value
       index <- index + 2L
       next
@@ -103,12 +122,123 @@ parse_cli <- function(args) {
   if (is.na(result$limit) || result$limit < 1L) {
     stop("--limit must be a positive integer")
   }
+  if (
+    !is.null(result$search_intent) &&
+      !result$search_intent %in% supported_search_intents()
+  ) {
+    stop(
+      "--search-intent must be one of: ",
+      paste(supported_search_intents(), collapse = ", ")
+    )
+  }
+  if (!is.null(result$output) && is.null(result$search_intent)) {
+    stop("--search-intent is required with --output")
+  }
   result
+}
+
+resolved_path_identity <- function(path, must_work = FALSE) {
+  link_target <- Sys.readlink(path)
+  if (
+    file.exists(path) ||
+      (!is.na(link_target) && nzchar(link_target))
+  ) {
+    return(normalizePath(path, mustWork = must_work))
+  }
+  parent <- normalizePath(dirname(path), mustWork = must_work)
+  file.path(parent, basename(path))
+}
+
+path_is_within <- function(path, directory) {
+  path <- resolved_path_identity(path, must_work = FALSE)
+  directory <- normalizePath(directory, mustWork = TRUE)
+  identical(path, directory) ||
+    startsWith(path, paste0(directory, .Platform$file.sep))
+}
+
+validate_receipt_destination <- function(
+  output,
+  schema,
+  cases_dir,
+  case_dirs = character(0)
+) {
+  link_target <- Sys.readlink(output)
+  if (!is.na(link_target) && nzchar(link_target)) {
+    stop("--output must not be an existing symbolic link")
+  }
+  if (dir.exists(output)) {
+    stop("--output must not be a directory")
+  }
+  output_parent <- dirname(output)
+  dir.create(output_parent, recursive = TRUE, showWarnings = FALSE)
+  if (!dir.exists(output_parent)) {
+    stop("Unable to create --output directory")
+  }
+  output_identity <- resolved_path_identity(output, must_work = FALSE)
+  if (
+    !is.null(schema) &&
+      identical(
+        output_identity,
+        resolved_path_identity(schema, must_work = TRUE)
+      )
+  ) {
+    stop("--output must not overwrite --schema")
+  }
+  if (dir.exists(cases_dir) && path_is_within(output, cases_dir)) {
+    stop("--output must not overwrite or enter the case evidence directory")
+  }
+  protected_case_dirs <- unique(as.character(case_dirs))
+  protected_case_dirs <- protected_case_dirs[dir.exists(protected_case_dirs)]
+  if (
+    length(protected_case_dirs) > 0L &&
+      any(vapply(
+        protected_case_dirs,
+        function(case_dir) path_is_within(output, case_dir),
+        logical(1L)
+      ))
+  ) {
+    stop("--output must not overwrite resolved case evidence")
+  }
+  invisible(output_identity)
+}
+
+write_receipt_atomic <- function(receipt, output) {
+  output_parent <- normalizePath(dirname(output), mustWork = TRUE)
+  temporary <- tempfile(
+    ".figureforge-search-receipt-",
+    tmpdir = output_parent,
+    fileext = ".csv"
+  )
+  on.exit(unlink(temporary, force = TRUE), add = TRUE)
+  write.csv(
+    receipt,
+    temporary,
+    row.names = FALSE,
+    fileEncoding = "UTF-8",
+    na = ""
+  )
+  temporary_info <- file.info(temporary)
+  if (
+    !isTRUE(file_test("-f", temporary)) ||
+      is.na(temporary_info$size[[1L]]) ||
+      temporary_info$size[[1L]] < 1
+  ) {
+    stop("Unable to create a non-empty search receipt")
+  }
+  link_target <- Sys.readlink(output)
+  if (!is.na(link_target) && nzchar(link_target)) {
+    stop("--output became a symbolic link before publication")
+  }
+  if (!file.rename(temporary, output)) {
+    stop("Unable to publish search receipt atomically")
+  }
+  invisible(output)
 }
 
 tryCatch(
   {
     options <- parse_cli(commandArgs(trailingOnly = TRUE))
+    effective_cases_dir <- options$cases_dir
     if (options$public) {
       default_private <- file.path(
         repo_root,
@@ -121,7 +251,16 @@ tryCatch(
       } else {
         options$cases_dir
       }
+      effective_cases_dir <- public_cases
       catalog <- build_public_catalog(public_cases)
+      if (!is.null(options$output)) {
+        validate_receipt_destination(
+          options$output,
+          options$schema,
+          effective_cases_dir,
+          catalog$case_path
+        )
+      }
       profile <- if (is.null(options$schema)) {
         NULL
       } else {
@@ -161,6 +300,14 @@ tryCatch(
       )
     } else {
       catalog <- build_case_catalog(options$cases_dir)
+      if (!is.null(options$output)) {
+        validate_receipt_destination(
+          options$output,
+          options$schema,
+          effective_cases_dir,
+          catalog$case_path
+        )
+      }
       results <- search_case_catalog(
         catalog,
         options$query,
@@ -198,12 +345,16 @@ tryCatch(
         numeric(0)
       }
       receipt <- data.frame(
-        receipt_schema_version = rep("1", result_count),
+        receipt_schema_version = rep("2", result_count),
         receipt_generator = rep(
           "figureforge-search_cases",
           result_count
         ),
-        search_query = rep(options$query, result_count),
+        search_query_sha256 = rep(
+          figureforge_sha256_text(options$query),
+          result_count
+        ),
+        search_intent = rep(options$search_intent, result_count),
         search_scope = rep(
           if (options$public) "public" else "private",
           result_count
@@ -240,18 +391,7 @@ tryCatch(
         },
         stringsAsFactors = FALSE
       )
-      dir.create(
-        dirname(options$output),
-        recursive = TRUE,
-        showWarnings = FALSE
-      )
-      write.csv(
-        receipt,
-        options$output,
-        row.names = FALSE,
-        fileEncoding = "UTF-8",
-        na = ""
-      )
+      write_receipt_atomic(receipt, options$output)
       message("Wrote search receipt: ", options$output)
     }
     if (nrow(display) == 0) {

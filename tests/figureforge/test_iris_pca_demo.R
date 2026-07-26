@@ -384,7 +384,12 @@ assert_true(
   "The canonical trace must record a verified case-grounded 20230925_PCA generation"
 )
 assert_true(
-  nzchar(trimws(trace_metadata$search_query)) &&
+  grepl(
+    "^[0-9a-f]{64}$",
+    trace_metadata$search_query_sha256,
+    perl = TRUE
+  ) &&
+    identical(trace_metadata$search_intent, "ordination") &&
     identical(trace_metadata$search_receipt_file, "case-search.csv") &&
     identical(
       trace_metadata$search_receipt_sha256,
@@ -523,7 +528,8 @@ validate_private_pca_trace_gate <- function(case_dir, required) {
   strict_trace <- validate_case_trace(
     trace_path,
     case_dir = case_dir,
-    script_path = file.path(demo_root, "plot.R")
+    script_path = file.path(demo_root, "plot.R"),
+    schema_path = file.path(demo_root, "iris.csv")
   )
   assert_true(
     isTRUE(strict_trace$ok) &&

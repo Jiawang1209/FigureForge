@@ -67,7 +67,8 @@ usage <- function() {
   paste(
     "Usage: validate_case_trace.R <trace.yml>",
     "[--case-dir PATH]",
-    "[--script PATH]"
+    "[--script PATH]",
+    "[--schema PATH]"
   )
 }
 
@@ -78,20 +79,23 @@ parse_cli <- function(args) {
   result <- list(
     trace_path = args[[1L]],
     case_dir = NULL,
-    script_path = NULL
+    script_path = NULL,
+    schema_path = NULL
   )
   index <- 2L
   while (index <= length(args)) {
     argument <- args[[index]]
-    if (!argument %in% c("--case-dir", "--script") ||
+    if (!argument %in% c("--case-dir", "--script", "--schema") ||
         index == length(args)) {
       stop("Unknown or incomplete argument: ", argument, "\n", usage())
     }
     value <- args[[index + 1L]]
     if (identical(argument, "--case-dir")) {
       result$case_dir <- value
-    } else {
+    } else if (identical(argument, "--script")) {
       result$script_path <- value
+    } else {
+      result$schema_path <- value
     }
     index <- index + 2L
   }
@@ -121,7 +125,8 @@ tryCatch(
     result <- validate_case_trace(
       options$trace_path,
       case_dir = options$case_dir,
-      script_path = options$script_path
+      script_path = options$script_path,
+      schema_path = options$schema_path
     )
     print_case_trace_result(result)
     if (!isTRUE(result$ok)) {

@@ -90,7 +90,7 @@ the result, and returns a standalone script with its figures.
 Case-based generation may claim FigureForge case knowledge only when it uses actual case evidence and passes strict trace validation.
 General fallback can still complete the plot with `claim: general_method`, but it is not case-grounded.
 The Skill handles case search, evidence reading, and hidden trace creation and validation in the background; users do not need to operate the case library.
-Every mode records the search query and a hashed CSV search receipt before the mode decision.
+Every mode records only a search-query SHA-256, a controlled abstract intent, and a hashed CSV search receipt before the mode decision; raw queries are not persisted.
 The default visible outputs remain `plot.R`, `plot.png`, and `plot.pdf`; the hidden case trace and search receipt are audit state.
 
 ## Iris PCA demo
@@ -129,8 +129,9 @@ Rscript plot.R <input-file> <output-directory>
 - [Skill entry](skills/figureforge/SKILL.md)
 - [Plotting workflow](skills/figureforge/references/plotting-workflow.md)
 - [Maintainer workflow](skills/figureforge/references/maintainer-workflow.md)
-- [FigureForge Skill 1.1.0 release evidence](docs/figureforge-skill-v1.1.0-release.md)
-- [Portable v1.1.0 certification evidence](docs/figureforge-skill-v1.1.0-evidence/README.md)
+- [Historical FigureForge Skill 1.1.0 certification snapshot](docs/figureforge-skill-v1.1.0-release.md)
+- [Portable evidence for that historical snapshot](docs/figureforge-skill-v1.1.0-evidence/README.md)
+- [Current-source recertification procedure](docs/figureforge-skill-v1.1.0-recertification.md)
 - [Current status](docs/figureforge-skill-mvp-status.md)
 - [Historical v1.0.1 release evidence](docs/figureforge-skill-v1.0.1-release.md)
 
@@ -139,7 +140,9 @@ Rscript plot.R <input-file> <output-directory>
 FigureForge defaults to R and ggplot2, adding specialist R packages when a
 scientific chart needs them.
 
-FigureForge Skill 1.1.0 is the current locally certified release.
+FigureForge Skill 1.1.0 is the current implemented version. Its linked
+certification evidence binds an earlier v1.1.0 source and package identity, so
+the changed current source is pending recertification.
 FigureForge Skill 1.0.1 is the prior certified historical release. The shipped
 package contains 15 public cases.
 

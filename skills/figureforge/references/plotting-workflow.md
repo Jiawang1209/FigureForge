@@ -13,9 +13,9 @@ input; do not rewrite the source file merely to match a case.
 
 Search by scientific relationship, data shape, visual grammar, schema, and
 dependency fit. Run `search_cases.R` with `--output` to
-`.figureforge/case-search.csv` before choosing a mode; record the exact query,
-receipt filename, and receipt SHA-256 in `case-trace.yml`. Then choose exactly
-one mode:
+`.figureforge/case-search.csv` before choosing a mode; record the query
+SHA-256, controlled abstract intent, receipt filename, and receipt SHA-256 in
+`case-trace.yml`. Never persist the raw query. Then choose exactly one mode:
 
 - `case_based`: choose one readable primary case; actually read `case.md`,
   `plot.R`, and `qa.md` when present. Use secondary cases only for local
@@ -52,7 +52,7 @@ Perform an independent fresh rerun. Confirm that all outputs are nonempty and
 open successfully. Review data coverage, mappings, groups, labels, legends,
 scales, panels, clipping, overlap, and readability. This is review of the task
 result, not case or release certification. For `case_based`, run
-`validate_case_trace.R` with both `--case-dir` and `--script`; only successful
+`validate_case_trace.R` with `--case-dir`, `--script`, and `--schema`; only successful
 `strict` validation permits `claim: case_grounded`. `structural` or `partial`
 validation cannot authorize that claim. For `general_fallback`, use
 `claim: general_method` and never imply case-grounded generation.

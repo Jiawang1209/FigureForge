@@ -7,15 +7,15 @@ Date: 2026-07-26
 FigureForge Skill 1.1.0 is a case-enhanced R plotting capability. For an
 ordinary user, real data plus a natural request should produce a standalone
 `plot.R`, `plot.png`, and `plot.pdf` without requiring the user to operate case
-metadata. The current implementation has deterministic contract coverage and
-is now locally certified by deterministic, real live-trigger, real plotting,
-and independent rerender evidence.
+metadata. The current implementation has deterministic contract coverage. The
+linked certification evidence is a historical snapshot for an earlier v1.1.0
+source and package identity; the changed current source is pending recertification.
 
 The v1.1.0 live gates passed with Explicit 1/1; implicit 10/10, plus one passed
 plotting row that loaded the installed Skill, delivered nonempty `plot.R`,
 `plot.png`, and `plot.pdf`, and passed the independent rerender gate.
 The durable
-[portable certification evidence](figureforge-skill-v1.1.0-evidence/README.md)
+[portable historical certification evidence](figureforge-skill-v1.1.0-evidence/README.md)
 contains parsed summaries, immutable source bindings, environment and command
 records, artifact/package identities, sanitized logs, and SHA-256 checks. The
 original local live root was `/tmp/figureforge-v110-live.740e78`.
@@ -32,7 +32,7 @@ original local live root was `/tmp/figureforge-v110-live.740e78`.
 | Re-run | `Rscript plot.R <input-file> <output-directory>` |
 | Default stack | R and ggplot2, with specialist R packages where appropriate |
 | Background work | Case search, schema mapping, task QA, and case metadata remain agent-operated |
-| Evidence state | FigureForge Skill 1.1.0 is locally certified; deterministic and real live-model release gates passed |
+| Evidence state | Historical v1.1.0 snapshot passed deterministic and real live-model gates; changed current source is pending identity-bound recertification |
 
 ## Maintainer and release reliability
 
@@ -131,8 +131,9 @@ their structured results. It must:
 - expose planned capability as planned until executable tools and tests exist.
 
 All 165 private cases have now been processed and the Skill/corpus acceptance
-boundary is stable. The locally certified v1.1.0 package adds only reviewed
-public assets; private cases remain local. FigureForge Skill 1.0.1 remains the
+boundary is stable. The historically certified v1.1.0 package snapshot adds
+only reviewed public assets; private cases remain local. FigureForge Skill
+1.0.1 remains the
 prior certified historical release. MCP work has not started; any future
 implementation must begin as a separate task from these verified contracts,
 not from assumptions about the private corpus.
