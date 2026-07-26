@@ -249,6 +249,87 @@ stopifnot("case evidence hashes match" %in% names(valid$checks))
 stopifnot("source anchors match case evidence" %in% names(valid$checks))
 stopifnot("generated anchors match script" %in% names(valid$checks))
 
+case_trace_cli <- file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "scripts",
+  "validate_case_trace.R"
+)
+stopifnot(file.exists(case_trace_cli))
+
+run_case_trace_cli <- function(arguments) {
+  output <- suppressWarnings(system2(
+    "/usr/local/bin/Rscript",
+    c(shQuote(case_trace_cli), shQuote(arguments)),
+    stdout = TRUE,
+    stderr = TRUE
+  ))
+  list(
+    status = attr(output, "status"),
+    output = paste(output, collapse = "\n")
+  )
+}
+
+strict_cli <- run_case_trace_cli(c(
+  trace_path,
+  "--case-dir", case_dir,
+  "--script", script_path
+))
+stopifnot(is.null(strict_cli$status))
+stopifnot(grepl(
+  "generated script hash matches: PASS",
+  strict_cli$output,
+  fixed = TRUE
+))
+stopifnot(grepl(
+  "Verification level: strict",
+  strict_cli$output,
+  fixed = TRUE
+))
+stopifnot(grepl(
+  paste0("Case trace validation OK: ", trace_path),
+  strict_cli$output,
+  fixed = TRUE
+))
+
+partial_cli <- run_case_trace_cli(c(
+  trace_path,
+  "--case-dir", case_dir
+))
+stopifnot(is.null(partial_cli$status))
+stopifnot(grepl(
+  "Verification level: partial",
+  partial_cli$output,
+  fixed = TRUE
+))
+
+structural_cli <- run_case_trace_cli(trace_path)
+stopifnot(is.null(structural_cli$status))
+stopifnot(grepl(
+  "Verification level: structural",
+  structural_cli$output,
+  fixed = TRUE
+))
+
+invalid_cli_fields <- valid_fields
+invalid_cli_fields$claim <- "general_method"
+write_trace(invalid_cli_fields)
+invalid_cli <- run_case_trace_cli(trace_path)
+stopifnot(!is.null(invalid_cli$status))
+stopifnot(identical(as.integer(invalid_cli$status), 1L))
+stopifnot(grepl(
+  "claim matches generation mode: FAIL",
+  invalid_cli$output,
+  fixed = TRUE
+))
+stopifnot(grepl(
+  "Case trace validation failed: claim matches generation mode",
+  invalid_cli$output,
+  fixed = TRUE
+))
+write_trace(valid_fields)
+
 write_trace(valid_fields)
 structural <- validate_case_trace(trace_path)
 expect_result_shape(structural)

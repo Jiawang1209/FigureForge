@@ -136,6 +136,16 @@ stopifnot(file.exists(file.path(
   "public-demo",
   "run_demo.sh"
 )))
+stopifnot(file.exists(file.path(
+  installed,
+  "scripts",
+  "validate_case_trace.R"
+)))
+stopifnot(file.exists(file.path(
+  installed,
+  "lib",
+  "case_trace_validation.R"
+)))
 stopifnot(!dir.exists(file.path(installed, "skills")))
 stopifnot(all(startsWith(package$manifest$package_path, "figureforge/")))
 
@@ -163,6 +173,26 @@ search <- run_installed_r(
   c("--public", "--query", "scatter", "--limit", "1")
 )
 stopifnot(search$ok)
+
+installed_trace <- file.path(output_root, "case-trace.yml")
+writeLines(c(
+  "schema_version: 1",
+  "generation_mode: general_fallback",
+  "figureforge_version: 1.1.0",
+  paste0("generated_script_sha256: ", paste(rep("0", 64L), collapse = "")),
+  "claim: general_method",
+  "fallback_reason: no suitable public case"
+), installed_trace, useBytes = TRUE)
+installed_trace_validation <- run_installed_r(
+  "validate_case_trace.R",
+  installed_trace
+)
+stopifnot(installed_trace_validation$ok)
+stopifnot(grepl(
+  "Verification level: structural",
+  installed_trace_validation$output,
+  fixed = TRUE
+))
 
 validation_status <- system2(
   "/usr/bin/python3",

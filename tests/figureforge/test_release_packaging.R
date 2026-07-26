@@ -100,6 +100,12 @@ stopifnot(any(manifest$package_path == "figureforge/SKILL.md"))
 stopifnot(any(
   manifest$package_path == "figureforge/examples/public-demo/run_demo.sh"
 ))
+stopifnot(any(
+  manifest$package_path == "figureforge/scripts/validate_case_trace.R"
+))
+stopifnot(any(
+  manifest$package_path == "figureforge/lib/case_trace_validation.R"
+))
 stopifnot(sum(grepl(
   "^figureforge/public-cases/[^/]+/distribution.yml$",
   manifest$package_path,
