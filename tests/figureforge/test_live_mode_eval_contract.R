@@ -445,6 +445,25 @@ adversarial_commands <- c(
     "|| true"
   ),
   paste(
+    paste(
+      trusted_cat,
+      shQuote(file.path(case_dir, "case.md"))
+    ),
+    "true",
+    sep = "\n"
+  ),
+  paste(
+    paste(
+      trusted_cat,
+      shQuote(file.path(case_dir, "case.md"))
+    ),
+    paste(
+      trusted_cat,
+      shQuote(file.path(case_dir, "plot.R"))
+    ),
+    sep = " && \n"
+  ),
+  paste(
     "cat",
     shQuote(file.path(case_dir, "case.md")),
     "> marker"
