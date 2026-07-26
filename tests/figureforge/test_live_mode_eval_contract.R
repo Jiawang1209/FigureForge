@@ -53,6 +53,11 @@ stopifnot(any(grepl(
   harness,
   fixed = TRUE
 )))
+stopifnot(any(grepl(
+  "Run each case evidence read as its own command",
+  harness,
+  fixed = TRUE
+)))
 stopifnot(any(grepl("trusted-install", harness, fixed = TRUE)))
 stopifnot(any(grepl("--manifest", harness, fixed = TRUE)))
 stopifnot(any(grepl("--trusted-cat", harness, fixed = TRUE)))
