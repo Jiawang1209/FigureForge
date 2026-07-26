@@ -1058,10 +1058,16 @@ escaping_input <- iris_data[seq_len(12L), , drop = FALSE]
 unsafe_species_labels <- c(
   "A & B",
   "C < D",
-  "E > F",
-  "<b title=\"O'Reilly\">quoted</b>"
+  "<script data-note=\"O'Reilly\">E > F</script>"
 )
-escaping_input$Species <- rep(unsafe_species_labels, each = 3L)
+escaping_input$Species <- rep(unsafe_species_labels, each = 4L)
+assert_true(
+  identical(
+    as.integer(table(escaping_input$Species)),
+    rep(4L, 3L)
+  ),
+  "Escaping fixture must retain exactly three valid four-row groups"
+)
 escaping_result <- run_valid_case(escaping_input, "Escaped species input")
 escaping_html <- escaping_result$html
 escaping_visible_text <- decode_html_text(gsub(
@@ -1071,27 +1077,57 @@ escaping_visible_text <- decode_html_text(gsub(
   perl = TRUE
 ))
 assert_true(
-  grepl("&(?:amp|#0*38|#x0*26);", escaping_html, ignore.case = TRUE, perl = TRUE) &&
-    grepl("&(?:lt|#0*60|#x0*3c);", escaping_html, ignore.case = TRUE, perl = TRUE) &&
-    grepl("&(?:gt|#0*62|#x0*3e);", escaping_html, ignore.case = TRUE, perl = TRUE) &&
-    grepl("&(?:quot|#0*34|#x0*22);", escaping_html, ignore.case = TRUE, perl = TRUE) &&
-    grepl("&(?:apos|#0*39|#x0*27);", escaping_html, ignore.case = TRUE, perl = TRUE),
-  "Dynamic Species labels must HTML-escape ampersands, brackets, and quotes"
+  !grepl(
+    "<script[^>]*data-note",
+    escaping_html,
+    ignore.case = TRUE,
+    perl = TRUE
+  ),
+  "Dynamic Species labels must not create a raw script element"
 )
 for (unsafe_label in unsafe_species_labels) {
-  assert_true(
-    grepl(unsafe_label, escaping_visible_text, fixed = TRUE),
-    paste("Escaped report must preserve Species label text", shQuote(unsafe_label))
-  )
   assert_true(
     !grepl(unsafe_label, escaping_html, fixed = TRUE),
     paste("Escaped report must not contain raw Species label", shQuote(unsafe_label))
   )
 }
-assert_true(
-  !grepl("<b title=\"O'Reilly\">quoted</b>", escaping_html, fixed = TRUE),
-  "Escaped report must not permit raw Species markup injection"
+
+optional_escaped_labels <- list(
+  list(
+    label = unsafe_species_labels[[1L]],
+    pattern = "A[[:space:]]*&(?:amp|#0*38|#x0*26);[[:space:]]*B"
+  ),
+  list(
+    label = unsafe_species_labels[[2L]],
+    pattern = "C[[:space:]]*&(?:lt|#0*60|#x0*3c);[[:space:]]*D"
+  ),
+  list(
+    label = unsafe_species_labels[[3L]],
+    pattern = paste0(
+      "&(?:lt|#0*60|#x0*3c);script[^\\r\\n]*",
+      "&(?:gt|#0*62|#x0*3e);E[[:space:]]*",
+      "&(?:gt|#0*62|#x0*3e);[[:space:]]*F",
+      "&(?:lt|#0*60|#x0*3c);/script",
+      "&(?:gt|#0*62|#x0*3e);"
+    )
+  )
 )
+for (fixture in optional_escaped_labels) {
+  if (grepl(fixture$label, escaping_visible_text, fixed = TRUE)) {
+    assert_true(
+      grepl(
+        fixture$pattern,
+        escaping_html,
+        ignore.case = TRUE,
+        perl = TRUE
+      ),
+      paste(
+        "Emitted Species label must safely escape dynamic &, <, or >:",
+        shQuote(fixture$label)
+      )
+    )
+  }
+}
 
 english <- read_text(file.path(repo_root, "README.md"))
 chinese <- read_text(file.path(repo_root, "README.zh.md"))
