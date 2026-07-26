@@ -27,6 +27,7 @@ reference_paths <- file.path(
   "references",
   c(
     "plotting-workflow.md",
+    "case-use-contract.md",
     "maintainer-workflow.md",
     "ggplot-patterns.md",
     "theme-and-export.md",
@@ -35,6 +36,7 @@ reference_paths <- file.path(
 )
 names(reference_paths) <- c(
   "plotting",
+  "case_use",
   "maintainer",
   "ggplot_patterns",
   "theme_and_export",
@@ -137,6 +139,25 @@ stopifnot(grepl(
   skill_text,
   fixed = TRUE
 ))
+for (phrase in c(
+  "Choose exactly one generation mode after search",
+  "`case_based`",
+  "`general_fallback`",
+  "actually read `case.md` and `plot.R`",
+  "read `qa.md` when it exists",
+  ".figureforge/case-trace.yml",
+  "schema mapping",
+  "adopted patterns",
+  "departures",
+  "validate_case_trace.R",
+  "Only a successful strict validation authorizes a case-grounded claim",
+  "Structural or partial validation never authorizes that claim",
+  "Never describe `general_fallback` output as case-grounded",
+  "The trace is hidden workflow state, not a fourth visible deliverable",
+  "Do not ask the user to inspect, select, or operate the case library"
+)) {
+  assert_contains(skill_text, phrase, "SKILL.md")
+}
 stopifnot(!grepl(
   paste(
     "Read case.md, case.yml, data.csv, plot.R, qa.md, and",
@@ -168,6 +189,39 @@ plotting_text <- paste(
 for (artifact in c("plot.R", "plot.png", "plot.pdf")) {
   assert_contains(plotting_text, artifact, "plotting-workflow.md")
 }
+for (phrase in c(
+  "case_based",
+  "general_fallback",
+  "case.md",
+  "plot.R",
+  "qa.md",
+  ".figureforge/case-trace.yml",
+  "schema_mapping",
+  "adopted_patterns",
+  "departures",
+  "<case evidence>#source anchor => plot.R#generated executable anchor",
+  "validate_case_trace.R",
+  "--case-dir",
+  "--script",
+  "strict",
+  "case_grounded",
+  "general_method",
+  "structural",
+  "partial"
+)) {
+  assert_contains(
+    paste(
+      readLines(
+        reference_paths[["case_use"]],
+        warn = FALSE,
+        encoding = "UTF-8"
+      ),
+      collapse = "\n"
+    ),
+    phrase,
+    "case-use-contract.md"
+  )
+}
 
 maintainer_text <- paste(
   readLines(
@@ -192,6 +246,9 @@ agent_prompt_requirements <- c(
   "inspect the real data",
   "choose a primary case",
   "optional secondary patterns",
+  "choose exactly one generation mode",
+  "strict case-grounded claim gate",
+  "general fallback",
   "write and run a standalone plot.r",
   "return plot.r, plot.png, and plot.pdf"
 )

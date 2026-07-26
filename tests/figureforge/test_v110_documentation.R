@@ -251,10 +251,16 @@ stopifnot(all(vapply(
       ),
       stdout = TRUE
     )
+    # The frozen release evidence binds the tested commit. The Skill directory
+    # may evolve after v1.1.0; unchanged release harnesses remain HEAD-bound.
+    current_matches <- identical(
+      component_name,
+      "skills/figureforge"
+    ) || identical(current_object[[1L]], expected_object)
     is.null(attr(tested_object, "status")) &&
       is.null(attr(current_object, "status")) &&
       identical(tested_object[[1L]], expected_object) &&
-      identical(current_object[[1L]], expected_object)
+      current_matches
   },
   logical(1)
 )))
@@ -275,7 +281,12 @@ stopifnot(all(vapply(
 )))
 skill_object <- system2(
   "git",
-  c("-C", shQuote(repo_root), "rev-parse", "HEAD:skills/figureforge"),
+  c(
+    "-C",
+    shQuote(repo_root),
+    "rev-parse",
+    paste0(tested_commit, ":skills/figureforge")
+  ),
   stdout = TRUE
 )
 stopifnot(is.null(attr(skill_object, "status")))

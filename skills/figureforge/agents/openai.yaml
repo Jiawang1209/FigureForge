@@ -1,4 +1,4 @@
 interface:
   display_name: "FigureForge"
   short_description: "Create publication-ready R plots from real data"
-  default_prompt: "Use $figureforge to inspect the real data, choose a primary case and optional secondary patterns, write and run a standalone plot.R, and return plot.R, plot.png, and plot.pdf."
+  default_prompt: "Use $figureforge to inspect the real data, search cases, choose a primary case and optional secondary patterns when supported, choose exactly one generation mode with a strict case-grounded claim gate or general fallback, write and run a standalone plot.R, and return plot.R, plot.png, and plot.pdf."

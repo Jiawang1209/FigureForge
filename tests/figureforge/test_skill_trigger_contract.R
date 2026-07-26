@@ -22,6 +22,13 @@ agent_path <- file.path(
   "agents",
   "openai.yaml"
 )
+case_use_path <- file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "references",
+  "case-use-contract.md"
+)
 live_eval_path <- file.path(
   repo_root,
   "scripts",
@@ -104,6 +111,45 @@ assert_contains(
   "MCP is planned and unimplemented.",
   "SKILL.md"
 )
+stopifnot(file.exists(case_use_path))
+case_use_text <- paste(
+  readLines(case_use_path, warn = FALSE, encoding = "UTF-8"),
+  collapse = "\n"
+)
+for (phrase in c(
+  "case_based",
+  "general_fallback",
+  "case.md",
+  "plot.R",
+  "qa.md",
+  ".figureforge/case-trace.yml",
+  "schema_mapping",
+  "adopted_patterns",
+  "departures",
+  "<case evidence>#source anchor => plot.R#generated executable anchor",
+  "validate_case_trace.R",
+  "--case-dir",
+  "--script",
+  "strict",
+  "case_grounded",
+  "general_method",
+  "structural",
+  "partial"
+)) {
+  assert_contains(case_use_text, phrase, "case-use-contract.md")
+}
+for (phrase in c(
+  "Choose exactly one generation mode after search",
+  "actually read `case.md` and `plot.R`",
+  "read `qa.md` when it exists",
+  "Only a successful strict validation authorizes a case-grounded claim",
+  "Structural or partial validation never authorizes that claim",
+  "Never describe `general_fallback` output as case-grounded",
+  "Do not ask the user to inspect, select, or operate the case library",
+  "The trace is hidden workflow state, not a fourth visible deliverable"
+)) {
+  assert_contains(skill_text, phrase, "SKILL.md")
+}
 stopifnot(!grepl(
   paste(
     "Read case.md, case.yml, data.csv, plot.R, qa.md, and",
@@ -134,6 +180,9 @@ agent_prompt_requirements <- c(
   "inspect the real data",
   "choose a primary case",
   "optional secondary patterns",
+  "choose exactly one generation mode",
+  "strict case-grounded claim gate",
+  "general fallback",
   "write and run a standalone plot.r",
   "return plot.r, plot.png, and plot.pdf"
 )

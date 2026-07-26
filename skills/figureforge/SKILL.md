@@ -24,8 +24,9 @@ from them. MCP is planned and unimplemented.
    supported by the data.
 3. Search the gallery in the background for relevant visual grammar and code
    experience.
-4. Choose one primary case for overall composition and use secondary cases only
-   for useful local patterns.
+4. Choose exactly one generation mode after search: `case_based` or
+   `general_fallback`. In `case_based`, choose one primary case for overall
+   composition and use secondary cases only for useful local patterns.
 5. Ask the user only when unresolved ambiguity would change the scientific
    meaning. Otherwise apply professional presentation defaults.
 6. Write a standalone `plot.R` that reads the real input rather than embedding
@@ -52,11 +53,26 @@ Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
   --limit 5
 ```
 
-Use a candidate's explanation, `plot.R`, and schema as knowledge. Adapt the
-plot newly to the user's data and request, and combine cases when a secondary
-case offers a useful local pattern. The gallery is experience, not a gate:
-avoid mechanical copying and do not impose metadata ceremony on an ordinary
-plotting task.
+Choose exactly one generation mode after search:
+
+- Use `case_based` only when a sufficiently relevant primary case is readable;
+  actually read `case.md` and `plot.R`, and read `qa.md` when it exists. Record
+  schema mapping, adopted patterns, and departures in
+  `.figureforge/case-trace.yml`.
+- Use `general_fallback` when no case matches sufficiently or required case
+  evidence cannot be read. Record the reason and proceed with a general R
+  method.
+
+For `case_based`, run `validate_case_trace.R` with the primary case directory
+and generated script. Only a successful strict validation authorizes a case-grounded claim.
+Structural or partial validation never authorizes that claim.
+Never describe `general_fallback` output as case-grounded; its claim is
+`general_method`.
+
+The trace is hidden workflow state, not a fourth visible deliverable.
+Do not ask the user to inspect, select, or operate the case library. See
+[Case Use Contract](references/case-use-contract.md) for the trace schema,
+mapping and anchor format, departures, validation command, and claim rules.
 
 ## Artifact Contract
 
