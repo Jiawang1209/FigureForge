@@ -138,12 +138,23 @@ if (require_configured) {
   spaced_parent <- tempfile("figureforge private PCA case with spaces ")
   dir.create(spaced_parent)
   spaced_case_dir <- file.path(spaced_parent, "20230925_PCA")
+  dir.create(spaced_case_dir)
+  case_entries <- list.files(
+    configured_case_dir,
+    all.files = TRUE,
+    full.names = TRUE,
+    no.. = TRUE
+  )
   assert_true(
-    file.symlink(
-      normalizePath(configured_case_dir, mustWork = TRUE),
-      spaced_case_dir
-    ),
-    "Could not create the spaced strict case-dir regression symlink"
+    length(case_entries) > 0L &&
+      all(file.copy(
+        case_entries,
+        spaced_case_dir,
+        recursive = TRUE,
+        copy.mode = TRUE,
+        copy.date = TRUE
+      )),
+    "Could not copy the strict case into the spaced regression directory"
   )
   spaced_strict_probe <- run_probe(
     spaced_case_dir,
