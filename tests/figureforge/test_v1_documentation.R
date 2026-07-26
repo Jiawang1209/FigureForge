@@ -43,23 +43,13 @@ english_terms <- c(
   "1.1.0",
   "plotting capability enhancer",
   "real data",
-  "primary case",
-  "secondary cases",
   "plot.R",
   "plot.png",
   "plot.pdf",
   "Rscript plot.R <input-file> <output-directory>",
-  "Maintainer workflow",
   "FigureForge Skill 1.1.0 is the current locally certified release",
   "FigureForge Skill 1.0.1 is the prior certified historical release",
   "15 public cases",
-  "24 synthetic stress fixtures",
-  "doctor.R",
-  "create_adaptation.R",
-  "match_schema.R",
-  "visual_qa.R",
-  "package_skill.R",
-  "review_required",
   "private corpus",
   "MCP is planned and unimplemented"
 )
@@ -75,23 +65,13 @@ chinese_terms <- c(
   "1.1.0",
   "绘图能力增强器",
   "真实数据",
-  "主案例",
-  "辅助案例",
   "plot.R",
   "plot.png",
   "plot.pdf",
   "Rscript plot.R <input-file> <output-directory>",
-  "维护者工作流",
   "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
   "FigureForge Skill 1.0.1 是此前已认证的历史发布版本",
   "15 个公开案例",
-  "24 个合成压力测试夹具",
-  "doctor.R",
-  "create_adaptation.R",
-  "match_schema.R",
-  "visual_qa.R",
-  "package_skill.R",
-  "review_required",
   "私有案例库",
   "MCP 状态为 planned 且尚未实现"
 )
@@ -106,10 +86,9 @@ stopifnot(all(vapply(
 english_positions <- vapply(
   c(
     "**A case-enhanced R scientific plotting capability for AI agents.**",
-    "## FigureForge Skill 1.1.0",
-    "FigureForge Skill 1.1.0 is the current locally certified release",
-    "Use `xxx.csv` with FigureForge to draw a scatter plot and give me the R script.",
-    "## Maintainer workflow"
+    "## Install",
+    "Use data.csv with the FigureForge Skill to draw a scatter plot and give me the R script.",
+    "## Documentation"
   ),
   fixed_position,
   integer(1),
@@ -120,10 +99,9 @@ stopifnot(all(diff(english_positions) > 0L))
 chinese_positions <- vapply(
   c(
     "**面向 AI 智能体、由案例增强的 R 科研绘图能力。**",
-    "## FigureForge Skill 1.1.0",
-    "FigureForge Skill 1.1.0 是当前完成本地认证的发布版本",
-    "使用 `xxx.csv` 数据，基于 FigureForge 帮我绘制一个散点图，并给我一份 R 脚本。",
-    "## 维护者工作流"
+    "## 安装",
+    "使用 data.csv 数据，基于 FigureForge Skill 帮我绘制一个散点图，并给我一份 R 脚本。",
+    "## 文档"
   ),
   fixed_position,
   integer(1),

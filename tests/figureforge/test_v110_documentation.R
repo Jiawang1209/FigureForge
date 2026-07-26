@@ -60,6 +60,97 @@ live_harness <- read_document("scripts/run_figureforge_live_evals.sh")
 plotting_harness <- read_document(
   "scripts/run_figureforge_plotting_eval.sh"
 )
+
+expected_readme_sections <- list(
+  english = c(
+    "## Install",
+    "## Use",
+    "## Iris PCA demo",
+    "## Default output",
+    "## Documentation",
+    "## Scope",
+    "## License"
+  ),
+  chinese = c(
+    "## 安装",
+    "## 使用",
+    "## Iris PCA 演示",
+    "## 默认输出",
+    "## 文档",
+    "## 范围",
+    "## 许可"
+  )
+)
+extract_h2_sections <- function(document) {
+  lines <- strsplit(document, "\n", fixed = TRUE)[[1L]]
+  lines[grepl("^## [^#]", lines)]
+}
+assert_readme_sections <- function(document, expected, label) {
+  actual <- extract_h2_sections(document)
+  if (!identical(actual, expected)) {
+    stop(
+      paste0(
+        label,
+        " README H2 sections differ.\nExpected:\n",
+        paste(expected, collapse = "\n"),
+        "\nActual:\n",
+        paste(actual, collapse = "\n")
+      ),
+      call. = FALSE
+    )
+  }
+}
+assert_readme_sections(
+  english,
+  expected_readme_sections$english,
+  "English"
+)
+assert_readme_sections(
+  chinese,
+  expected_readme_sections$chinese,
+  "Chinese"
+)
+
+old_maintainer_walkthrough_headings <- c(
+  "## Maintainer workflow",
+  "### Historical v1.0.1 compatibility and release evidence",
+  "### Install and discover",
+  "### Runtime and public workflow",
+  "### Verify, evaluate, and upgrade",
+  "### Case-system rationale",
+  "### Maintained case workflow",
+  "### Case Readiness Audit",
+  "## 维护者工作流",
+  "### v1.0.1 历史兼容与发布证据",
+  "### 安装与发现",
+  "### R 运行时与公开工作流",
+  "### 验证、评测与升级",
+  "### 案例系统原理",
+  "### 维护中的案例工作流",
+  "### 案例就绪审计"
+)
+for (heading in old_maintainer_walkthrough_headings) {
+  stopifnot(!grepl(heading, english, fixed = TRUE))
+  stopifnot(!grepl(heading, chinese, fixed = TRUE))
+}
+
+for (document in list(english, chinese)) {
+  stopifnot(contains_all(
+    document,
+    c(
+      "examples/iris-pca",
+      "plot.R",
+      "plot.png",
+      "plot.pdf",
+      "skills/figureforge/references/maintainer-workflow.md",
+      "docs/figureforge-skill-v1.1.0-release.md",
+      "docs/figureforge-skill-v1.1.0-evidence/README.md",
+      "docs/figureforge-skill-mvp-status.md",
+      "skills/figureforge/cases/",
+      "LICENSE"
+    )
+  ))
+}
 evidence_root <- file.path(
   repo_root,
   "docs",
