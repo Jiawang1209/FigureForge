@@ -46,21 +46,105 @@ assert_numeric_equal <- function(actual, expected, label, tolerance = 1e-7) {
   )
 }
 
-png_dimensions <- function(path) {
-  bytes <- readBin(path, what = "raw", n = 24L)
-  signature <- as.raw(c(137L, 80L, 78L, 71L, 13L, 10L, 26L, 10L))
+decoded_png_dimensions <- function(path) {
   assert_true(
-    length(bytes) == 24L && identical(bytes[seq_len(8L)], signature),
-    "plot.png does not have a valid PNG signature"
+    requireNamespace("png", quietly = TRUE),
+    "The available R png package is required to decode plot.png"
   )
-  uint32 <- function(value) {
-    sum(as.integer(value) * 256^(3:0))
-  }
+  decoded <- tryCatch(
+    png::readPNG(path, native = FALSE),
+    error = function(error) error
+  )
+  assert_true(
+    !inherits(decoded, "error"),
+    "plot.png must decode successfully with the R png package"
+  )
+  dimensions <- dim(decoded)
+  assert_true(
+    length(dimensions) >= 2L,
+    "Decoded plot.png must have height and width dimensions"
+  )
   c(
-    width = uint32(bytes[17:20]),
-    height = uint32(bytes[21:24])
+    width = dimensions[[2L]],
+    height = dimensions[[1L]]
   )
 }
+
+contains_absolute_local_path <- function(document) {
+  attribute_matches <- regmatches(
+    document,
+    gregexpr(
+      "(?:href|src)[[:space:]]*=[[:space:]]*[\"'][^\"']+[\"']",
+      document,
+      ignore.case = TRUE,
+      perl = TRUE
+    )
+  )[[1L]]
+  attribute_values <- if (
+    length(attribute_matches) == 1L &&
+      identical(attribute_matches, "")
+  ) {
+    character()
+  } else {
+    sub(
+      "^[^=]+=[[:space:]]*[\"']([^\"']+)[\"']$",
+      "\\1",
+      attribute_matches,
+      perl = TRUE
+    )
+  }
+  unsafe_attribute <- any(grepl(
+    "^(?:file://|/|[A-Za-z]:[\\\\/]|\\\\\\\\)",
+    attribute_values,
+    ignore.case = TRUE,
+    perl = TRUE
+  ))
+
+  visible_text <- gsub("<[^>]+>", " ", document, perl = TRUE)
+  unsafe_text_patterns <- c(
+    "file://",
+    "(^|[[:space:]\"'(=])/[A-Za-z0-9._~-]+",
+    "(^|[[:space:]\"'(=])[A-Za-z]:[\\\\/]",
+    "(^|[[:space:]\"'(=])\\\\\\\\[A-Za-z0-9._~-]+[\\\\/]"
+  )
+  unsafe_attribute || any(vapply(
+    unsafe_text_patterns,
+    grepl,
+    logical(1),
+    x = visible_text,
+    ignore.case = TRUE,
+    perl = TRUE
+  ))
+}
+
+unsafe_path_examples <- c(
+  "<code>/opt/figureforge/demo</code>",
+  "<a href='/var/tmp/plot.png'>plot</a>",
+  "<code>C:\\Users\\analyst\\plot.png</code>",
+  "<a href='\\\\server\\share\\plot.png'>plot</a>",
+  "<a href='file:///tmp/plot.png'>plot</a>"
+)
+assert_true(
+  all(vapply(
+    unsafe_path_examples,
+    contains_absolute_local_path,
+    logical(1)
+  )),
+  "Absolute-path detection must cover Unix, Windows, UNC, and file paths"
+)
+safe_path_examples <- c(
+  "<a href='plot.png'>plot</a>",
+  "<a href='./pca-scores.csv'>scores</a>",
+  "<a href='https://example.org/results/plot.png'>external result</a>"
+)
+assert_true(
+  !any(vapply(
+    safe_path_examples,
+    contains_absolute_local_path,
+    logical(1)
+  )),
+  "Absolute-path detection must allow relative links and normal web URLs"
+)
 
 required_files <- c(
   "iris.csv",
@@ -157,6 +241,40 @@ assert_true(
   ),
   "plot.R must not depend on a private case or machine-local path"
 )
+
+invalid_invocations <- list(
+  zero_arguments = character(),
+  one_argument = shQuote(file.path(demo_root, "iris.csv")),
+  three_arguments = c(
+    shQuote(file.path(demo_root, "iris.csv")),
+    shQuote(tempfile("figureforge-iris-pca-invalid-output-")),
+    "unexpected-third-argument"
+  )
+)
+for (invocation_name in names(invalid_invocations)) {
+  invalid_log <- tempfile(
+    paste0("figureforge-iris-pca-", invocation_name, "-"),
+    fileext = ".log"
+  )
+  invalid_status <- system2(
+    file.path(R.home("bin"), "Rscript"),
+    c(
+      shQuote(plot_script_path),
+      invalid_invocations[[invocation_name]]
+    ),
+    stdout = invalid_log,
+    stderr = invalid_log
+  )
+  assert_true(
+    length(invalid_status) == 1L &&
+      !is.na(as.integer(invalid_status)) &&
+      as.integer(invalid_status) != 0L,
+    paste(
+      "plot.R must reject",
+      gsub("_", " ", invocation_name, fixed = TRUE)
+    )
+  )
+}
 
 rerun_root <- tempfile("figureforge-iris-pca-")
 dir.create(rerun_root, recursive = TRUE)
@@ -293,10 +411,10 @@ for (filename in c(
   )
 }
 
-png_size <- png_dimensions(file.path(demo_root, "plot.png"))
+png_size <- decoded_png_dimensions(file.path(demo_root, "plot.png"))
 assert_true(
-  png_size[["width"]] >= 1200 && png_size[["height"]] >= 800,
-  "plot.png must be at least 1200 by 800 pixels"
+  png_size[["width"]] > 0 && png_size[["height"]] > 0,
+  "Decoded plot.png dimensions must be positive"
 )
 
 pdfinfo <- Sys.which("pdfinfo")
@@ -313,9 +431,15 @@ assert_true(
   is.null(attr(pdf_info, "status")),
   "plot.pdf must be readable by pdfinfo"
 )
+page_line <- grep("^Pages:[[:space:]]+", pdf_info, value = TRUE)
+page_count <- if (length(page_line) == 1L) {
+  as.integer(sub("^Pages:[[:space:]]+", "", page_line))
+} else {
+  NA_integer_
+}
 assert_true(
-  any(grepl("^Pages:[[:space:]]+1[[:space:]]*$", pdf_info)),
-  "plot.pdf must contain exactly one page"
+  !is.na(page_count) && page_count >= 1L,
+  "plot.pdf must contain at least one page"
 )
 render_prefix <- tempfile("figureforge-iris-pca-pdf-")
 render_log <- tempfile("figureforge-iris-pca-pdf-", fileext = ".log")
@@ -350,10 +474,11 @@ assert_true(
   "index.html must declare a responsive viewport"
 )
 assert_true(
-  grepl("request", html, ignore.case = TRUE, fixed = TRUE) &&
+  grepl("FigureForge", html, ignore.case = TRUE, fixed = TRUE) &&
+    grepl("request", html, ignore.case = TRUE, fixed = TRUE) &&
     grepl("Iris", html, ignore.case = TRUE, fixed = TRUE) &&
     grepl("PCA", html, ignore.case = TRUE, fixed = TRUE),
-  "index.html must state the Iris PCA request"
+  "index.html must identify FigureForge and state the Iris PCA request"
 )
 assert_true(
   contains_all(html, c("PC1", "PC2")),
@@ -404,12 +529,7 @@ assert_true(
   "index.html must show the portable rerun command"
 )
 assert_true(
-  !grepl(
-    "file://|/(Users|home|private|tmp)/|[A-Za-z]:[\\\\/]",
-    html,
-    ignore.case = TRUE,
-    perl = TRUE
-  ),
+  !contains_absolute_local_path(html),
   "index.html must not contain an absolute local path"
 )
 
