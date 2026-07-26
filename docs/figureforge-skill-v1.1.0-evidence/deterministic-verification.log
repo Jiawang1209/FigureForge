@@ -1,5 +1,6 @@
 [PASS] release package validation completed before each live gate
 [PASS] all three release manifests are byte-identical
+[PASS] schema v2 identity binds all three live summary SHA-256 values
 [PASS] certification identity checker reported CURRENT
-source_commit=32eb3a7e3fa1a6aaef19d462b3893e9e396b3282
-manifest_sha256=a6dbd539aba44cf566cf974c6b7eaa277b3d8d5717c1ebe88d2399e783c5e6bf
+source_commit=9888601f2119e03380855aaadd92b340f8a24964
+manifest_sha256=45e2bc2cf42249c037ccca63876fe30864684de1026768787cb03806dcea5b04

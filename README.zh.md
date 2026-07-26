@@ -139,9 +139,9 @@ Rscript plot.R <input-file> <output-directory>
 
 FigureForge 默认使用 R 和 ggplot2；科研图形确有需要时，再引入专业 R 包。
 
-FigureForge Skill 1.1.0 是当前完成本地认证的发布版本。机器可读身份绑定
-准确的发布输入 commit 与包清单；后续仅文档 commit 可以承载该认证，而
-无需改变已认证源码 commit。
+FigureForge Skill 1.1.0 是当前完成本地认证的发布版本。schema v2
+机器可读身份绑定准确的发布输入 commit、包清单与三份 live gate 摘要；
+后续仅文档 commit 可以承载该认证，而无需改变已认证源码 commit。
 FigureForge Skill 1.0.1 是此前已认证的历史发布版本。随包提供 15 个公开案例。
 
 本地 `skills/figureforge/cases/` 私有案例库和受限来源材料不会公开分发；

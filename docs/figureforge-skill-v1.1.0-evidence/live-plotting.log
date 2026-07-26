@@ -2,4 +2,5 @@
 [PASS] plot.R, plot.png, and plot.pdf are nonempty
 [PASS] independent rerender produced valid PNG and PDF
 [PASS] delivered and independently rerendered PNG identities match
-source_commit=32eb3a7e3fa1a6aaef19d462b3893e9e396b3282
+summary_sha256=856f549023725bfafa46df9cef9fc8e4edddd5fcb8225ef4632109b2a57da178
+source_commit=9888601f2119e03380855aaadd92b340f8a24964

@@ -1,6 +1,6 @@
 key	value	observability	source
 timezone	Asia/Shanghai	observed	session environment
-codex_path	/Users/liuyue/.local/bin/codex	observed	command -v codex
+codex_command	codex	observed	command invocation
 codex_version	codex-cli 0.145.0	observed	codex --version
 codex_model	not_exposed	not_exposed	retained events did not expose resolved default model
 rscript_path	/usr/local/bin/Rscript	observed	explicit executable

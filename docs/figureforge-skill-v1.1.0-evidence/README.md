@@ -7,11 +7,12 @@ local FigureForge Skill 1.1.0 certification.
 
 The machine-readable
 [certification-identity.tsv](certification-identity.tsv) binds release `1.1.0`
-to source commit `32eb3a7e3fa1a6aaef19d462b3893e9e396b3282`, source tree
-`403bd3c9de57345480244d7a57174522afc062f1`, the release-source digest, and the
-canonical package manifest. A later documentation-only commit may carry this
-bundle without changing the certified source commit, provided the currentness
-checker confirms that every release input remains identical.
+to source commit `9888601f2119e03380855aaadd92b340f8a24964`, source tree
+`dd6026c700b5d715d0a66b31db6531324793ec80`, the release-source digest, the
+canonical package manifest, and SHA-256 identities for all three live gate
+summaries. A later documentation-only commit may carry this bundle without
+changing the certified source commit, provided the currentness checker confirms
+that every release input and live summary remains identical.
 
 ## Files
 
@@ -32,7 +33,7 @@ checker confirms that every release input remains identical.
 
 All three live gates produced the same 159-row manifest:
 
-`a6dbd539aba44cf566cf974c6b7eaa277b3d8d5717c1ebe88d2399e783c5e6bf`
+`45e2bc2cf42249c037ccca63876fe30864684de1026768787cb03806dcea5b04`
 
 This manifest is the portable package identity because it binds each member
 path, size, and SHA-256. The three compressed archives differ only at the
@@ -48,3 +49,7 @@ archives, credentials, and installed trees are excluded.
 Tracked sanitized certification logs contain aggregate outcomes and
 cryptographic identities only. The configured Codex model name was not exposed
 by the retained events and is recorded as `not_exposed`, not guessed.
+
+The query SHA-256 values described by the release are linkable pseudonymous
+identifiers, not encryption. Queries therefore remain abstract and must not
+contain secrets or personal identifiers.

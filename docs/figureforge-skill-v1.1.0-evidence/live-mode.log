@@ -3,4 +3,5 @@
 [PASS] general_fallback generation selected claim=general_method
 [PASS] general_fallback generation did not read case evidence
 [PASS] both modes passed schema-bound receipt, strict validation, installed-skill integrity, trusted-reader, and artifact checks
-source_commit=32eb3a7e3fa1a6aaef19d462b3893e9e396b3282
+summary_sha256=bee9b99a7c0b2acb68de944f839ae1e4c5a1017026c4e89be4ffa36a7d2efbc6
+source_commit=9888601f2119e03380855aaadd92b340f8a24964

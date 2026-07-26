@@ -2,8 +2,8 @@
 
 Status: currently certified locally
 Version: `1.1.0`
-Certified source commit: `32eb3a7e3fa1a6aaef19d462b3893e9e396b3282`
-Certified source tree: `403bd3c9de57345480244d7a57174522afc062f1`
+Certified source commit: `9888601f2119e03380855aaadd92b340f8a24964`
+Certified source tree: `dd6026c700b5d715d0a66b31db6531324793ec80`
 
 FigureForge Skill 1.1.0 is the current locally certified release. The
 certification is bound by
@@ -43,11 +43,12 @@ MCP is planned and unimplemented.
 
 The canonical 159-row release manifest SHA-256 is:
 
-`a6dbd539aba44cf566cf974c6b7eaa277b3d8d5717c1ebe88d2399e783c5e6bf`
+`45e2bc2cf42249c037ccca63876fe30864684de1026768787cb03806dcea5b04`
 
-All three live gates produced this same manifest. Their compressed archive
-hashes differ because the packaging contract does not promise deterministic
-gzip/tar container bytes. The archive used for the certification identity is
+All three live gates produced this same manifest. Schema v2 additionally binds
+the exact trigger, plotting, and mode summary SHA-256 values. Their compressed
+archive hashes differ because the packaging contract does not promise
+deterministic gzip/tar container bytes. The archive used for the certification identity is
 recorded separately in the identity and
 [`package-identities.tsv`](figureforge-skill-v1.1.0-evidence/package-identities.tsv).
 
@@ -57,6 +58,10 @@ The raw or unsanitized evaluation logs are not committed. The bundle contains
 tracked sanitized certification logs with aggregate results and cryptographic identities;
 they exclude prompts, transcripts, credentials, private corpus content, user
 data, and generated binaries.
+
+Search-query SHA-256 values are linkable pseudonymous identifiers, not
+encryption. Search queries must remain abstract and exclude secrets and personal
+identifiers.
 
 FigureForge Skill 1.0.1 is the prior certified historical release. This is a
 local certification only: no push, tag, merge, PR, or publication is implied.

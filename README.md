@@ -143,9 +143,10 @@ FigureForge defaults to R and ggplot2, adding specialist R packages when a
 scientific chart needs them.
 
 FigureForge Skill 1.1.0 is the current locally certified release. Its
-machine-readable identity binds the exact release-input commit and package
-manifest; a later documentation-only commit may carry that certification
-without changing the certified source commit.
+schema v2 machine-readable identity binds the exact release-input commit,
+package manifest, and three live gate summaries; a later documentation-only
+commit may carry that certification without changing the certified source
+commit.
 FigureForge Skill 1.0.1 is the prior certified historical release. The shipped
 package contains 15 public cases.
 

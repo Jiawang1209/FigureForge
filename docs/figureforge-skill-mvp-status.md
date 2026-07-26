@@ -9,9 +9,10 @@ contract (`plot.R`, `plot.png`, and `plot.pdf`) while selecting either
 case-grounded generation or a general-method fallback.
 
 The certified release-input commit is
-`32eb3a7e3fa1a6aaef19d462b3893e9e396b3282`. Certification documentation may
+`9888601f2119e03380855aaadd92b340f8a24964`. Certification documentation may
 land in a later documentation-only commit; the identity checker confirms that
-the release inputs still match the certified commit.
+the release inputs and all three live summaries still match the certified
+identity.
 
 ## Gate status
 
@@ -31,6 +32,10 @@ The platform baseline remains 15 public cases, 24 synthetic stress fixtures,
 30 deterministic bilingual forward evaluations, 152 completed private cases,
 13 validated blockers, and 0 pending cases. The private corpus and generated
 artifacts are not committed.
+
+Search-query SHA-256 values are linkable pseudonymous identifiers rather than
+encryption; queries must remain abstract and exclude secrets and personal
+identifiers.
 
 FigureForge Skill 1.0.1 is the prior certified historical release. No MCP server
 is included in 1.1.0, and no push, tag, merge, PR, or publication is implied by
