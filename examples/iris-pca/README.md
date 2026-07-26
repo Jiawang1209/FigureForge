@@ -14,7 +14,7 @@ The script validates the input, performs centered and scaled PCA with `stats::pr
 
 At the generation stage, FigureForge read the primary `20230925_PCA` case's `case.md`, `plot.R`, and verified `qa.md`. The hidden generation trace passed strict validation against those evidence files and this demo's generated `plot.R`. Public reruns remain standalone: `plot.R` reads only the supplied Iris CSV, does not access the private case, and does not create or rewrite generation-time trace state.
 
-No private data, evidence content, source code, hashes, or machine-local paths are included in this public demo.
+The user-visible README and HTML do not display private paths, private source code, private data, or hashes. The hidden trace retains SHA-256 hashes for provenance auditing.
 
 ### Schema mapping
 

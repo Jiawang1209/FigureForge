@@ -1084,6 +1084,40 @@ assert_numeric_table_row <- function(
   )
 }
 
+assert_hash_visibility_language <- function(document, label) {
+  normalized <- tolower(document)
+  assert_true(
+    contains_all(
+      normalized,
+      c(
+        "user-visible readme and html",
+        "private paths",
+        "private source code",
+        "private data",
+        "hashes",
+        "hidden trace",
+        "retains sha-256 hashes",
+        "provenance auditing"
+      )
+    ),
+    paste(
+      label,
+      "must distinguish user-visible redaction from hidden trace hash retention"
+    )
+  )
+  assert_true(
+    !grepl(
+      paste(
+        "no private data, evidence content, source code, hashes,",
+        "or machine-local paths"
+      ),
+      normalized,
+      fixed = TRUE
+    ),
+    paste(label, "must reject the old absolute no-hashes statement")
+  )
+}
+
 assert_live_html <- function(
     html_path,
     live_input,
@@ -1190,6 +1224,7 @@ assert_live_html <- function(
     !grepl("[0-9a-f]{64}", html, ignore.case = TRUE, perl = TRUE),
     paste(label, "index.html must not disclose provenance hashes")
   )
+  assert_hash_visibility_language(html, paste(label, "index.html"))
   assert_true(
     grepl(
       "<img[^>]+src=[\"'](?:\\./)?plot\\.png[\"']",
@@ -2009,6 +2044,7 @@ for (fixture in optional_escaped_labels) {
 english <- read_text(file.path(repo_root, "README.md"))
 chinese <- read_text(file.path(repo_root, "README.zh.md"))
 demo_readme <- read_text(file.path(demo_root, "README.md"))
+assert_hash_visibility_language(demo_readme, "The demo README")
 assert_true(
   contains_all(
     tolower(demo_readme),
