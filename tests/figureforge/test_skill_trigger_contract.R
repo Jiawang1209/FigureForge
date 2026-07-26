@@ -255,6 +255,14 @@ stopifnot(grepl(
   live_eval_text,
   fixed = TRUE
 ))
+stopifnot(grepl(
+  paste0(
+    "probe_prompt=\"Before answering, first use the terminal to read ",
+    "the selected capability's installed SKILL.md. $prompt\""
+  ),
+  live_eval_text,
+  fixed = TRUE
+))
 
 fake_root <- tempfile("figureforge-live-relative-")
 dir.create(fake_root, recursive = TRUE)

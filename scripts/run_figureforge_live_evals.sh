@@ -116,7 +116,7 @@ while IFS=$'\t' read -r kind probe_id prompt; do
   if [ -n "$MODEL" ]; then
     codex_args+=(--model "$MODEL")
   fi
-  probe_prompt="$prompt Before answering, read the selected capability's installed SKILL.md."
+  probe_prompt="Before answering, first use the terminal to read the selected capability's installed SKILL.md. $prompt"
   if "$CODEX_BIN" "${codex_args[@]}" "$probe_prompt" \
       </dev/null >"$transcript" 2>"$stderr_log"; then
     exit_status=0
