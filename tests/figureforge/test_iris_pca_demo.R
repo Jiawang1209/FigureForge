@@ -1807,10 +1807,9 @@ for (document in list(english, chinese)) {
     contains_all(
       document,
       c(
-        "git clone https://github.com/Jiawang1209/FigureForge.git",
-        "mkdir -p .agents/skills",
-        "cp -R FigureForge/skills/figureforge .agents/skills/figureforge",
-        "test -s .agents/skills/figureforge/SKILL.md",
+        "FIGUREFORGE_REPO_URL",
+        "# figureforge-install:start",
+        "# figureforge-install:end",
         "examples/iris-pca",
         "plot.R",
         "plot.png",
@@ -1838,5 +1837,156 @@ assert_true(
     grepl("Rscript examples/iris-pca/plot\\.R", chinese, perl = TRUE),
   "Both root READMEs must include the Iris PCA rerun command"
 )
+
+extract_install_script <- function(document) {
+  lines <- strsplit(document, "\n", fixed = TRUE)[[1L]]
+  start <- which(lines == "# figureforge-install:start")
+  end <- which(lines == "# figureforge-install:end")
+  assert_true(
+    length(start) == 1L && length(end) == 1L && start < end,
+    "README must contain one marked install script"
+  )
+  paste(lines[start:end], collapse = "\n")
+}
+
+install_script_en <- extract_install_script(english)
+install_script_zh <- extract_install_script(chinese)
+assert_true(
+  identical(install_script_en, install_script_zh),
+  "English and Chinese READMEs must ship identical install logic"
+)
+
+local({
+  install_test_root <- tempfile("figureforge-readme-install-")
+  dir.create(install_test_root, recursive = TRUE)
+  on.exit(unlink(install_test_root, recursive = TRUE, force = TRUE))
+
+  install_script_path <- file.path(install_test_root, "install.sh")
+  writeLines(install_script_en, install_script_path, useBytes = TRUE)
+  workspace <- file.path(install_test_root, "workspace")
+  dir.create(workspace)
+
+  run_install <- function(repo_url, expect_success) {
+    previous <- setwd(workspace)
+    on.exit(setwd(previous), add = TRUE)
+    output <- suppressWarnings(
+      system2(
+        "sh",
+        shQuote(install_script_path),
+        stdout = TRUE,
+        stderr = TRUE,
+        env = paste0(
+          "FIGUREFORGE_REPO_URL=",
+          shQuote(normalizePath(repo_url, mustWork = TRUE))
+        )
+      )
+    )
+    status <- attr(output, "status")
+    succeeded <- is.null(status) || identical(as.integer(status), 0L)
+    assert_true(
+      identical(succeeded, expect_success),
+      paste(
+        "Documented install script returned an unexpected status:",
+        paste(output, collapse = "\n")
+      )
+    )
+  }
+
+  installed <- file.path(
+    workspace,
+    ".agents",
+    "skills",
+    "figureforge"
+  )
+  for (attempt in seq_len(2L)) {
+    run_install(repo_root, expect_success = TRUE)
+    assert_true(
+      file.exists(file.path(installed, "SKILL.md")),
+      "Documented install script must install SKILL.md"
+    )
+    assert_true(
+      !dir.exists(file.path(installed, "figureforge")),
+      "Rerunning install must not create nested figureforge directories"
+    )
+    install_debris <- list.files(
+      file.path(workspace, ".agents", "skills"),
+      pattern = "^\\.figureforge-(?:stage|backup)\\.",
+      all.files = TRUE
+    )
+    assert_true(
+      length(install_debris) == 0L,
+      "Successful install must clean its staging and backup directories"
+    )
+    diff_output <- system2(
+      "diff",
+      c(
+        "-qr",
+        shQuote(file.path(repo_root, "skills", "figureforge")),
+        shQuote(installed)
+      ),
+      stdout = TRUE,
+      stderr = TRUE
+    )
+    assert_true(
+      is.null(attr(diff_output, "status")),
+      paste(
+        "Installed Skill must match the repository source:",
+        paste(diff_output, collapse = "\n")
+      )
+    )
+  }
+
+  snapshot_root <- file.path(install_test_root, "installed-snapshot")
+  dir.create(snapshot_root)
+  copy_ok <- file.copy(
+    installed,
+    snapshot_root,
+    recursive = TRUE,
+    copy.mode = TRUE,
+    copy.date = TRUE
+  )
+  assert_true(copy_ok, "Could not snapshot the installed Skill")
+  installed_snapshot <- file.path(snapshot_root, "figureforge")
+
+  invalid_repo <- file.path(install_test_root, "invalid-repo")
+  invalid_skill <- file.path(invalid_repo, "skills", "figureforge")
+  dir.create(invalid_skill, recursive = TRUE)
+  writeLines("invalid staged package", file.path(invalid_skill, "VERSION"))
+  git_commands <- list(
+    c("init", "-q", shQuote(invalid_repo)),
+    c("-C", shQuote(invalid_repo), "config", "user.name", "FigureForge Test"),
+    c("-C", shQuote(invalid_repo), "config", "user.email", "test@example.invalid"),
+    c("-C", shQuote(invalid_repo), "add", "skills/figureforge/VERSION"),
+    c(
+      "-C",
+      shQuote(invalid_repo),
+      "commit",
+      "-q",
+      "-m",
+      shQuote("invalid fixture")
+    )
+  )
+  for (command in git_commands) {
+    assert_true(
+      identical(as.integer(system2("git", command)), 0L),
+      "Could not prepare invalid local repository fixture"
+    )
+  }
+
+  run_install(invalid_repo, expect_success = FALSE)
+  preserved_output <- system2(
+    "diff",
+    c("-qr", shQuote(installed_snapshot), shQuote(installed)),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  assert_true(
+    is.null(attr(preserved_output, "status")),
+    paste(
+      "Failed staged validation must preserve the previous install:",
+      paste(preserved_output, collapse = "\n")
+    )
+  )
+})
 
 message("Iris PCA demo contract tests: PASS")

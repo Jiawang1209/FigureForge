@@ -9,13 +9,67 @@ FigureForge 是一个绘图能力增强器：把真实数据和绘图需求交�
 
 ## 安装
 
-将随仓库发布的 Skill 安装到项目的 `.agents/skills` 目录：
+在需要使用 FigureForge 的项目中，运行下面可安全升级的 POSIX shell 代码：
 
-```bash
-git clone https://github.com/Jiawang1209/FigureForge.git
+```sh
+# figureforge-install:start
+set -eu
+
+FIGUREFORGE_REPO_URL=${FIGUREFORGE_REPO_URL:-https://github.com/Jiawang1209/FigureForge.git}
+figureforge_target=.agents/skills/figureforge
+figureforge_clone=$(mktemp -d "${TMPDIR:-/tmp}/figureforge-clone.XXXXXX")
+figureforge_stage_root=
+figureforge_backup_root=
+figureforge_published=0
+
+figureforge_cleanup() {
+  figureforge_status=$?
+  trap - 0 HUP INT TERM
+  if [ "$figureforge_published" -eq 0 ] &&
+     [ -n "$figureforge_backup_root" ] &&
+     [ -e "$figureforge_backup_root/figureforge" ]; then
+    if [ ! -e "$figureforge_target" ] && [ ! -L "$figureforge_target" ]; then
+      mv "$figureforge_backup_root/figureforge" "$figureforge_target" ||
+        figureforge_status=1
+    else
+      printf '%s\n' "Previous install preserved at $figureforge_backup_root/figureforge" >&2
+      figureforge_backup_root=
+    fi
+  fi
+  for figureforge_dir in \
+    "$figureforge_stage_root" "$figureforge_backup_root" "$figureforge_clone"
+  do
+    if [ -n "$figureforge_dir" ] && [ -d "$figureforge_dir" ]; then
+      rm -rf "$figureforge_dir" || figureforge_status=1
+    fi
+  done
+  exit "$figureforge_status"
+}
+trap figureforge_cleanup 0
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+git clone --quiet "$FIGUREFORGE_REPO_URL" "$figureforge_clone/repo"
+test -s "$figureforge_clone/repo/skills/figureforge/SKILL.md"
 mkdir -p .agents/skills
-cp -R FigureForge/skills/figureforge .agents/skills/figureforge
-test -s .agents/skills/figureforge/SKILL.md
+figureforge_stage_root=$(mktemp -d ".agents/skills/.figureforge-stage.XXXXXX")
+cp -R "$figureforge_clone/repo/skills/figureforge" \
+  "$figureforge_stage_root/figureforge"
+test -s "$figureforge_stage_root/figureforge/SKILL.md"
+
+figureforge_backup_root=$(mktemp -d ".agents/skills/.figureforge-backup.XXXXXX")
+if [ -e "$figureforge_target" ] || [ -L "$figureforge_target" ]; then
+  mv "$figureforge_target" "$figureforge_backup_root/figureforge"
+fi
+mv "$figureforge_stage_root/figureforge" "$figureforge_target"
+figureforge_published=1
+rm -rf "$figureforge_backup_root" "$figureforge_stage_root" "$figureforge_clone"
+figureforge_backup_root=
+figureforge_stage_root=
+figureforge_clone=
+trap - 0 HUP INT TERM
+# figureforge-install:end
 ```
 
 其他兼容 Skill 的智能体也可以使用同一个 `skills/figureforge` 目录：将其
@@ -42,8 +96,10 @@ Skill 会检查真实数据、迁移经过验证的绘图方法、渲染结果�
 Rscript examples/iris-pca/plot.R examples/iris-pca/iris.csv examples/iris-pca
 ```
 
-打开[离线报告](examples/iris-pca/index.html)，或查看
-[源文件目录与说明](examples/iris-pca/README.md)。
+GitHub 上的 [HTML 链接](examples/iris-pca/index.html)显示的是报告源代码。
+克隆仓库后，请在本地打开 `examples/iris-pca/index.html`（macOS 可运行
+`open examples/iris-pca/index.html`，其他系统可使用浏览器的“打开文件”）。
+另见[源文件目录与说明](examples/iris-pca/README.md)。
 
 ## 默认输出
 

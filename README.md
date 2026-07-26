@@ -9,13 +9,68 @@ English · [简体中文](README.zh.md)
 
 ## Install
 
-Install the shipped Skill in a project's `.agents/skills` directory:
+From the project where you want to use FigureForge, run this upgrade-safe
+POSIX shell block:
 
-```bash
-git clone https://github.com/Jiawang1209/FigureForge.git
+```sh
+# figureforge-install:start
+set -eu
+
+FIGUREFORGE_REPO_URL=${FIGUREFORGE_REPO_URL:-https://github.com/Jiawang1209/FigureForge.git}
+figureforge_target=.agents/skills/figureforge
+figureforge_clone=$(mktemp -d "${TMPDIR:-/tmp}/figureforge-clone.XXXXXX")
+figureforge_stage_root=
+figureforge_backup_root=
+figureforge_published=0
+
+figureforge_cleanup() {
+  figureforge_status=$?
+  trap - 0 HUP INT TERM
+  if [ "$figureforge_published" -eq 0 ] &&
+     [ -n "$figureforge_backup_root" ] &&
+     [ -e "$figureforge_backup_root/figureforge" ]; then
+    if [ ! -e "$figureforge_target" ] && [ ! -L "$figureforge_target" ]; then
+      mv "$figureforge_backup_root/figureforge" "$figureforge_target" ||
+        figureforge_status=1
+    else
+      printf '%s\n' "Previous install preserved at $figureforge_backup_root/figureforge" >&2
+      figureforge_backup_root=
+    fi
+  fi
+  for figureforge_dir in \
+    "$figureforge_stage_root" "$figureforge_backup_root" "$figureforge_clone"
+  do
+    if [ -n "$figureforge_dir" ] && [ -d "$figureforge_dir" ]; then
+      rm -rf "$figureforge_dir" || figureforge_status=1
+    fi
+  done
+  exit "$figureforge_status"
+}
+trap figureforge_cleanup 0
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+git clone --quiet "$FIGUREFORGE_REPO_URL" "$figureforge_clone/repo"
+test -s "$figureforge_clone/repo/skills/figureforge/SKILL.md"
 mkdir -p .agents/skills
-cp -R FigureForge/skills/figureforge .agents/skills/figureforge
-test -s .agents/skills/figureforge/SKILL.md
+figureforge_stage_root=$(mktemp -d ".agents/skills/.figureforge-stage.XXXXXX")
+cp -R "$figureforge_clone/repo/skills/figureforge" \
+  "$figureforge_stage_root/figureforge"
+test -s "$figureforge_stage_root/figureforge/SKILL.md"
+
+figureforge_backup_root=$(mktemp -d ".agents/skills/.figureforge-backup.XXXXXX")
+if [ -e "$figureforge_target" ] || [ -L "$figureforge_target" ]; then
+  mv "$figureforge_target" "$figureforge_backup_root/figureforge"
+fi
+mv "$figureforge_stage_root/figureforge" "$figureforge_target"
+figureforge_published=1
+rm -rf "$figureforge_backup_root" "$figureforge_stage_root" "$figureforge_clone"
+figureforge_backup_root=
+figureforge_stage_root=
+figureforge_clone=
+trap - 0 HUP INT TERM
+# figureforge-install:end
 ```
 
 Other Skill-compatible agents can use the same `skills/figureforge` directory:
@@ -42,8 +97,10 @@ Run the checked-in demo directly:
 Rscript examples/iris-pca/plot.R examples/iris-pca/iris.csv examples/iris-pca
 ```
 
-Open the [offline report](examples/iris-pca/index.html), or inspect the
-[source directory and README](examples/iris-pca/README.md).
+GitHub's [HTML link](examples/iris-pca/index.html) shows the report source.
+After cloning the repository, open `examples/iris-pca/index.html` locally
+(`open examples/iris-pca/index.html` on macOS, or use your browser's Open File
+command). See the [source directory and README](examples/iris-pca/README.md).
 
 ## Default output
 
