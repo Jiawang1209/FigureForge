@@ -148,6 +148,7 @@ stage "installed official validation, doctor, search, demo, and rerender"
 INSTALLED_CASE_DIR="$INSTALLED/public-cases/public-correlation-heatmap"
 INSTALLED_CASE_WORKSPACE="$VERIFY_ROOT/installed-case-trace-workspace"
 INSTALLED_CASE_TRACE="$INSTALLED_CASE_WORKSPACE/.figureforge/case-trace.yml"
+INSTALLED_CASE_SEARCH="$INSTALLED_CASE_WORKSPACE/.figureforge/case-search.csv"
 INSTALLED_CASE_SCRIPT="$INSTALLED_CASE_WORKSPACE/plot.R"
 INSTALLED_CASE_TRACE_LOG="$VERIFY_ROOT/installed-case-trace.log"
 mkdir -p "$INSTALLED_CASE_WORKSPACE/.figureforge"
@@ -170,12 +171,23 @@ installed_plot_r_sha=$(
 installed_qa_md_sha=$(
   installed_sha256 "$INSTALLED_CASE_DIR/qa.md"
 )
+"$RSCRIPT" "$INSTALLED/scripts/search_cases.R" \
+  --public \
+  --query "correlation heatmap" \
+  --limit 5 \
+  --output "$INSTALLED_CASE_SEARCH"
+installed_search_sha=$(
+  installed_sha256 "$INSTALLED_CASE_SEARCH"
+)
 {
   echo "schema_version: 1"
   echo "generation_mode: case_based"
   echo "figureforge_version: 1.1.0"
   echo "generated_script_sha256: $installed_generated_sha"
   echo "claim: case_grounded"
+  echo "search_query: correlation heatmap"
+  echo "search_receipt_file: case-search.csv"
+  echo "search_receipt_sha256: $installed_search_sha"
   echo "primary_case_id: public-correlation-heatmap"
   echo "case_md_file: case.md"
   echo "case_md_sha256: $installed_case_md_sha"

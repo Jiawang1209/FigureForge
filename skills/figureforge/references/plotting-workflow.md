@@ -12,7 +12,10 @@ input; do not rewrite the source file merely to match a case.
 ## Case Strategy
 
 Search by scientific relationship, data shape, visual grammar, schema, and
-dependency fit, then choose exactly one mode:
+dependency fit. Run `search_cases.R` with `--output` to
+`.figureforge/case-search.csv` before choosing a mode; record the exact query,
+receipt filename, and receipt SHA-256 in `case-trace.yml`. Then choose exactly
+one mode:
 
 - `case_based`: choose one readable primary case; actually read `case.md`,
   `plot.R`, and `qa.md` when present. Use secondary cases only for local
@@ -57,6 +60,6 @@ validation cannot authorize that claim. For `general_fallback`, use
 ## Delivery
 
 Deliver clickable paths for `plot.R`, `plot.png`, and `plot.pdf`. The hidden
-trace is not a fourth visible artifact. Add a short note identifying the mode,
+trace and search receipt are not visible artifacts. Add a short note identifying the mode,
 the primary case and mappings when case-based or the fallback reason otherwise,
 plus specialist packages and remaining limits.

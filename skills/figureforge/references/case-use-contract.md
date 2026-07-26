@@ -5,6 +5,30 @@ generation mode: `case_based` or `general_fallback`. Keep the audit record at
 `.figureforge/case-trace.yml` under the output directory. It is hidden workflow
 state and is not a fourth user-visible deliverable.
 
+## Mandatory search receipt
+
+Before choosing either mode, run `search_cases.R` with `--output` to a hidden
+CSV beside the trace:
+
+```bash
+Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
+  --public \
+  --query "<scientific intent, relationship, or chart family>" \
+  --schema "<input-file>" \
+  --explain-scores \
+  --limit 5 \
+  --output "<output-directory>/.figureforge/case-search.csv"
+```
+
+Both modes must record the nonempty `search_query`, the trace-relative
+`search_receipt_file: case-search.csv`, and its
+`search_receipt_sha256`. The receipt filename must be a safe CSV basename and
+the file must remain beside `case-trace.yml`. Validation checks that it is a
+regular nonempty readable CSV and that its SHA-256 matches. For `case_based`,
+the selected `primary_case_id` must occur in the receipt's `case_id` column.
+A console-only search or an invented fallback explanation does not satisfy the
+contract.
+
 ## `case_based`
 
 Use this mode only when one primary case is sufficiently relevant and readable.
@@ -50,6 +74,9 @@ generation_mode: case_based
 figureforge_version: <version>
 generated_script_sha256: <sha256>
 claim: case_grounded
+search_query: <scientific intent, relationship, or chart family>
+search_receipt_file: case-search.csv
+search_receipt_sha256: <sha256>
 primary_case_id: <case-id>
 case_md_file: case.md
 case_md_sha256: <sha256>
@@ -82,6 +109,9 @@ generation_mode: general_fallback
 figureforge_version: <version>
 generated_script_sha256: <sha256>
 claim: general_method
+search_query: <scientific intent, relationship, or chart family>
+search_receipt_file: case-search.csv
+search_receipt_sha256: <sha256>
 fallback_reason: <no sufficient match or unreadable evidence>
 ```
 

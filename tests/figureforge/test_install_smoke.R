@@ -175,12 +175,29 @@ search <- run_installed_r(
 stopifnot(search$ok)
 
 installed_trace <- file.path(output_root, "case-trace.yml")
+installed_search_receipt <- file.path(output_root, "case-search.csv")
+write.csv(
+  data.frame(
+    case_id = character(0),
+    score_total = numeric(0),
+    stringsAsFactors = FALSE
+  ),
+  installed_search_receipt,
+  row.names = FALSE,
+  fileEncoding = "UTF-8"
+)
 writeLines(c(
   "schema_version: 1",
   "generation_mode: general_fallback",
   "figureforge_version: 1.1.0",
   paste0("generated_script_sha256: ", paste(rep("0", 64L), collapse = "")),
   "claim: general_method",
+  "search_query: unmatched installation smoke plot",
+  "search_receipt_file: case-search.csv",
+  paste0(
+    "search_receipt_sha256: ",
+    figureforge_sha256(installed_search_receipt)
+  ),
   "fallback_reason: no suitable public case"
 ), installed_trace, useBytes = TRUE)
 installed_trace_validation <- run_installed_r(

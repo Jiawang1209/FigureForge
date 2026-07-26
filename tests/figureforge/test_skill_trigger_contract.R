@@ -123,6 +123,11 @@ for (phrase in c(
   "plot.R",
   "qa.md",
   ".figureforge/case-trace.yml",
+  "search_query",
+  "search_receipt_file",
+  "search_receipt_sha256",
+  "case-search.csv",
+  "--output",
   "schema_mapping",
   "adopted_patterns",
   "departures",
@@ -146,6 +151,7 @@ for (phrase in c(
 }
 for (phrase in c(
   "Choose exactly one generation mode after search",
+  "Run `search_cases.R` with `--output` before choosing the generation mode",
   "actually read `case.md` and `plot.R`",
   "read `qa.md` when it exists",
   "Only a successful strict validation authorizes a case-grounded claim",

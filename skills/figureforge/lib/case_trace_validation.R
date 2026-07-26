@@ -4,7 +4,10 @@ case_trace_required_common_keys <- function() {
     "generation_mode",
     "figureforge_version",
     "generated_script_sha256",
-    "claim"
+    "claim",
+    "search_query",
+    "search_receipt_file",
+    "search_receipt_sha256"
   )
 }
 
@@ -38,6 +41,52 @@ case_trace_nonempty_keys <- function(metadata, keys) {
 case_trace_sha256 <- function(value) {
   length(value) == 1L &&
     grepl("^[0-9a-f]{64}$", value, perl = TRUE)
+}
+
+case_trace_safe_search_receipt_file <- function(value) {
+  length(value) == 1L &&
+    nzchar(trimws(value)) &&
+    identical(value, basename(value)) &&
+    !value %in% c(".", "..") &&
+    !grepl("[/\\\\]", value, perl = TRUE) &&
+    grepl("\\.csv$", value, perl = TRUE, ignore.case = TRUE)
+}
+
+case_trace_read_search_receipt <- function(path) {
+  if (!case_trace_regular_nonempty_file(path)) {
+    return(NULL)
+  }
+  tryCatch(
+    read.csv(
+      path,
+      stringsAsFactors = FALSE,
+      check.names = FALSE,
+      fileEncoding = "UTF-8"
+    ),
+    error = function(error) NULL
+  )
+}
+
+case_trace_search_receipt_matches_mode <- function(
+  receipt,
+  generation_mode,
+  primary_case_id = ""
+) {
+  if (
+    is.null(receipt) ||
+      !"case_id" %in% names(receipt) ||
+      anyDuplicated(names(receipt))
+  ) {
+    return(FALSE)
+  }
+  case_ids <- as.character(receipt$case_id)
+  if (identical(generation_mode, "case_based")) {
+    return(
+      nzchar(primary_case_id) &&
+        primary_case_id %in% case_ids
+    )
+  }
+  identical(generation_mode, "general_fallback")
 }
 
 case_trace_verification_level <- function(
@@ -403,6 +452,48 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
   } else {
     ""
   }
+  search_receipt_file <- if (
+    "search_receipt_file" %in% names(metadata)
+  ) {
+    metadata$search_receipt_file
+  } else {
+    ""
+  }
+  recorded_search_receipt_hash <- if (
+    "search_receipt_sha256" %in% names(metadata)
+  ) {
+    metadata$search_receipt_sha256
+  } else {
+    ""
+  }
+  search_receipt_file_safe <-
+    case_trace_safe_search_receipt_file(search_receipt_file)
+  search_receipt_path <- if (search_receipt_file_safe) {
+    file.path(dirname(trace_path), search_receipt_file)
+  } else {
+    ""
+  }
+  search_receipt_hash_format_ok <-
+    case_trace_sha256(recorded_search_receipt_hash)
+  search_receipt_regular <- search_receipt_file_safe &&
+    identical(Sys.readlink(search_receipt_path), "") &&
+    case_trace_regular_nonempty_file(search_receipt_path)
+  search_receipt_hash_matches <- search_receipt_regular &&
+    search_receipt_hash_format_ok &&
+    identical(
+      suppressWarnings(
+        tryCatch(
+          figureforge_sha256(search_receipt_path),
+          error = function(error) ""
+        )
+      ),
+      recorded_search_receipt_hash
+    )
+  search_receipt <- if (search_receipt_regular) {
+    case_trace_read_search_receipt(search_receipt_path)
+  } else {
+    NULL
+  }
 
   verification_level <- case_trace_verification_level(
     mode,
@@ -455,6 +546,11 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
           identical(claim, "general_method"))
     ),
     "generated script hash format" = script_hash_format_ok,
+    "search receipt filename is safe" = search_receipt_file_safe,
+    "search receipt is regular non-empty CSV" =
+      search_receipt_regular && !is.null(search_receipt),
+    "search receipt hash format" = search_receipt_hash_format_ok,
+    "search receipt hash matches" = search_receipt_hash_matches,
     "no absolute paths" = path_ok,
     "no embedded newlines" = newline_ok
   )
@@ -595,7 +691,13 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       "auditable adopted pattern format" = patterns_ok,
       "non-empty departures" = departures_ok,
       "no fallback-only evidence" = no_fallback_evidence,
-      "QA evidence declared" = qa_declared_ok
+      "QA evidence declared" = qa_declared_ok,
+      "search receipt matches generation mode" =
+        case_trace_search_receipt_matches_mode(
+          search_receipt,
+          mode,
+          primary_case_id
+        )
     )
     if (!is.null(case_dir)) {
       checks <- c(
@@ -632,6 +734,11 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       "required fallback metadata" = fallback_ok,
       "non-empty fallback reason" = fallback_ok &&
         nzchar(trimws(metadata$fallback_reason)),
+      "search receipt matches generation mode" =
+        case_trace_search_receipt_matches_mode(
+          search_receipt,
+          mode
+        ),
       "no primary case evidence" =
         !any(forbidden_keys %in% names(metadata))
     )
@@ -644,6 +751,13 @@ validate_case_trace <- function(trace_path, case_dir = NULL, script_path = NULL)
       generation_mode = mode,
       primary_case_id = primary_case_id,
       generated_script_sha256 = recorded_script_hash,
+      search_query = if ("search_query" %in% names(metadata)) {
+        metadata$search_query
+      } else {
+        ""
+      },
+      search_receipt_file = search_receipt_file,
+      search_receipt_sha256 = recorded_search_receipt_hash,
       qa_status = qa_status,
       verification_level = verification_level,
       anchor_validation = if (identical(mode, "case_based")) {

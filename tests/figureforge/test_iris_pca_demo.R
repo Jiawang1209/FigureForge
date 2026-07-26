@@ -324,6 +324,7 @@ required_files <- c(
   "iris.csv",
   "plot.R",
   ".figureforge/case-trace.yml",
+  ".figureforge/case-search.csv",
   "plot.png",
   "plot.pdf",
   "pca-variance.csv",
@@ -371,12 +372,35 @@ source(file.path(
   "case_trace_validation.R"
 ))
 trace_metadata <- parse_simple_metadata(trace_path)
+search_receipt_path <- file.path(
+  dirname(trace_path),
+  trace_metadata$search_receipt_file
+)
 assert_true(
   identical(trace_metadata$generation_mode, "case_based") &&
     identical(trace_metadata$claim, "case_grounded") &&
     identical(trace_metadata$primary_case_id, "20230925_PCA") &&
     identical(trace_metadata$qa_status, "verified"),
   "The canonical trace must record a verified case-grounded 20230925_PCA generation"
+)
+assert_true(
+  nzchar(trimws(trace_metadata$search_query)) &&
+    identical(trace_metadata$search_receipt_file, "case-search.csv") &&
+    identical(
+      trace_metadata$search_receipt_sha256,
+      sha256_file(search_receipt_path)
+    ),
+  "The canonical trace must bind a nonempty trace-relative search receipt"
+)
+search_receipt <- read.csv(
+  search_receipt_path,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+assert_true(
+  "case_id" %in% names(search_receipt) &&
+    trace_metadata$primary_case_id %in% search_receipt$case_id,
+  "The canonical search receipt must contain the selected primary PCA case"
 )
 assert_true(
   identical(

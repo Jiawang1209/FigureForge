@@ -175,7 +175,8 @@ stopifnot(contains_all(
     "Case-based generation may claim FigureForge case knowledge only when it uses actual case evidence and passes strict trace validation.",
     "General fallback can still complete the plot with `claim: general_method`, but it is not case-grounded.",
     "The Skill handles case search, evidence reading, and hidden trace creation and validation in the background; users do not need to operate the case library.",
-    "The default visible outputs remain `plot.R`, `plot.png`, and `plot.pdf`; the hidden case trace is audit state."
+    "Every mode records the search query and a hashed CSV search receipt before the mode decision.",
+    "The default visible outputs remain `plot.R`, `plot.png`, and `plot.pdf`; the hidden case trace and search receipt are audit state."
   )
 ))
 stopifnot(contains_all(
@@ -184,7 +185,8 @@ stopifnot(contains_all(
     "案例生成只有实际使用案例证据并通过严格的追踪验证，才可以声称使用了 FigureForge 案例知识。",
     "通用回退仍可完成绘图，但必须使用 `claim: general_method`，且不得声称由案例支撑。",
     "案例检索、证据读取以及隐藏追踪的创建和校验均由 Skill 在后台完成；普通用户无需操作案例库。",
-    "默认可见输出仍是 `plot.R`、`plot.png` 和 `plot.pdf`；隐藏的案例追踪仅用于审计。"
+    "无论采用哪种模式，Skill 都必须在模式选择前记录检索词和带哈希的 CSV 检索回执。",
+    "默认可见输出仍是 `plot.R`、`plot.png` 和 `plot.pdf`；隐藏的案例追踪与检索回执仅用于审计。"
   )
 ))
 evidence_root <- file.path(

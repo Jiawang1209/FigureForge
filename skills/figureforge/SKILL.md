@@ -50,8 +50,14 @@ Rscript "$FIGUREFORGE_SKILL_ROOT/scripts/search_cases.R" \
   --query "<scientific intent, relationship, or chart family>" \
   --schema "<input-file>" \
   --explain-scores \
-  --limit 5
+  --limit 5 \
+  --output "<output-directory>/.figureforge/case-search.csv"
 ```
+
+Run `search_cases.R` with `--output` before choosing the generation mode.
+Keep the nonempty CSV beside `case-trace.yml`, then record the exact
+`search_query`, `search_receipt_file`, and `search_receipt_sha256` in the
+trace. A console-only search is not a valid search receipt.
 
 Choose exactly one generation mode after search:
 
@@ -69,7 +75,8 @@ Structural or partial validation never authorizes that claim.
 Never describe `general_fallback` output as case-grounded; its claim is
 `general_method`.
 
-The trace is hidden workflow state, not a fourth visible deliverable.
+The trace is hidden workflow state, not a fourth visible deliverable. The
+search receipt is hidden workflow state too, not another visible deliverable.
 Do not ask the user to inspect, select, or operate the case library. See
 [Case Use Contract](references/case-use-contract.md) for the trace schema,
 mapping and anchor format, departures, validation command, and claim rules.
