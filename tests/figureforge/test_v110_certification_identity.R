@@ -29,6 +29,18 @@ source(file.path(
   "release_certification.R"
 ))
 
+required_live_certification_paths <- c(
+  "scripts/run_figureforge_live_evals.sh",
+  "scripts/run_figureforge_plotting_eval.sh",
+  "scripts/run_figureforge_mode_evals.sh",
+  "scripts/evaluate_figureforge_mode_probe.R",
+  "scripts/lib/live_mode_evaluation.R"
+)
+stopifnot(all(
+  required_live_certification_paths %in%
+    figureforge_certification_additional_source_paths()
+))
+
 valid_identity <- data.frame(
   schema_version = "1",
   release_version = "1.1.0",

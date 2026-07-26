@@ -117,6 +117,9 @@ figureforge_certification_additional_source_paths <- function() {
   c(
     "scripts/run_figureforge_live_evals.sh",
     "scripts/run_figureforge_plotting_eval.sh",
+    "scripts/run_figureforge_mode_evals.sh",
+    "scripts/evaluate_figureforge_mode_probe.R",
+    "scripts/lib/live_mode_evaluation.R",
     "scripts/verify_figureforge_v110.sh",
     "scripts/lib/release_certification.R",
     "scripts/check_figureforge_v110_certification.R",
