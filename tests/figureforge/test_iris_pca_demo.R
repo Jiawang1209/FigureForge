@@ -963,11 +963,11 @@ assert_live_html <- function(
 
   assert_true(
     grepl(
-      "Rscript[[:space:]]+plot\\.R[[:space:]]+iris\\.csv[[:space:]]+\\.",
+      "<code>Rscript[[:space:]][^<]+</code>",
       html,
       perl = TRUE
     ),
-    paste(label, "index.html must show the portable rerun command")
+    paste(label, "index.html must show a portable Rscript rerun command")
   )
   assert_true(
     !contains_absolute_local_path(html),
@@ -996,12 +996,13 @@ assert_live_html <- function(
       label
     )
   }
+  loading_components <- setdiff(names(live_loadings), "variable")
   for (index in seq_len(nrow(live_loadings))) {
     assert_numeric_table_row(
       table_rows,
       live_loadings$variable[[index]],
       unlist(
-        live_loadings[index, paste0("PC", 1:4)],
+        live_loadings[index, loading_components],
         use.names = FALSE
       ),
       label
@@ -1093,6 +1094,12 @@ run_valid_case <- function(data, case_label) {
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
+  case_pca <- prcomp(
+    data[measure_columns],
+    center = TRUE,
+    scale. = TRUE
+  )
+  case_components <- colnames(case_pca$rotation)
   assert_true(
     identical(
       names(case_variance),
@@ -1108,27 +1115,19 @@ run_valid_case <- function(data, case_label) {
   assert_true(
     identical(
       names(case_scores),
-      c("sample_id", "Species", paste0("PC", 1:4))
+      c("sample_id", "Species", case_components)
     ),
     paste(case_label, "scores CSV has an unexpected schema")
   )
   assert_true(
-    identical(
-      names(case_loadings),
-      c("variable", paste0("PC", 1:4))
-    ),
+    identical(names(case_loadings), c("variable", case_components)),
     paste(case_label, "loadings CSV has an unexpected schema")
   )
 
-  case_pca <- prcomp(
-    data[measure_columns],
-    center = TRUE,
-    scale. = TRUE
-  )
   case_percent <- 100 * case_pca$sdev^2 / sum(case_pca$sdev^2)
   assert_true(
-    identical(case_variance$component, paste0("PC", 1:4)),
-    paste(case_label, "variance CSV must identify PC1 through PC4")
+    identical(case_variance$component, case_components),
+    paste(case_label, "variance CSV must identify every available component")
   )
   assert_numeric_equal(
     case_variance[
@@ -1146,8 +1145,8 @@ run_valid_case <- function(data, case_label) {
     paste(case_label, "scores CSV must preserve Species row order")
   )
   assert_numeric_equal(
-    case_scores[paste0("PC", 1:4)],
-    case_pca$x[, paste0("PC", 1:4), drop = FALSE],
+    case_scores[case_components],
+    case_pca$x[, case_components, drop = FALSE],
     paste(case_label, "scores CSV")
   )
   assert_true(
@@ -1155,10 +1154,10 @@ run_valid_case <- function(data, case_label) {
     paste(case_label, "loadings CSV must preserve measure order")
   )
   assert_numeric_equal(
-    case_loadings[paste0("PC", 1:4)],
+    case_loadings[case_components],
     case_pca$rotation[
       measure_columns,
-      paste0("PC", 1:4),
+      case_components,
       drop = FALSE
     ],
     paste(case_label, "loadings CSV")
@@ -1176,7 +1175,8 @@ run_valid_case <- function(data, case_label) {
     root = output_root,
     variance = case_variance,
     loadings = case_loadings,
-    html = read_text(file.path(output_root, "index.html"))
+    html = read_text(file.path(output_root, "index.html")),
+    log = paste(readLines(log_path, warn = FALSE), collapse = "\n")
   )
 }
 
@@ -1203,6 +1203,138 @@ assert_true(
     tolerance = 1e-3
   )),
   "Altered input must produce non-canonical live PC1/PC2 variance values"
+)
+
+three_row_input <- data.frame(
+  Sepal.Length = c(1, 2, 3),
+  Sepal.Width = c(2, 4, 6),
+  Petal.Length = c(3, 6, 9),
+  Petal.Width = c(4, 8, 12),
+  Species = rep("single-group", 3L),
+  check.names = FALSE
+)
+three_row_result <- run_valid_case(
+  three_row_input,
+  "Three-row degenerate single group"
+)
+assert_true(
+  identical(
+    names(three_row_result$loadings),
+    c("variable", "PC1", "PC2", "PC3")
+  ),
+  "A three-row input must expose only the three PCA components prcomp returns"
+)
+assert_true(
+  !grepl("warning", three_row_result$log, ignore.case = TRUE),
+  paste(
+    "Three-row degenerate ellipse rendering must not warn:",
+    three_row_result$log
+  )
+)
+
+renamed_root <- tempfile("figureforge-iris-pca-renamed-input-")
+dir.create(renamed_root, recursive = TRUE)
+renamed_filename <- "renamed input's.csv"
+renamed_path <- file.path(renamed_root, renamed_filename)
+assert_true(
+  file.copy(file.path(demo_root, "iris.csv"), renamed_path),
+  "Renamed-input fixture must be created"
+)
+renamed_log <- tempfile("figureforge-iris-pca-renamed-input-", fileext = ".log")
+renamed_status <- system2(
+  file.path(R.home("bin"), "Rscript"),
+  c(
+    shQuote(plot_script_path),
+    shQuote(renamed_path),
+    shQuote(renamed_root)
+  ),
+  stdout = renamed_log,
+  stderr = renamed_log
+)
+assert_true(
+  identical(as.integer(renamed_status), 0L),
+  paste(
+    "Same-directory renamed input failed:",
+    paste(readLines(renamed_log, warn = FALSE), collapse = "\n")
+  )
+)
+renamed_html <- read_text(file.path(renamed_root, "index.html"))
+assert_true(
+  grepl(
+    "href=[\"']renamed input(?:&#39;|&#0*39;|&#x27;)s\\.csv[\"']",
+    renamed_html,
+    ignore.case = TRUE,
+    perl = TRUE
+  ),
+  "Same-directory renamed input must have a safely escaped working input link"
+)
+assert_true(
+  !has_relative_href(renamed_html, "plot.R") &&
+    !has_relative_href(renamed_html, "README.md"),
+  "Report must not emit broken same-directory plot.R or README.md links"
+)
+renamed_hrefs <- regmatches(
+  renamed_html,
+  gregexpr(
+    "href=[\"'][^\"']+[\"']",
+    renamed_html,
+    ignore.case = TRUE,
+    perl = TRUE
+  )
+)[[1L]]
+renamed_targets <- vapply(
+  renamed_hrefs,
+  function(attribute) {
+    decode_html_text(sub(
+      "^href=[\"']([^\"']+)[\"']$",
+      "\\1",
+      attribute,
+      ignore.case = TRUE,
+      perl = TRUE
+    ))
+  },
+  character(1)
+)
+assert_true(
+  all(file.exists(file.path(renamed_root, renamed_targets))),
+  paste(
+    "Every renamed-input report link must resolve to a real relative target; missing:",
+    paste(
+      renamed_targets[
+        !file.exists(file.path(renamed_root, renamed_targets))
+      ],
+      collapse = ", "
+    )
+  )
+)
+rerun_markup <- regmatches(
+  renamed_html,
+  regexpr(
+    "<code>Rscript[[:space:]][^<]+</code>",
+    renamed_html,
+    perl = TRUE
+  )
+)
+assert_true(
+  length(rerun_markup) == 1L && nzchar(rerun_markup),
+  "Renamed-input report must contain one rerun command"
+)
+rerun_command <- decode_html_text(gsub("<[^>]+>", "", rerun_markup, perl = TRUE))
+assert_true(
+  grepl("renamed input's\\.csv", rerun_command, perl = TRUE),
+  "Rerun command must use the live renamed input filename"
+)
+old_working_directory <- getwd()
+setwd(renamed_root)
+rerun_status <- system(
+  rerun_command,
+  ignore.stdout = TRUE,
+  ignore.stderr = TRUE
+)
+setwd(old_working_directory)
+assert_true(
+  identical(as.integer(rerun_status), 0L),
+  paste("Report rerun command must execute successfully:", rerun_command)
 )
 
 escaping_input <- iris_data[seq_len(12L), , drop = FALSE]

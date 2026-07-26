@@ -1,5 +1,15 @@
 #!/usr/bin/env Rscript
 
+all_args <- commandArgs(trailingOnly = FALSE)
+file_arg <- grep("^--file=", all_args, value = TRUE)
+if (length(file_arg) != 1L) {
+  stop("Could not determine the plot.R script path.", call. = FALSE)
+}
+script_path <- normalizePath(
+  sub("^--file=", "", file_arg[[1L]]),
+  mustWork = TRUE
+)
+
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 2L) {
   stop(
@@ -190,16 +200,54 @@ names(shape_values) <- species_levels
 
 plot_data <- scores
 plot_data$Species <- factor(plot_data$Species, levels = species_levels)
+
+covariance_ellipse <- function(group_data, level = 0.95, points = 181L) {
+  coordinates <- as.matrix(group_data[, c("PC1", "PC2"), drop = FALSE])
+  center <- colMeans(coordinates)
+  covariance <- stats::cov(coordinates)
+  decomposition <- eigen(covariance, symmetric = TRUE)
+  largest_eigenvalue <- max(c(decomposition$values, 0))
+  eigenvalue_floor <- max(
+    largest_eigenvalue * 1e-10,
+    .Machine$double.eps
+  )
+  stable_eigenvalues <- pmax(decomposition$values, eigenvalue_floor)
+  angles <- seq(0, 2 * pi, length.out = points)
+  unit_circle <- rbind(cos(angles), sin(angles))
+  transform <- decomposition$vectors %*%
+    diag(sqrt(stable_eigenvalues), nrow = 2L)
+  ellipse <- sqrt(stats::qchisq(level, df = 2L)) *
+    transform %*% unit_circle
+  ellipse <- sweep(ellipse, 1L, center, FUN = "+")
+  data.frame(
+    PC1 = ellipse[1L, ],
+    PC2 = ellipse[2L, ],
+    Species = factor(
+      rep(as.character(group_data$Species[[1L]]), ncol(ellipse)),
+      levels = species_levels
+    ),
+    check.names = FALSE
+  )
+}
+
+ellipse_data <- do.call(
+  rbind,
+  lapply(
+    split(plot_data, plot_data$Species, drop = TRUE),
+    covariance_ellipse
+  )
+)
+
 p <- ggplot2::ggplot(
   plot_data,
   ggplot2::aes(x = PC1, y = PC2, color = Species, shape = Species)
 ) +
   ggplot2::geom_hline(yintercept = 0, color = "#B8B8B8", linewidth = 0.35) +
   ggplot2::geom_vline(xintercept = 0, color = "#B8B8B8", linewidth = 0.35) +
-  ggplot2::stat_ellipse(
-    ggplot2::aes(group = Species),
-    type = "norm",
-    level = 0.95,
+  ggplot2::geom_path(
+    data = ellipse_data,
+    ggplot2::aes(x = PC1, y = PC2, color = Species, group = Species),
+    inherit.aes = FALSE,
     linewidth = 0.7,
     alpha = 0.75,
     show.legend = FALSE
@@ -311,21 +359,87 @@ variance_rows <- numeric_table_rows(
 loading_rows <- numeric_table_rows(
   loadings,
   "variable",
-  paste0("PC", 1:4)
+  components
 )
 input_basename <- basename(input_file)
-input_link <- ""
-same_directory <- identical(
-  normalizePath(dirname(input_file), mustWork = TRUE),
-  normalizePath(output_directory, mustWork = TRUE)
-)
-if (same_directory) {
-  input_link <- paste0(
+
+relative_path <- function(target, from_directory) {
+  target <- normalizePath(target, winslash = "/", mustWork = TRUE)
+  from_directory <- normalizePath(
+    from_directory,
+    winslash = "/",
+    mustWork = TRUE
+  )
+  target_volume <- sub("^(([A-Za-z]:)?/).*$", "\\1", target)
+  from_volume <- sub("^(([A-Za-z]:)?/).*$", "\\1", from_directory)
+  if (!identical(tolower(target_volume), tolower(from_volume))) {
+    abort("Script, input, and output must be on the same filesystem volume.")
+  }
+  target_parts <- strsplit(
+    sub("^([A-Za-z]:)?/", "", target),
+    "/",
+    fixed = FALSE
+  )[[1L]]
+  from_parts <- strsplit(
+    sub("^([A-Za-z]:)?/", "", from_directory),
+    "/",
+    fixed = FALSE
+  )[[1L]]
+  common_count <- 0L
+  limit <- min(length(target_parts), length(from_parts))
+  while (
+    common_count < limit &&
+      identical(
+        target_parts[[common_count + 1L]],
+        from_parts[[common_count + 1L]]
+      )
+  ) {
+    common_count <- common_count + 1L
+  }
+  upward <- if (common_count < length(from_parts)) {
+    rep("..", length(from_parts) - common_count)
+  } else {
+    character()
+  }
+  downward <- if (common_count < length(target_parts)) {
+    target_parts[seq.int(common_count + 1L, length(target_parts))]
+  } else {
+    character()
+  }
+  result <- paste(c(upward, downward), collapse = "/")
+  if (nzchar(result)) result else "."
+}
+
+output_path <- normalizePath(output_directory, winslash = "/", mustWork = TRUE)
+script_relative <- relative_path(script_path, output_path)
+input_relative <- relative_path(input_file, output_path)
+readme_path <- file.path(dirname(script_path), "README.md")
+
+file_link <- function(target, label) {
+  if (!file.exists(target) || isTRUE(file.info(target)$isdir)) {
+    return("")
+  }
+  paste0(
     "<li><a href=\"",
-    html_escape(input_basename),
-    "\">Input CSV</a></li>"
+    html_escape(relative_path(target, output_path)),
+    "\">",
+    html_escape(label),
+    "</a></li>"
   )
 }
+
+rerun_command <- paste(
+  "Rscript",
+  shQuote(script_relative, type = "sh"),
+  shQuote(input_relative, type = "sh"),
+  "."
+)
+loading_headers <- paste0(
+  "<th>",
+  html_escape(components),
+  "</th>",
+  collapse = ""
+)
 
 html <- c(
   "<!doctype html>",
@@ -377,7 +491,11 @@ html <- c(
   "<section><h2>Variance summary</h2><div class=\"table-wrap\"><table><thead><tr><th>Component</th><th>Eigenvalue</th><th>Explained %</th><th>Cumulative %</th></tr></thead><tbody>",
   variance_rows,
   "</tbody></table></div></section>",
-  "<section><h2>Loading summary</h2><div class=\"table-wrap\"><table><thead><tr><th>Variable</th><th>PC1</th><th>PC2</th><th>PC3</th><th>PC4</th></tr></thead><tbody>",
+  paste0(
+    "<section><h2>Loading summary</h2><div class=\"table-wrap\"><table><thead><tr><th>Variable</th>",
+    loading_headers,
+    "</tr></thead><tbody>"
+  ),
   loading_rows,
   "</tbody></table></div></section>",
   "</div>",
@@ -387,12 +505,16 @@ html <- c(
   "<li><a href=\"pca-variance.csv\">PCA variance CSV</a></li>",
   "<li><a href=\"pca-scores.csv\">PCA scores CSV</a></li>",
   "<li><a href=\"pca-loadings.csv\">PCA loadings CSV</a></li>",
-  input_link,
-  if (same_directory) "<li><a href=\"plot.R\">R script</a></li>" else "",
-  if (same_directory) "<li><a href=\"README.md\">README</a></li>" else "",
+  file_link(input_file, "Input CSV"),
+  file_link(script_path, "R script"),
+  file_link(readme_path, "README"),
   "</ul>",
   "<h2>Reproduce</h2>",
-  "<p>From this directory, run <code>Rscript plot.R iris.csv .</code>.</p>",
+  paste0(
+    "<p>From this directory, run <code>",
+    html_escape(rerun_command),
+    "</code>.</p>"
+  ),
   "</main></body>",
   "</html>"
 )
