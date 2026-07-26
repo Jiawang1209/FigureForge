@@ -323,6 +323,7 @@ assert_true(
 required_files <- c(
   "iris.csv",
   "plot.R",
+  ".figureforge/case-trace.yml",
   "plot.png",
   "plot.pdf",
   "pca-variance.csv",
@@ -345,6 +346,137 @@ assert_true(
   all(file.info(file.path(demo_root, required_files))$size > 0L),
   "Every Iris PCA demo artifact must be non-empty"
 )
+
+trace_path <- file.path(demo_root, ".figureforge", "case-trace.yml")
+trace_text <- read_text(trace_path)
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "distribution_validation.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "checksums.R"
+))
+source(file.path(
+  repo_root,
+  "skills",
+  "figureforge",
+  "lib",
+  "case_trace_validation.R"
+))
+trace_metadata <- parse_simple_metadata(trace_path)
+assert_true(
+  identical(trace_metadata$generation_mode, "case_based") &&
+    identical(trace_metadata$claim, "case_grounded") &&
+    identical(trace_metadata$primary_case_id, "20230925_PCA") &&
+    identical(trace_metadata$qa_status, "verified"),
+  "The canonical trace must record a verified case-grounded 20230925_PCA generation"
+)
+assert_true(
+  identical(
+    trace_metadata$generated_script_sha256,
+    sha256_file(file.path(demo_root, "plot.R"))
+  ),
+  "The canonical trace generated script SHA-256 must match plot.R"
+)
+assert_true(
+  contains_all(
+    trace_metadata$schema_mapping,
+    c(
+      "feature-by-sample",
+      "row-wise Iris",
+      "sample group",
+      "Species",
+      "Dim.1/Dim.2",
+      "PC1/PC2"
+    )
+  ),
+  "The canonical trace must record the source-to-Iris schema mapping"
+)
+assert_true(
+  contains_all(
+    trace_metadata$departures,
+    c(
+      "feature-by-sample",
+      "row-wise Iris",
+      "four panels",
+      "single biplot",
+      "FactoMineR",
+      "stats::prcomp",
+      "fixed limits",
+      "data-aware",
+      "loading arrows"
+    )
+  ),
+  "The canonical trace must record every deliberate PCA case departure"
+)
+
+adopted_patterns <- case_trace_adopted_pattern_items(
+  trace_metadata$adopted_patterns
+)
+assert_true(
+  length(adopted_patterns) >= 3L &&
+    all(vapply(
+      adopted_patterns,
+      adopted_pattern_is_auditable,
+      logical(1L),
+      qa_available = TRUE
+    )),
+  "Every adopted pattern must use the current source => generated anchor format"
+)
+assert_true(
+  all(vapply(
+    adopted_patterns,
+    function(pattern) {
+      parsed <- parse_adopted_pattern(pattern)
+      !is.null(parsed) &&
+        parsed$source_file %in% c("case.md", "plot.R", "qa.md") &&
+        identical(parsed$generated_file, "plot.R")
+    },
+    logical(1L)
+  )),
+  "Every adopted pattern must bind case evidence to generated plot.R"
+)
+
+structural_trace <- validate_case_trace(trace_path)
+assert_true(
+  isTRUE(structural_trace$ok) &&
+    identical(
+      structural_trace$evidence$verification_level,
+      "structural"
+    ),
+  paste(
+    "The canonical case trace must always pass structural validation:",
+    paste(structural_trace$failed_checks, collapse = ", ")
+  )
+)
+
+private_case_dir <- Sys.getenv("FIGUREFORGE_PCA_CASE_DIR", unset = "")
+if (dir.exists(private_case_dir)) {
+  strict_trace <- validate_case_trace(
+    trace_path,
+    case_dir = private_case_dir,
+    script_path = file.path(demo_root, "plot.R")
+  )
+  assert_true(
+    isTRUE(strict_trace$ok) &&
+      identical(strict_trace$evidence$verification_level, "strict") &&
+      isTRUE(strict_trace$checks[["case evidence hashes match"]]) &&
+      isTRUE(strict_trace$checks[["source anchors match case evidence"]]) &&
+      isTRUE(strict_trace$checks[["generated anchors match script"]]) &&
+      isTRUE(strict_trace$checks[["QA evidence matches case"]]),
+    paste(
+      "FIGUREFORGE_PCA_CASE_DIR must enable strict case-trace validation:",
+      paste(strict_trace$failed_checks, collapse = ", ")
+    )
+  )
+}
 
 iris_data <- read.csv(
   file.path(demo_root, "iris.csv"),
@@ -559,6 +691,18 @@ assert_invalid_input(
 
 rerun_root <- tempfile("figureforge-iris-pca-")
 dir.create(rerun_root, recursive = TRUE)
+rerun_trace_dir <- file.path(rerun_root, ".figureforge")
+dir.create(rerun_trace_dir)
+rerun_trace_path <- file.path(rerun_trace_dir, "case-trace.yml")
+writeLines(
+  c(
+    "generation_time_trace: preserve",
+    "plot_runtime_must_not_rewrite: true"
+  ),
+  rerun_trace_path,
+  useBytes = TRUE
+)
+rerun_trace_sha_before <- sha256_file(rerun_trace_path)
 rerun_log <- tempfile("figureforge-iris-pca-", fileext = ".log")
 rerun_status <- system2(
   file.path(R.home("bin"), "Rscript"),
@@ -568,7 +712,8 @@ rerun_status <- system2(
     shQuote(rerun_root)
   ),
   stdout = rerun_log,
-  stderr = rerun_log
+  stderr = rerun_log,
+  env = "FIGUREFORGE_PCA_CASE_DIR="
 )
 if (!identical(as.integer(rerun_status), 0L)) {
   stop(
@@ -591,6 +736,10 @@ assert_true(
 assert_true(
   all(file.info(file.path(rerun_root, generated_outputs))$size > 0L),
   "Every independently rerun output must be non-empty"
+)
+assert_true(
+  identical(sha256_file(rerun_trace_path), rerun_trace_sha_before),
+  "A public plot.R rerun must not create or rewrite generation-time case trace state"
 )
 
 variance <- read.csv(
@@ -999,6 +1148,47 @@ assert_live_html <- function(
       c("prcomp", "center", "scal", "adapt")
     ),
     paste(label, "index.html must explain the PCA method and adaptation")
+  )
+  assert_true(
+    contains_all(
+      normalized_html,
+      tolower(c(
+        "case-grounded",
+        "generation stage",
+        "case.md",
+        "plot.R",
+        "qa.md",
+        "strict validation",
+        "adopted patterns",
+        "departures",
+        "schema mapping",
+        "feature-by-sample",
+        "row-wise Iris",
+        "four panels",
+        "single biplot",
+        "FactoMineR",
+        "stats::prcomp",
+        "fixed limits",
+        "data-aware",
+        "loading arrows"
+      ))
+    ),
+    paste(
+      label,
+      "index.html must explain adopted patterns, departures, schema mapping, and strict validated provenance"
+    )
+  )
+  assert_true(
+    !grepl(
+      "was consulted only as a visual grammar reference",
+      tolower(html),
+      fixed = TRUE
+    ),
+    paste(label, "index.html must reject the legacy visual-reference-only claim")
+  )
+  assert_true(
+    !grepl("[0-9a-f]{64}", html, ignore.case = TRUE, perl = TRUE),
+    paste(label, "index.html must not disclose provenance hashes")
   )
   assert_true(
     grepl(
@@ -1818,6 +2008,41 @@ for (fixture in optional_escaped_labels) {
 
 english <- read_text(file.path(repo_root, "README.md"))
 chinese <- read_text(file.path(repo_root, "README.zh.md"))
+demo_readme <- read_text(file.path(demo_root, "README.md"))
+assert_true(
+  contains_all(
+    tolower(demo_readme),
+    tolower(c(
+      "case-grounded",
+      "generation stage",
+      "case.md",
+      "plot.R",
+      "qa.md",
+      "strict validation",
+      "adopted patterns",
+      "departures",
+      "schema mapping",
+      "feature-by-sample",
+      "row-wise Iris",
+      "four panels",
+      "single biplot",
+      "FactoMineR",
+      "stats::prcomp",
+      "fixed limits",
+      "data-aware",
+      "loading arrows"
+    ))
+  ),
+  "The demo README must explain adopted patterns, departures, schema mapping, and strict validated provenance"
+)
+assert_true(
+  !grepl(
+    "was consulted only as a visual grammar reference",
+    tolower(demo_readme),
+    fixed = TRUE
+  ),
+  "The demo README must reject the legacy visual-reference-only claim"
+)
 for (document in list(english, chinese)) {
   assert_true(
     contains_all(

@@ -1,0 +1,16 @@
+schema_version: 1
+generation_mode: case_based
+figureforge_version: 1.1.0
+generated_script_sha256: 5a0c13656687f751ae517d4a698bf97f94b68570bc48b7494940ed311d322211
+claim: case_grounded
+primary_case_id: 20230925_PCA
+case_md_file: case.md
+case_md_sha256: 69d53255deccf012bee4c628f201a289d622189384eef5f1bbf929cf6f0a5065
+plot_r_file: plot.R
+plot_r_sha256: 582086be6bc3b0b4e75707fa9fd55e23fa10e8d25b0693c6c37a0f8cf1b2be89
+schema_mapping: feature-by-sample value matrix -> row-wise Iris measurement columns | sample group -> Species | Dim.1/Dim.2 -> PC1/PC2
+adopted_patterns: case.md#PCA Ordination Plot => plot.R#stats::prcomp | plot.R#ggplot2::geom_point => plot.R#ggplot2::geom_point | plot.R#ggplot2::stat_ellipse => plot.R#covariance_ellipse | case.md#variance explained in axis labels => plot.R#explained_percent
+departures: feature-by-sample input -> row-wise Iris observations | four panels -> single biplot | FactoMineR -> stats::prcomp | fixed limits -> data-aware limits | loading arrows extension
+qa_md_file: qa.md
+qa_md_sha256: 142d71d89c7c87437f1ea9a9e9ad28bde16f23d966600275d9f78fc1d44110c5
+qa_status: verified

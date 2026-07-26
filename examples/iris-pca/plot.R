@@ -530,8 +530,32 @@ html <- c(
   ),
   paste0(
     "<p><strong>Method and adaptation:</strong> The four measurement columns were centered and scaled, then analyzed with ",
-    "<code>stats::prcomp</code>. The referenced PCA case's visual grammar was adapted to this public dataset: species use both ",
-    "color and shape, normal ellipses summarize groups, and scaled loading arrows explain direction without reusing private data or code.</p>"
+    "<code>stats::prcomp</code>. Species use both color and shape, normal ellipses summarize groups, and scaled loading arrows explain direction.</p>"
+  ),
+  paste0(
+    "<section><h2>Case-grounded provenance</h2>",
+    "<p>At the generation stage, FigureForge read the primary <code>20230925_PCA</code> case evidence: ",
+    "<code>case.md</code>, <code>plot.R</code>, and the verified <code>qa.md</code>. ",
+    "The generation trace passed strict validation against those evidence files and this generated script. ",
+    "The public rerun is standalone: it reads only the supplied Iris CSV and does not access the private case.</p>",
+    "<p>No private data, evidence content, hashes, source code, or machine-local paths are exposed in this report.</p>",
+    "<h3>Schema mapping</h3><ul>",
+    "<li>The case's feature-by-sample value matrix maps to row-wise Iris measurement columns.</li>",
+    "<li>The case's sample group maps to <code>Species</code>.</li>",
+    "<li>The case's <code>Dim.1</code>/<code>Dim.2</code> roles map to <code>PC1</code>/<code>PC2</code>.</li>",
+    "</ul>",
+    "<h3>Adopted patterns</h3><ul>",
+    "<li>A PC1-PC2 ordination composition with variance explained in both axis labels.</li>",
+    "<li>Group encoding through points, color, and shape.</li>",
+    "<li>Group-boundary ellipses layered with zero reference axes.</li>",
+    "</ul>",
+    "<h3>Departures</h3><ul>",
+    "<li>Feature-by-sample input became row-wise Iris observations.</li>",
+    "<li>Four panels became a single biplot.</li>",
+    "<li><code>FactoMineR</code> became <code>stats::prcomp</code>.</li>",
+    "<li>Fixed limits became data-aware limits.</li>",
+    "<li>Loading arrows were added as an explanatory extension.</li>",
+    "</ul></section>"
   ),
   sprintf(
     "<p><strong>Result:</strong> PC1 explains %.6f%% and PC2 explains %.6f%% of scaled variance (%.6f%% cumulatively).</p>",
