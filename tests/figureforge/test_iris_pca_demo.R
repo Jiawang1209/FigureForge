@@ -1351,6 +1351,129 @@ assert_true(
   "Hard-link publication must leave input and generated scores independently valid"
 )
 
+write_old_outputs <- function(root, filenames) {
+  for (filename in filenames) {
+    writeBin(
+      charToRaw(paste0("OLD-", filename, "\n")),
+      file.path(root, filename)
+    )
+  }
+}
+
+output_hashes <- function(root, filenames) {
+  stats::setNames(
+    vapply(
+      file.path(root, filenames),
+      sha256_file,
+      character(1)
+    ),
+    filenames
+  )
+}
+
+assert_no_transaction_residue <- function(root, label) {
+  residue <- list.files(
+    root,
+    pattern = "^\\.figureforge-iris-pca-(?:stage|backup)-",
+    all.files = TRUE
+  )
+  assert_true(
+    length(residue) == 0L,
+    paste(label, "must remove staging and backup residue:", paste(residue, collapse = ", "))
+  )
+}
+
+preflight_root <- tempfile("figureforge-iris-pca-preflight-")
+dir.create(preflight_root, recursive = TRUE)
+preflight_input <- file.path(preflight_root, "source.csv")
+assert_true(
+  file.copy(file.path(demo_root, "iris.csv"), preflight_input),
+  "Preflight fixture input must be created"
+)
+replaceable_outputs <- setdiff(generated_outputs, "index.html")
+write_old_outputs(preflight_root, replaceable_outputs)
+preflight_hashes_before <- output_hashes(
+  preflight_root,
+  replaceable_outputs
+)
+dir.create(file.path(preflight_root, "index.html"))
+preflight_log <- tempfile(
+  "figureforge-iris-pca-preflight-",
+  fileext = ".log"
+)
+preflight_status <- system2(
+  file.path(R.home("bin"), "Rscript"),
+  c(
+    shQuote(plot_script_path),
+    shQuote(preflight_input),
+    shQuote(preflight_root)
+  ),
+  stdout = preflight_log,
+  stderr = preflight_log
+)
+assert_true(
+  !identical(as.integer(preflight_status), 0L),
+  "A directory blocking the late index.html target must reject publication"
+)
+assert_true(
+  identical(
+    output_hashes(preflight_root, replaceable_outputs),
+    preflight_hashes_before
+  ),
+  "Destination preflight failure must leave every OLD output byte-identical"
+)
+assert_true(
+  isTRUE(file.info(file.path(preflight_root, "index.html"))$isdir),
+  "Destination preflight must leave the blocking index.html directory unchanged"
+)
+assert_no_transaction_residue(preflight_root, "Preflight failure")
+
+rollback_root <- tempfile("figureforge-iris-pca-rollback-")
+dir.create(rollback_root, recursive = TRUE)
+rollback_input <- file.path(rollback_root, "source.csv")
+assert_true(
+  file.copy(file.path(demo_root, "iris.csv"), rollback_input),
+  "Rollback fixture input must be created"
+)
+write_old_outputs(rollback_root, generated_outputs)
+rollback_hashes_before <- output_hashes(rollback_root, generated_outputs)
+rollback_log <- tempfile(
+  "figureforge-iris-pca-rollback-",
+  fileext = ".log"
+)
+rollback_status <- system2(
+  file.path(R.home("bin"), "Rscript"),
+  c(
+    shQuote(plot_script_path),
+    shQuote(rollback_input),
+    shQuote(rollback_root)
+  ),
+  env = "FIGUREFORGE_INTERNAL_TEST_FAIL_AFTER_PUBLISH=3",
+  stdout = rollback_log,
+  stderr = rollback_log
+)
+assert_true(
+  !identical(as.integer(rollback_status), 0L),
+  "Injected mid-publication failure must make plot.R fail"
+)
+assert_true(
+  grepl(
+    "inject|test.*fail|fail.*publish",
+    paste(readLines(rollback_log, warn = FALSE), collapse = "\n"),
+    ignore.case = TRUE,
+    perl = TRUE
+  ),
+  "Injected mid-publication failure must be explained in the error output"
+)
+assert_true(
+  identical(
+    output_hashes(rollback_root, generated_outputs),
+    rollback_hashes_before
+  ),
+  "Mid-publication rollback must restore every OLD output byte-identical"
+)
+assert_no_transaction_residue(rollback_root, "Mid-publication rollback")
+
 renamed_root <- tempfile("figureforge-iris-pca-renamed-input-")
 dir.create(renamed_root, recursive = TRUE)
 renamed_filename <- "input#frag? 50% O'Reilly-数据.csv"

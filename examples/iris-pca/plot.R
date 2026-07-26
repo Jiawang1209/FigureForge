@@ -581,31 +581,184 @@ is_symbolic_link <- function(path) {
   length(target) == 1L && !is.na(target) && nzchar(target)
 }
 
+destination_paths <- stats::setNames(
+  file.path(output_directory, output_filenames),
+  output_filenames
+)
+if (file.access(output_directory, mode = 2L) != 0L) {
+  abort("Output directory is not writable; no outputs were published.")
+}
 for (filename in output_filenames) {
-  staged_file <- staged_path(filename)
-  destination <- file.path(output_directory, filename)
+  destination <- destination_paths[[filename]]
   destination_exists <- file.exists(destination) ||
     is_symbolic_link(destination)
-  if (destination_exists) {
-    if (isTRUE(file.info(destination)$isdir)) {
-      abort(paste0(
-        "Cannot publish ",
-        filename,
-        " because its destination is a directory."
-      ))
+  if (destination_exists && isTRUE(file.info(destination)$isdir)) {
+    abort(paste0(
+      "Cannot publish ",
+      filename,
+      " because its destination is a directory; no outputs were published."
+    ))
+  }
+  resolved_destination <- normalizePath(
+    destination,
+    winslash = "/",
+    mustWork = FALSE
+  )
+  if (identical(resolved_destination, resolved_input)) {
+    abort(paste0(
+      "Cannot publish ",
+      filename,
+      " because its destination resolves to the input file."
+    ))
+  }
+}
+
+backup_directory <- tempfile(
+  pattern = ".figureforge-iris-pca-backup-",
+  tmpdir = output_directory
+)
+if (!dir.create(backup_directory, showWarnings = FALSE)) {
+  abort("Could not create a same-filesystem backup area; no outputs were published.")
+}
+
+backed_up <- character()
+published <- character()
+transaction_active <- TRUE
+
+rollback_publication <- function() {
+  rollback_errors <- character()
+  for (filename in rev(published)) {
+    destination <- destination_paths[[filename]]
+    if (file.exists(destination) || is_symbolic_link(destination)) {
+      if (
+        isTRUE(file.info(destination)$isdir) ||
+          unlink(destination, recursive = FALSE, force = TRUE) != 0L
+      ) {
+        rollback_errors <- c(
+          rollback_errors,
+          paste0("could not remove newly published ", filename)
+        )
+      }
     }
-    unlink_status <- unlink(destination, recursive = FALSE, force = TRUE)
+  }
+  for (filename in backed_up) {
+    backup_file <- file.path(backup_directory, filename)
+    destination <- destination_paths[[filename]]
     if (
-      unlink_status != 0L ||
-        file.exists(destination) ||
-        is_symbolic_link(destination)
+      file.exists(backup_file) || is_symbolic_link(backup_file)
     ) {
-      abort(paste0("Could not remove existing output destination: ", filename))
+      if (
+        file.exists(destination) ||
+          is_symbolic_link(destination) ||
+          !isTRUE(suppressWarnings(file.rename(backup_file, destination)))
+      ) {
+        rollback_errors <- c(
+          rollback_errors,
+          paste0("could not restore original ", filename)
+        )
+      }
     }
   }
-  if (!file.rename(staged_file, destination)) {
-    abort(paste0("Could not atomically publish generated output: ", filename))
+  rollback_errors
+}
+
+on.exit({
+  if (transaction_active) {
+    rollback_publication()
   }
+  if (dir.exists(backup_directory)) {
+    unlink(backup_directory, recursive = TRUE, force = TRUE)
+  }
+}, add = TRUE)
+
+test_fail_value <- Sys.getenv(
+  "FIGUREFORGE_INTERNAL_TEST_FAIL_AFTER_PUBLISH",
+  unset = ""
+)
+test_fail_after <- NA_integer_
+if (nzchar(test_fail_value)) {
+  test_fail_after <- suppressWarnings(as.integer(test_fail_value))
+  if (
+    is.na(test_fail_after) ||
+      test_fail_after < 1L ||
+      test_fail_after > length(output_filenames)
+  ) {
+    abort(
+      "FIGUREFORGE_INTERNAL_TEST_FAIL_AFTER_PUBLISH must be an integer within the output count."
+    )
+  }
+}
+
+publication_error <- tryCatch(
+  {
+    for (filename in output_filenames) {
+      destination <- destination_paths[[filename]]
+      if (file.exists(destination) || is_symbolic_link(destination)) {
+        backup_file <- file.path(backup_directory, filename)
+        if (!isTRUE(suppressWarnings(file.rename(destination, backup_file)))) {
+          stop(
+            paste0("Could not back up existing output: ", filename),
+            call. = FALSE
+          )
+        }
+        backed_up <- c(backed_up, filename)
+      }
+    }
+
+    for (filename in output_filenames) {
+      staged_file <- staged_path(filename)
+      destination <- destination_paths[[filename]]
+      if (!isTRUE(suppressWarnings(file.rename(staged_file, destination)))) {
+        stop(
+          paste0("Could not atomically publish generated output: ", filename),
+          call. = FALSE
+        )
+      }
+      published <- c(published, filename)
+      if (
+        !is.na(test_fail_after) &&
+          length(published) == test_fail_after
+      ) {
+        stop(
+          paste0(
+            "Injected internal test failure after publishing ",
+            test_fail_after,
+            " outputs."
+          ),
+          call. = FALSE
+        )
+      }
+    }
+    NULL
+  },
+  error = function(error) error
+)
+
+if (inherits(publication_error, "error")) {
+  rollback_errors <- rollback_publication()
+  if (length(rollback_errors) == 0L) {
+    transaction_active <- FALSE
+    abort(paste0(
+      "Output publication failed; every original output was restored. ",
+      conditionMessage(publication_error)
+    ))
+  }
+  abort(paste0(
+    "Output publication failed and rollback was incomplete: ",
+    paste(rollback_errors, collapse = "; "),
+    ". Original error: ",
+    conditionMessage(publication_error)
+  ))
+}
+
+transaction_active <- FALSE
+backup_cleanup_status <- unlink(
+  backup_directory,
+  recursive = TRUE,
+  force = TRUE
+)
+if (backup_cleanup_status != 0L || dir.exists(backup_directory)) {
+  abort("Outputs were published, but the temporary backup area could not be removed.")
 }
 
 message("FigureForge Iris PCA outputs written to: ", output_directory)
