@@ -263,6 +263,40 @@ stopifnot(isTRUE(result$qa_md_read[[1L]]))
 stopifnot(isTRUE(result$artifacts_present[[1L]]))
 stopifnot(isTRUE(result$passed[[1L]]))
 
+batched_transcript <- file.path(
+  fixture_root,
+  "batched-trusted-read-transcript.jsonl"
+)
+writeLines(
+  json_command(sprintf(
+    "/bin/zsh -lc %s",
+    shQuote(paste(
+      paste(
+        trusted_cat,
+        shQuote(file.path(case_dir, "case.md"))
+      ),
+      paste(
+        trusted_cat,
+        shQuote(file.path(case_dir, "plot.R"))
+      ),
+      paste(
+        trusted_cat,
+        shQuote(file.path(case_dir, "qa.md"))
+      ),
+      sep = " && "
+    ))
+  )),
+  batched_transcript
+)
+for (evidence_name in c("case.md", "plot.R", "qa.md")) {
+  stopifnot(live_mode_transcript_reads(
+    batched_transcript,
+    workspace,
+    file.path(case_dir, evidence_name),
+    trusted_reader_paths = trusted_reader_paths
+  ))
+}
+
 failed_transcript <- file.path(fixture_root, "failed-transcript.jsonl")
 writeLines(
   c(

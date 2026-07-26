@@ -152,42 +152,57 @@ live_mode_command_reads <- function(
   if (
     length(inner) != 1L ||
       is.na(inner) ||
-      grepl("[;&|<>()`\\r\\n]", inner, perl = TRUE) ||
+      grepl("[;|<>()`\\r\\n]", inner, perl = TRUE) ||
       grepl("\\$\\(", inner, perl = TRUE)
   ) {
     return(FALSE)
   }
-  words <- live_mode_shell_words(inner)
-  if (length(words) < 2L) return(FALSE)
-  executable <- words[[1L]]
-  candidate <- ""
+  segments <- strsplit(
+    inner,
+    "[[:space:]]+&&[[:space:]]+",
+    perl = TRUE
+  )[[1L]]
   if (
-    identical(executable, trusted_reader_paths[["cat"]]) &&
-      length(words) == 2L
+    length(segments) < 1L ||
+      any(!nzchar(trimws(segments))) ||
+      any(grepl("&", segments, fixed = TRUE))
   ) {
-    candidate <- words[[2L]]
-  } else if (
-    identical(executable, trusted_reader_paths[["sed"]]) &&
-      length(words) == 4L &&
-      identical(words[[2L]], "-n") &&
-      grepl("^[0-9]+(?:,[0-9]+)?p$", words[[3L]], perl = TRUE)
-  ) {
-    candidate <- words[[4L]]
-  } else {
-    return(FALSE)
-  }
-  if (!nzchar(candidate) || startsWith(candidate, "-")) {
     return(FALSE)
   }
   current_dir <- normalizePath(workspace_root, mustWork = TRUE)
   expected <- normalizePath(target_path, mustWork = TRUE)
-  resolved <- if (startsWith(candidate, "/")) {
-    candidate
-  } else {
-    file.path(current_dir, candidate)
-  }
-  file.exists(resolved) &&
-    identical(normalizePath(resolved, mustWork = TRUE), expected)
+  resolved_targets <- vapply(segments, function(segment) {
+    words <- live_mode_shell_words(segment)
+    if (length(words) < 2L) return("")
+    executable <- words[[1L]]
+    candidate <- ""
+    if (
+      identical(executable, trusted_reader_paths[["cat"]]) &&
+        length(words) == 2L
+    ) {
+      candidate <- words[[2L]]
+    } else if (
+      identical(executable, trusted_reader_paths[["sed"]]) &&
+        length(words) == 4L &&
+        identical(words[[2L]], "-n") &&
+        grepl("^[0-9]+(?:,[0-9]+)?p$", words[[3L]], perl = TRUE)
+    ) {
+      candidate <- words[[4L]]
+    } else {
+      return("")
+    }
+    if (!nzchar(candidate) || startsWith(candidate, "-")) {
+      return("")
+    }
+    resolved <- if (startsWith(candidate, "/")) {
+      candidate
+    } else {
+      file.path(current_dir, candidate)
+    }
+    if (!file.exists(resolved)) return("")
+    normalizePath(resolved, mustWork = TRUE)
+  }, character(1L))
+  all(nzchar(resolved_targets)) && expected %in% resolved_targets
 }
 
 live_mode_transcript_reads <- function(
