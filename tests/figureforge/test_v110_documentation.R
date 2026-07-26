@@ -174,6 +174,7 @@ stopifnot(contains_all(
   c(
     "Case-based generation may claim FigureForge case knowledge only when it uses actual case evidence and passes strict trace validation.",
     "General fallback can still complete the plot with `claim: general_method`, but it is not case-grounded.",
+    "The Skill handles case search, evidence reading, and hidden trace creation and validation in the background; users do not need to operate the case library.",
     "The default visible outputs remain `plot.R`, `plot.png`, and `plot.pdf`; the hidden case trace is audit state."
   )
 ))
@@ -182,6 +183,7 @@ stopifnot(contains_all(
   c(
     "案例生成只有实际使用案例证据并通过严格的追踪验证，才可以声称使用了 FigureForge 案例知识。",
     "通用回退仍可完成绘图，但必须使用 `claim: general_method`，且不得声称由案例支撑。",
+    "案例检索、证据读取以及隐藏追踪的创建和校验均由 Skill 在后台完成；普通用户无需操作案例库。",
     "默认可见输出仍是 `plot.R`、`plot.png` 和 `plot.pdf`；隐藏的案例追踪仅用于审计。"
   )
 ))
@@ -915,13 +917,32 @@ installed_ok_check <- grep(
   verifier_lines,
   fixed = TRUE
 )
+installed_doctor <- grep(
+  '"$RSCRIPT" "$INSTALLED/scripts/doctor.R"',
+  verifier_lines,
+  fixed = TRUE
+)
 stopifnot(length(installed_stage) == 1L)
 stopifnot(length(installed_trace_cli) == 1L)
 stopifnot(length(installed_strict_check) == 1L)
 stopifnot(length(installed_ok_check) == 1L)
+stopifnot(length(installed_doctor) == 1L)
 stopifnot(installed_stage < installed_trace_cli)
 stopifnot(installed_trace_cli < installed_strict_check)
 stopifnot(installed_strict_check < installed_ok_check)
+stopifnot(installed_ok_check < installed_doctor)
+installed_trace_gate <- paste(
+  verifier_lines[installed_stage:(installed_doctor - 1L)],
+  collapse = "\n"
+)
+stopifnot(contains_all(
+  installed_trace_gate,
+  c(
+    '"$INSTALLED/lib/checksums.R"',
+    "figureforge_sha256"
+  )
+))
+stopifnot(!grepl("shasum", installed_trace_gate, fixed = TRUE))
 for (unsafe_pattern in c(
   "read.csv('$VERIFY_ROOT",
   "open('$VERIFY_ROOT",

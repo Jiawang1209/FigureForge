@@ -89,6 +89,7 @@ the result, and returns a standalone script with its figures.
 
 Case-based generation may claim FigureForge case knowledge only when it uses actual case evidence and passes strict trace validation.
 General fallback can still complete the plot with `claim: general_method`, but it is not case-grounded.
+The Skill handles case search, evidence reading, and hidden trace creation and validation in the background; users do not need to operate the case library.
 The default visible outputs remain `plot.R`, `plot.png`, and `plot.pdf`; the hidden case trace is audit state.
 
 ## Iris PCA demo

@@ -152,17 +152,23 @@ INSTALLED_CASE_SCRIPT="$INSTALLED_CASE_WORKSPACE/plot.R"
 INSTALLED_CASE_TRACE_LOG="$VERIFY_ROOT/installed-case-trace.log"
 mkdir -p "$INSTALLED_CASE_WORKSPACE/.figureforge"
 cp "$INSTALLED_CASE_DIR/plot.R" "$INSTALLED_CASE_SCRIPT"
+installed_sha256() {
+  FIGUREFORGE_CHECKSUMS_R="$INSTALLED/lib/checksums.R" \
+    FIGUREFORGE_HASH_FILE="$1" \
+    "$RSCRIPT" -e \
+    'source(Sys.getenv("FIGUREFORGE_CHECKSUMS_R")); cat(figureforge_sha256(Sys.getenv("FIGUREFORGE_HASH_FILE")))'
+}
 installed_generated_sha=$(
-  shasum -a 256 "$INSTALLED_CASE_SCRIPT" | awk '{print $1}'
+  installed_sha256 "$INSTALLED_CASE_SCRIPT"
 )
 installed_case_md_sha=$(
-  shasum -a 256 "$INSTALLED_CASE_DIR/case.md" | awk '{print $1}'
+  installed_sha256 "$INSTALLED_CASE_DIR/case.md"
 )
 installed_plot_r_sha=$(
-  shasum -a 256 "$INSTALLED_CASE_DIR/plot.R" | awk '{print $1}'
+  installed_sha256 "$INSTALLED_CASE_DIR/plot.R"
 )
 installed_qa_md_sha=$(
-  shasum -a 256 "$INSTALLED_CASE_DIR/qa.md" | awk '{print $1}'
+  installed_sha256 "$INSTALLED_CASE_DIR/qa.md"
 )
 {
   echo "schema_version: 1"
