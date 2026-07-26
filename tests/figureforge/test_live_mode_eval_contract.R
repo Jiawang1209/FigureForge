@@ -272,6 +272,11 @@ writeLines(
     "/bin/zsh -lc %s",
     shQuote(paste(
       paste(
+        "/usr/bin/find",
+        shQuote(case_dir),
+        "-maxdepth 1 -type f -print"
+      ),
+      paste(
         trusted_cat,
         shQuote(file.path(case_dir, "case.md"))
       ),

@@ -202,7 +202,7 @@ live_mode_command_reads <- function(
     if (!file.exists(resolved)) return("")
     normalizePath(resolved, mustWork = TRUE)
   }, character(1L))
-  all(nzchar(resolved_targets)) && expected %in% resolved_targets
+  expected %in% resolved_targets[nzchar(resolved_targets)]
 }
 
 live_mode_transcript_reads <- function(
