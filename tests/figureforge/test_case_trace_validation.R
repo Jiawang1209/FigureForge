@@ -328,6 +328,81 @@ stopifnot(grepl(
 ))
 stopifnot(!grepl("poison sibling", vendor_cli$output, fixed = TRUE))
 
+shell_quote <- function(value) {
+  paste0("'", gsub("'", "'\"'\"'", value, fixed = TRUE), "'")
+}
+
+spaced_install_root <- file.path(
+  fixture_root,
+  "installed Skill path with space and 'quote' literal~tilde+plus"
+)
+spaced_install_scripts <- file.path(spaced_install_root, "scripts")
+spaced_install_lib <- file.path(spaced_install_root, "lib")
+dir.create(spaced_install_scripts, recursive = TRUE)
+dir.create(spaced_install_lib, recursive = TRUE)
+file.copy(case_trace_cli, spaced_install_scripts, overwrite = TRUE)
+for (library_file in c(
+  "distribution_validation.R",
+  "checksums.R",
+  "case_trace_validation.R"
+)) {
+  file.copy(
+    file.path(
+      repo_root,
+      "skills",
+      "figureforge",
+      "lib",
+      library_file
+    ),
+    spaced_install_lib,
+    overwrite = TRUE
+  )
+}
+spaced_install_cli <- file.path(
+  spaced_install_scripts,
+  "validate_case_trace.R"
+)
+spaced_install_runner <- file.path(
+  fixture_root,
+  "run-spaced-installed-cli.sh"
+)
+writeLines(
+  c(
+    "#!/bin/sh",
+    "set -eu",
+    paste(
+      "exec",
+      shell_quote("/usr/local/bin/Rscript"),
+      shell_quote(spaced_install_cli),
+      shell_quote(trace_path),
+      "--case-dir",
+      shell_quote(case_dir),
+      "--script",
+      shell_quote(script_path)
+    )
+  ),
+  spaced_install_runner,
+  useBytes = TRUE
+)
+spaced_install_output <- suppressWarnings(system2(
+  "sh",
+  shQuote(spaced_install_runner),
+  stdout = TRUE,
+  stderr = TRUE
+))
+stopifnot(is.null(attr(spaced_install_output, "status")))
+spaced_install_text <- paste(spaced_install_output, collapse = "\n")
+stopifnot(grepl(
+  "Verification level: strict",
+  spaced_install_text,
+  fixed = TRUE
+))
+stopifnot(grepl(
+  paste0("Case trace validation OK: ", trace_path),
+  spaced_install_text,
+  fixed = TRUE
+))
+
 missing_lib_root <- file.path(fixture_root, "missing-lib-skill")
 missing_lib_script_dir <- file.path(missing_lib_root, "scripts")
 dir.create(missing_lib_script_dir, recursive = TRUE)

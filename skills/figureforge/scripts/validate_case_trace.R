@@ -1,9 +1,16 @@
 #!/usr/bin/env Rscript
 
+decode_rscript_file_path <- function(path) {
+  gsub("~+~", " ", path, fixed = TRUE)
+}
+
 command_args <- commandArgs(trailingOnly = FALSE)
 file_arg <- grep("^--file=", command_args, value = TRUE)
 launcher_path <- if (length(file_arg) > 0L) {
-  normalizePath(sub("^--file=", "", file_arg[[1L]]), mustWork = TRUE)
+  normalizePath(
+    decode_rscript_file_path(sub("^--file=", "", file_arg[[1L]])),
+    mustWork = TRUE
+  )
 } else {
   normalizePath(
     "skills/figureforge/scripts/validate_case_trace.R",
