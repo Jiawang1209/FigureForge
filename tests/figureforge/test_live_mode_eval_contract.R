@@ -302,6 +302,35 @@ for (evidence_name in c("case.md", "plot.R", "qa.md")) {
   ))
 }
 
+newline_transcript <- file.path(
+  fixture_root,
+  "newline-trusted-read-transcript.jsonl"
+)
+writeLines(
+  json_command(sprintf(
+    "/bin/zsh -lc %s",
+    shQuote(paste(
+      trusted_cat,
+      shQuote(file.path(case_dir, "case.md")),
+      "\n",
+      trusted_cat,
+      shQuote(file.path(case_dir, "plot.R")),
+      "\n",
+      trusted_cat,
+      shQuote(file.path(case_dir, "qa.md"))
+    ))
+  )),
+  newline_transcript
+)
+for (evidence_name in c("case.md", "plot.R", "qa.md")) {
+  stopifnot(live_mode_transcript_reads(
+    newline_transcript,
+    workspace,
+    file.path(case_dir, evidence_name),
+    trusted_reader_paths = trusted_reader_paths
+  ))
+}
+
 failed_transcript <- file.path(fixture_root, "failed-transcript.jsonl")
 writeLines(
   c(

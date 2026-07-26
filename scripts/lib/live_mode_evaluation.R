@@ -152,16 +152,27 @@ live_mode_command_reads <- function(
   if (
     length(inner) != 1L ||
       is.na(inner) ||
-      grepl("[;|<>()`\\r\\n]", inner, perl = TRUE) ||
+      grepl("[;|<>()`\\r]", inner, perl = TRUE) ||
       grepl("\\$\\(", inner, perl = TRUE)
   ) {
     return(FALSE)
   }
-  segments <- strsplit(
-    inner,
+  newline_chain <- grepl("\n", inner, fixed = TRUE)
+  and_chain <- grepl(
     "[[:space:]]+&&[[:space:]]+",
+    inner,
     perl = TRUE
-  )[[1L]]
+  )
+  if (newline_chain && and_chain) return(FALSE)
+  segments <- if (newline_chain) {
+    strsplit(inner, "\n", fixed = TRUE)[[1L]]
+  } else {
+    strsplit(
+      inner,
+      "[[:space:]]+&&[[:space:]]+",
+      perl = TRUE
+    )[[1L]]
+  }
   if (
     length(segments) < 1L ||
       any(!nzchar(trimws(segments))) ||
@@ -202,7 +213,8 @@ live_mode_command_reads <- function(
     if (!file.exists(resolved)) return("")
     normalizePath(resolved, mustWork = TRUE)
   }, character(1L))
-  expected %in% resolved_targets[nzchar(resolved_targets)]
+  (!newline_chain || all(nzchar(resolved_targets))) &&
+    expected %in% resolved_targets[nzchar(resolved_targets)]
 }
 
 live_mode_transcript_reads <- function(
