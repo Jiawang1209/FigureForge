@@ -245,9 +245,12 @@ if [ "$RUN_LIVE" = "1" ]; then
   stage "bounded executable plotting artifact probe"
   bash "$REPO_ROOT/scripts/run_figureforge_plotting_eval.sh" \
     --output-dir "$VERIFY_ROOT/live-plotting-eval"
+  stage "bounded two-mode case-grounding probes"
+  bash "$REPO_ROOT/scripts/run_figureforge_mode_evals.sh" \
+    --output-dir "$VERIFY_ROOT/live-mode-evals"
 else
   stage "bounded live probes skipped"
-  echo "Set FIGUREFORGE_RUN_LIVE_EVALS=1 to run both the installed trigger and executable plotting artifact gates."
+  echo "Set FIGUREFORGE_RUN_LIVE_EVALS=1 to run installed trigger, executable plotting, and two-mode case-grounding gates."
 fi
 
 stage "parse every tracked public R file"
