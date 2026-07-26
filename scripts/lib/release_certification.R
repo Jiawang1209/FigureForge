@@ -309,9 +309,35 @@ validate_figureforge_live_certification_summaries <- function(
       na.strings = character(0)
     )
   }
+  parse_booleans <- function(values, field) {
+    normalized <- tolower(trimws(as.character(values)))
+    if (any(!normalized %in% c("true", "false"))) {
+      stop("Live summary contains an invalid boolean field: ", field)
+    }
+    normalized == "true"
+  }
   trigger <- read_summary(trigger_summary_path)
   plotting <- read_summary(plotting_summary_path)
   mode <- read_summary(mode_summary_path)
+  if ("passed" %in% names(trigger)) {
+    trigger$passed <- parse_booleans(trigger$passed, "trigger.passed")
+  }
+  for (field in c("passed", "script_exists", "png_exists", "pdf_exists")) {
+    if (field %in% names(plotting)) {
+      plotting[[field]] <- parse_booleans(
+        plotting[[field]],
+        paste0("plotting.", field)
+      )
+    }
+  }
+  for (field in c("case_md_read", "plot_r_read", "qa_md_read", "passed")) {
+    if (field %in% names(mode)) {
+      mode[[field]] <- parse_booleans(
+        mode[[field]],
+        paste0("mode.", field)
+      )
+    }
+  }
   if (!all(c("kind", "passed") %in% names(trigger)) ||
       nrow(trigger) != 11L ||
       sum(trigger$kind == "explicit") != 1L ||

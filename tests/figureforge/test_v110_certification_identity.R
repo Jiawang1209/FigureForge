@@ -149,17 +149,17 @@ mode_summary_path <- file.path(fixture_root, "live-mode-summary.csv")
 write.csv(
   data.frame(
     kind = c("explicit", rep("implicit", 10L)),
-    passed = rep(TRUE, 11L)
+    passed = rep("true", 11L)
   ),
   trigger_summary_path,
   row.names = FALSE
 )
 write.csv(
   data.frame(
-    script_exists = TRUE,
-    png_exists = TRUE,
-    pdf_exists = TRUE,
-    passed = TRUE
+    script_exists = "true",
+    png_exists = "true",
+    pdf_exists = "true",
+    passed = "true"
   ),
   plotting_summary_path,
   row.names = FALSE
@@ -177,11 +177,19 @@ write.csv(
   mode_summary_path,
   row.names = FALSE
 )
-validate_figureforge_live_certification_summaries(
-  trigger_summary_path,
-  plotting_summary_path,
-  mode_summary_path
+live_validation_warning <- NULL
+withCallingHandlers(
+  validate_figureforge_live_certification_summaries(
+    trigger_summary_path,
+    plotting_summary_path,
+    mode_summary_path
+  ),
+  warning = function(warning) {
+    live_validation_warning <<- conditionMessage(warning)
+    invokeRestart("muffleWarning")
+  }
 )
+stopifnot(is.null(live_validation_warning))
 invalid_mode <- read.csv(mode_summary_path)
 invalid_mode$case_md_read[[1L]] <- FALSE
 write.csv(invalid_mode, mode_summary_path, row.names = FALSE)
